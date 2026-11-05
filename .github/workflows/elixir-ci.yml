@@ -20,8 +20,8 @@ jobs:
       - name: Configurar BEAM
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: '1.18'
-          otp-version: '27'
+          elixir-version: '1.20'
+          otp-version: '29'
 
       # 3. Descargar dependencias
       - name: Obtener dependencias
