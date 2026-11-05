@@ -1,0 +1,75 @@
+
+name: Elixir CI - Sistema de Emergencias
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-run:
+    name: Compilar, Probar y Ejecutar
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Descargar el repositorio
+      - name: Checkout del código
+        uses: actions/checkout@v4
+
+      # 2. Configurar Erlang y Elixir
+      - name: Configurar BEAM
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.18'
+          otp-version: '27'
+
+      # 3. Descargar dependencias
+      - name: Obtener dependencias
+        run: mix deps.get
+
+      # 4. Compilar todos los módulos
+      - name: Compilar aplicación
+        id: compile
+        run: mix compile --warnings-as-errors
+
+      # 5. Compilar y ejecutar pruebas
+      - name: Ejecutar pruebas
+        id: tests
+        run: mix test
+
+      # 6. Ejecutar el programa
+      - name: Ejecutar sistema
+        id: execution
+        run: mix run -e "Emergencias.CI.verificar_sistema()"
+
+      # 7. Notificar errores
+      - name: Reportar fallos
+        if: failure()
+        run: |
+          echo "::error title=Error en CI::Falló alguna etapa de compilación, pruebas o ejecución."
+
+      # 8. Generar resumen
+      - name: Generar informe
+        if: always()
+        env:
+          COMPILE_STATUS: ${{ steps.compile.outcome }}
+          TEST_STATUS: ${{ steps.tests.outcome }}
+          EXECUTION_STATUS: ${{ steps.execution.outcome }}
+          JOB_STATUS: ${{ job.status }}
+        run: |
+          echo "## Reporte - Sistema de Emergencias" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "| Etapa | Resultado |" >> $GITHUB_STEP_SUMMARY
+          echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Compilación | $COMPILE_STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Pruebas | $TEST_STATUS |" >> $GITHUB_STEP_SUMMARY
+          echo "| Ejecución | $EXECUTION_STATUS |" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$JOB_STATUS" == "success" ]; then
+            echo "### ✅ Todas las validaciones finalizaron correctamente." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ❌ Se encontraron errores. Revisar los logs de las etapas fallidas." >> $GITHUB_STEP_SUMMARY
+          fi
