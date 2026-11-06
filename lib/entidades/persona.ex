@@ -28,11 +28,14 @@ defmodule Emergencia.Persona do
 
     cond do
       is_nil(id) or is_nil(nombre) or is_nil(documento) or is_nil(id_zona) ->
-        {:error, "ID, nombre, documento y zona son obligatorios"}
+      {:error, "ID, nombre, documento y zona son obligatorios"}
+
       estado not in @estados_permitidos ->
         {:error, "Estado inválido. Opciones: #{inspect(@estados_permitidos)}"}
-      edad != nil and edad < 0 ->
-        {:error, "La edad no puede ser negativa"}
+
+      not is_nil(edad) and (not is_integer(edad) or edad < 0) ->
+        {:error, "La edad debe ser un número entero no negativo"}
+
       true ->
         historial_inicial = [{estado, DateTime.utc_now()}]
 

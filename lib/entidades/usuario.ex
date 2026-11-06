@@ -1,30 +1,51 @@
+
 defmodule Emergencia.Usuario do
   @derive {Inspect, except: [:contrasena]}
 
   @tipos_permitidos [:ciudadano, :voluntario, :coordinador, :administrador]
 
-  @enforce_keys [:id_usuario, :nombre_usuario, :contrasena, :nombre_completo, :tipo_usuario]
-  defstruct [:id_usuario, :nombre_usuario, :contrasena, :nombre_completo, :tipo_usuario, :zona_principal_id]
+  @enforce_keys [
+    :id_usuario,
+    :nombre_usuario,
+    :contrasena,
+    :nombre_completo,
+    :tipo_usuario
+  ]
+
+  defstruct [
+    :id_usuario,
+    :nombre_usuario,
+    :contrasena,
+    :nombre_completo,
+    :tipo_usuario,
+    :zona_principal_id,
+    conectado: false
+  ]
 
   @type tipo_usuario :: :ciudadano | :voluntario | :coordinador | :administrador
+
   @type t :: %__MODULE__{
           id_usuario: String.t(),
           nombre_usuario: String.t(),
           contrasena: String.t(),
           nombre_completo: String.t(),
           tipo_usuario: tipo_usuario(),
-          zona_principal_id: String.t() | nil
+          zona_principal_id: String.t() | nil,
+          conectado: boolean()
         }
 
   @doc """
-  Función segura: Retorna {:ok, usuario} o {:error, motivo}
+  Función segura: Retorna {:ok, usuario} o {:error, motivo}.
+  Por defecto, el usuario se crea desconectado.
   """
-  def nueva(id, user, pass, nombre, tipo, zona_id \\ nil) do
+  def nuevo(id, user, pass, nombre, tipo, zona_id \\ nil) do
     cond do
       is_nil(id) or is_nil(user) or is_nil(pass) or is_nil(nombre) ->
         {:error, "ID, usuario, contraseña y nombre son obligatorios"}
+
       tipo not in @tipos_permitidos ->
         {:error, "Tipo de usuario :#{tipo} inválido. Opciones: #{inspect(@tipos_permitidos)}"}
+
       true ->
         {:ok, %__MODULE__{
           id_usuario: id,
@@ -32,7 +53,8 @@ defmodule Emergencia.Usuario do
           contrasena: pass,
           nombre_completo: nombre,
           tipo_usuario: tipo,
-          zona_principal_id: zona_id
+          zona_principal_id: zona_id,
+          conectado: false
         }}
     end
   end
@@ -40,8 +62,8 @@ defmodule Emergencia.Usuario do
   @doc """
   Función estricta: Retorna la estructura o lanza ArgumentError.
   """
-  def nueva!(id, user, pass, nombre, tipo, zona_id \\ nil) do
-    case nueva(id, user, pass, nombre, tipo, zona_id) do
+  def nuevo!(id, user, pass, nombre, tipo, zona_id \\ nil) do
+    case nuevo(id, user, pass, nombre, tipo, zona_id) do
       {:ok, usuario} -> usuario
       {:error, motivo} -> raise ArgumentError, motivo
     end
