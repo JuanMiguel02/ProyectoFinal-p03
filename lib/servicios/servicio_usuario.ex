@@ -5,7 +5,6 @@ defmodule Emergencia.Servicios.ServicioUsuario do
   """
 
   alias Emergencia.Usuario
-  alias Emergencia.Servicios.ServicioActividad
 
   @tipos_permitidos [:ciudadano, :voluntario, :coordinador, :administrador]
 
@@ -17,54 +16,33 @@ defmodule Emergencia.Servicios.ServicioUsuario do
   Registra un usuario si cumple las validaciones
   y su nombre de usuario e ID son únicos.
   """
-  def registrar_usuario(
-        estado_global,
-        username,
-        contrasena,
-        nombre_completo,
-        tipo,
-        opciones \\ []
-      ) do
-    id_zona = Keyword.get(opciones, :id_zona)
+ def registrar_usuario(
+      estado,
+      username,
+      contrasena,
+      nombre_completo,
+      tipo,
+      opciones \\ []
+    ) do
+  id_zona = Keyword.get(opciones, :id_zona)
 
-    with :ok <- validar_id_no_proporcionado(opciones),
-         :ok <- validar_nombre_usuario(username),
-         :ok <- validar_contrasena(contrasena),
-         :ok <- validar_nombre_completo(nombre_completo),
-         :ok <- validar_tipo(tipo),
-         :ok <- validar_unicidad_nombre_usuario(estado_global.usuarios, username),
-         {:ok, nuevo_usuario} <-
-           Usuario.nuevo(username, contrasena, nombre_completo, tipo, id_zona),
-         :ok <- validar_unicidad_id(estado_global.usuarios, nuevo_usuario.id) do
-      id_final = nuevo_usuario.id
+  with :ok <- validar_id_no_proporcionado(opciones),
+       :ok <- validar_nombre_usuario(username),
+       :ok <- validar_contrasena(contrasena),
+       :ok <- validar_nombre_completo(nombre_completo),
+       :ok <- validar_tipo(tipo),
+       :ok <- validar_unicidad_nombre_usuario(estado.usuarios, username),
+       {:ok, nuevo_usuario} <-
+         Usuario.nuevo(username, contrasena, nombre_completo, tipo, id_zona),
+       :ok <- validar_unicidad_id(estado.usuarios, nuevo_usuario.id) do
+    nuevos_usuarios =
+      Map.put(estado.usuarios, nuevo_usuario.id, nuevo_usuario)
 
-      nuevos_usuarios =
-        Map.put(
-          estado_global.usuarios,
-          id_final,
-          nuevo_usuario
-        )
+    nuevo_estado = %{estado | usuarios: nuevos_usuarios}
 
-      estado_actualizado =
-        %{estado_global | usuarios: nuevos_usuarios}
-
-      descripcion =
-        "Usuario '#{username}' registrado con ID #{id_final} y rol :#{tipo}"
-
-      case ServicioActividad.registrar(
-             estado_actualizado,
-             id_final,
-             "REGISTRO_USUARIO",
-             descripcion
-           ) do
-        {:ok, estado_final} ->
-          {:ok, nuevo_usuario, estado_final}
-
-        {:error, motivo} ->
-          {:error, motivo}
-      end
-    end
+    {:ok, nuevo_usuario, nuevo_estado}
   end
+end
 
   # ============================================================
   # 2. AUTENTICACIÓN
@@ -73,43 +51,20 @@ defmodule Emergencia.Servicios.ServicioUsuario do
   @doc """
   Autentica un usuario y actualiza su estado de conexión.
   """
-  def autenticar(estado_global, nombre_usuario, contrasena) do
-    with {:ok, usuario} <-
-           buscar_por_nombre_usuario(
-             estado_global.usuarios,
-             nombre_usuario
-           ),
-         :ok <- verificar_contrasena(usuario, contrasena) do
-      usuario_conectado = %{usuario | conectado: true}
+def autenticar(estado, nombre_usuario, contrasena) do
+  with {:ok, usuario} <-
+         buscar_por_nombre_usuario(estado.usuarios, nombre_usuario),
+       :ok <- verificar_contrasena(usuario, contrasena) do
+    usuario_conectado = %{usuario | conectado: true}
 
-      nuevos_usuarios =
-        Map.put(
-          estado_global.usuarios,
-          usuario.id,
-          usuario_conectado
-        )
+    nuevos_usuarios =
+      Map.put(estado.usuarios, usuario.id, usuario_conectado)
 
-      estado_actualizado =
-        %{estado_global | usuarios: nuevos_usuarios}
+    nuevo_estado = %{estado | usuarios: nuevos_usuarios}
 
-      descripcion =
-        "Inicio de sesión exitoso desde el usuario '#{nombre_usuario}'"
-
-      case ServicioActividad.registrar(
-             estado_actualizado,
-             usuario.id,
-             "LOGIN",
-             descripcion
-           ) do
-        {:ok, estado_final} ->
-          {:ok, usuario_conectado, estado_final}
-
-        {:error, motivo} ->
-          {:error, motivo}
-      end
-    end
+    {:ok, usuario_conectado, nuevo_estado}
   end
-
+end
   # ============================================================
   # 3. DESCONEXIÓN
   # ============================================================
@@ -132,24 +87,9 @@ defmodule Emergencia.Servicios.ServicioUsuario do
       estado_actualizado =
         %{estado_global | usuarios: nuevos_usuarios}
 
-      descripcion =
-        "Cierre de sesión del usuario '#{usuario.nombre_usuario}'"
 
-      case ServicioActividad.registrar(
-             estado_actualizado,
-             id_usuario,
-             "LOGOUT",
-             descripcion
-           ) do
-        {:ok, estado_final} ->
-          {:ok, usuario_desconectado, estado_final}
+       {:ok, usuario_desconectado, estado_actualizado}
 
-        {:error, motivo} ->
-          {:error, motivo}
-      end
-    else
-      :error ->
-        {:error, "El usuario con ID #{id_usuario} no existe"}
     end
   end
 

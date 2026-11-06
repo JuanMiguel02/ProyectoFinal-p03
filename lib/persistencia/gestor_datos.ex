@@ -7,7 +7,10 @@ defmodule Emergencia.GestorDatos do
     Familia,
     Zona,
     Sector,
+    CentroAcopio,
+    InventarioUbicacion,
     Albergue,
+    RegistroAlbergue,
     Necesidad,
     Recurso,
     Mensaje,
@@ -23,11 +26,14 @@ defmodule Emergencia.GestorDatos do
   # Formato: {clave_estado, archivo, modulo, campo_id}
   @colecciones [
     {:usuarios, "usuarios.json", Usuario, :id},
-    {:personas, "personas.json", Persona, :id, },
+    {:personas, "personas.json", Persona, :id},
     {:familias, "familias.json", Familia, :id},
     {:zonas, "zonas.json", Zona, :id},
     {:sectores, "sectores.json", Sector, :id},
     {:albergues, "albergues.json", Albergue, :id},
+    {:registros_albergues, "registros_albergues.json", RegistroAlbergue, :id},
+    {:centros_acopio, "centros_acopio.json", CentroAcopio, :id},
+    {:inventarios, "inventarios.json", InventarioUbicacion, :id},
     {:necesidades, "necesidades.json", Necesidad, :id},
     {:recursos, "recursos.json", Recurso, :id},
     {:mensajes, "mensajes.json", Mensaje, :id_envio},
@@ -43,21 +49,70 @@ defmodule Emergencia.GestorDatos do
      AsignacionRecurso, :id}
   ]
 
-  @doc """
-  Carga todas las colecciones y construye el estado inicial.
-  """
-  def cargar_estado do
-    Enum.reduce_while(@colecciones, {:ok, %{}}, fn
-      {clave, archivo, modulo, campo_id}, {:ok, estado} ->
-        case cargar_coleccion(archivo, modulo, campo_id) do
+  @dominios %{
+  usuarios: [:usuarios],
+  territorio: [:zonas, :sectores, :centros_acopio],
+  poblacion: [:personas, :familias, :albergues],
+  recursos: [
+    :recursos,
+    :inventarios,
+    :necesidades,
+    :movimientos_recursos,
+    :asignaciones_recursos
+  ],
+  mensajes: [:mensajes, :mensajes_destinatarios],
+  mascotas: [:reportes_mascotas, :coincidencias_mascotas],
+  actividades: [:actividades]
+}
+
+def cargar_dominio(dominio) do
+  case Map.fetch(@dominios, dominio) do
+    {:ok, colecciones} ->
+      Enum.reduce_while(colecciones, {:ok, %{}}, fn clave, {:ok, estado} ->
+        case cargar_por_clave(clave) do
           {:ok, entidades} ->
             {:cont, {:ok, Map.put(estado, clave, entidades)}}
 
           {:error, motivo} ->
             {:halt, {:error, {clave, motivo}}}
         end
-    end)
+      end)
+
+    :error ->
+      {:error, {:dominio_desconocido, dominio}}
   end
+end
+
+defp cargar_por_clave(clave) do
+  case Enum.find(@colecciones, fn {nombre, _, _, _} -> nombre == clave end) do
+    {_, archivo, modulo, campo_id} ->
+      cargar_coleccion(archivo, modulo, campo_id)
+
+    nil ->
+      {:error, {:coleccion_desconocida, clave}}
+  end
+end
+
+@doc """
+Guarda todas las colecciones pertenecientes a un dominio.
+"""
+def guardar_dominio(estado, dominio) do
+  case Map.fetch(@dominios, dominio) do
+    {:ok, colecciones} ->
+      Enum.reduce_while(colecciones, :ok, fn clave, :ok ->
+        case guardar_coleccion(estado, clave) do
+          :ok ->
+            {:cont, :ok}
+
+          {:error, motivo} ->
+            {:halt, {:error, {clave, motivo}}}
+        end
+      end)
+
+    :error ->
+      {:error, {:dominio_desconocido, dominio}}
+  end
+end
 
   @doc """
   Carga una colección desde su archivo JSON y reconstruye sus entidades.
