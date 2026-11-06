@@ -3,7 +3,7 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
   Servicio puro para la creación y despacho de mensajes, gestión de destinatarios,
   confirmación de entregas y consulta de notificaciones para personas afectadas.
   """
-
+  alias Emergencia.Servicios.ServicioActividad
   # ============================================================================
   # 1. Enviar / Despachar Mensaje (Uno o múltiples destinatarios)
   # ============================================================================
@@ -37,10 +37,18 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
       total_dest = length(lista_ids_personas)
       desc = "Envío de mensaje '#{id_mensaje}' a #{total_dest} destinatarios"
 
-      {:ok, estado_final} =
-        ServicioActividad.registrar(estado_actualizado, id_remitente, "ENVIO_MENSAJE", desc)
+      case ServicioActividad.registrar(
+             estado_actualizado,
+             id_remitente,
+             "ENVIO_MENSAJE",
+             desc
+           ) do
+        {:ok, estado_final} ->
+          {:ok, {nuevo_mensaje, lista_destinatarios}, estado_final}
 
-      {:ok, {nuevo_mensaje, lista_destinatarios}, estado_final}
+        {:error, motivo} ->
+          {:error, motivo}
+      end
     end
   end
 
@@ -64,15 +72,18 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
 
       desc = "Confirmación de entrega de notificación '#{id_mensaje_destinatario}'"
 
-      {:ok, estado_final} =
-        ServicioActividad.registrar(
-          estado_actualizado,
-          id_usuario_actualizador,
-          "CONFIRMAR_ENTREGA",
-          desc
-        )
+      case ServicioActividad.registrar(
+             estado_actualizado,
+             id_usuario_actualizador,
+             "CONFIRMAR_ENTREGA",
+             desc
+           ) do
+        {:ok, estado_final} ->
+          {:ok, reg_actualizado, estado_final}
 
-      {:ok, reg_actualizado, estado_final}
+        {:error, motivo} ->
+          {:error, motivo}
+      end
     else
       :error -> {:error, "El registro de entrega '#{id_mensaje_destinatario}' no existe"}
       {:error, motivo} -> {:error, motivo}
@@ -91,12 +102,12 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
     notificaciones =
       estado_global.mensajes_destinatarios
       |> Map.values()
-      |> Enum.filter(&(&1.id_persona_destinatario == id_persona))
+      |> Enum.filter(&(&1.id_persona == id_persona))
       |> Enum.map(fn reg ->
-        mensaje = Map.get(estado_global.mensajes, reg.id_mensaje)
+        mensaje = Map.get(estado_global.mensajes, reg.id_envio)
 
         %{
-          id_registro: reg.id,
+          id_registro: reg.id_mensaje_destinatario,
           mensaje: mensaje,
           estado_entrega: reg.estado,
           fecha_entrega: reg.fecha_entrega
@@ -116,7 +127,7 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
         registros =
           estado_global.mensajes_destinatarios
           |> Map.values()
-          |> Enum.filter(&(&1.id_mensaje == id_mensaje))
+          |> Enum.filter(&(&1.id_envio == id_mensaje))
 
         pendientes = Enum.count(registros, &(&1.estado == :pendiente))
         entregados = Enum.count(registros, &(&1.estado == :entregado))
@@ -164,7 +175,7 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
 
     if Enum.empty?(errores) do
       registros = Enum.map(resultados, fn {:ok, reg} -> reg end)
-      mapa = Map.new(registros, fn reg -> {reg.id, reg} end)
+      mapa = Map.new(registros, fn reg -> {reg.id_mensaje_destinatario, reg} end)
       {:ok, mapa, registros}
     else
       {:error, "Error al generar destinatarios: #{inspect(errores)}"}

@@ -34,23 +34,41 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   """
   def registrar_persona(estado_global, nombre, documento, id_zona, estado, opciones \\ []) do
     with :ok <- validar_id_no_proporcionado(opciones),
+         :ok <- validar_nombre(nombre),
+         :ok <- validar_documento(documento),
+         :ok <- validar_id_zona(id_zona),
          :ok <- validar_estado(estado),
-         {:ok, nueva_persona} <-
-           Persona.nueva(nombre, documento, id_zona, estado, opciones),
+         {:ok, nueva_persona} <- Persona.nueva(nombre, documento, id_zona, estado, opciones),
          :ok <- validar_unicidad_id(estado_global.personas, nueva_persona.id) do
       id_final = nueva_persona.id
-      nuevas_personas = Map.put(estado_global.personas, id_final, nueva_persona)
-      estado_actualizado = %{estado_global | personas: nuevas_personas}
+
+      nuevas_personas =
+        Map.put(
+          estado_global.personas,
+          id_final,
+          nueva_persona
+        )
+
+      estado_actualizado =
+        %{estado_global | personas: nuevas_personas}
 
       id_autor = Keyword.get(opciones, :id_usuario_registro, "SISTEMA")
 
-      desc =
+      descripcion =
         "Registro de persona '#{nombre}' (#{documento}) con ID #{id_final} en estado :#{estado}"
 
-      {:ok, estado_final} =
-        ServicioActividad.registrar(estado_actualizado, id_autor, "REGISTRO_PERSONA", desc)
+      case ServicioActividad.registrar(
+             estado_actualizado,
+             id_autor,
+             "REGISTRO_PERSONA",
+             descripcion
+           ) do
+        {:ok, estado_final} ->
+          {:ok, nueva_persona, estado_final}
 
-      {:ok, nueva_persona, estado_final}
+        {:error, motivo} ->
+          {:error, motivo}
+      end
     end
   end
 
@@ -69,18 +87,20 @@ defmodule Emergencia.Servicios.ServicioPersonas do
       nuevas_personas = Map.put(estado_global.personas, id_persona, persona_actualizada)
       estado_actualizado = %{estado_global | personas: nuevas_personas}
 
-      # Registro de auditoría
-      desc = "Cambio de estado de persona '#{persona.nombre}' a :#{nuevo_estado}"
+      descripcion = "Cambio de estado de persona '#{persona.nombre}' a :#{nuevo_estado}"
 
-      {:ok, estado_final} =
-        ServicioActividad.registrar(
-          estado_actualizado,
-          id_usuario_actualizador,
-          "CAMBIO_ESTADO_PERSONA",
-          desc
-        )
+      case ServicioActividad.registrar(
+             estado_actualizado,
+             id_usuario_actualizador,
+             "CAMBIO_ESTADO_PERSONA",
+             descripcion
+           ) do
+        {:ok, estado_final} ->
+          {:ok, persona_actualizada, estado_final}
 
-      {:ok, persona_actualizada, estado_final}
+        {:error, motivo} ->
+          {:error, motivo}
+      end
     end
   end
 
@@ -136,12 +156,31 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   end
 
   defp validar_id_no_proporcionado(opciones) do
-    if Keyword.has_key?(opciones, :id) do
-      {:error, "El ID de persona se genera automáticamente y no debe proporcionarse"}
-    else
-      :ok
+    campos_id = [:id, :codigo_persona]
+
+    case Enum.find(campos_id, &Keyword.has_key?(opciones, &1)) do
+      nil -> :ok
+      campo -> {:error, "El campo #{campo} se genera automáticamente y no debe proporcionarse"}
     end
   end
+
+  defp validar_nombre(nombre) when is_binary(nombre) do
+    if String.trim(nombre) != "", do: :ok, else: {:error, "El nombre no puede estar vacío"}
+  end
+
+  defp validar_nombre(_), do: {:error, "El nombre debe ser texto"}
+
+  defp validar_documento(documento) when is_binary(documento) do
+    if String.trim(documento) != "", do: :ok, else: {:error, "El documento no puede estar vacío"}
+  end
+
+  defp validar_documento(_), do: {:error, "El documento debe ser texto"}
+
+  defp validar_id_zona(id_zona) when is_binary(id_zona) do
+    if String.trim(id_zona) != "", do: :ok, else: {:error, "El ID de zona no puede estar vacío"}
+  end
+
+  defp validar_id_zona(_), do: {:error, "El ID de zona debe ser texto"}
 
   defp validar_estado(estado) do
     if estado in @estados_permitidos do

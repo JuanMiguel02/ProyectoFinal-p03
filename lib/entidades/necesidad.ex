@@ -77,16 +77,6 @@ defmodule Emergencia.Necesidad do
     end
   end
 
-  @doc """
-  Crea una nueva Necesidad o lanza ArgumentError si falla la validación.
-  """
-  def nueva!(tipo, cantidad, id_zona, prioridad, opciones \\ []) do
-    case nueva(tipo, cantidad, id_zona, prioridad, opciones) do
-      {:ok, necesidad} -> necesidad
-      {:error, motivo} -> raise ArgumentError, motivo
-    end
-  end
-
   # ============================================================================
   # Funciones privadas de validación
   # ============================================================================
@@ -114,5 +104,92 @@ defmodule Emergencia.Necesidad do
     else
       {:error, "La cantidad requerida debe ser un número entero mayor a cero"}
     end
+  end
+
+  def a_map(%__MODULE__{} = entidad) do
+    entidad
+    |> Map.from_struct()
+    |> Map.update!(:tipo, &Atom.to_string/1)
+    |> Map.update!(:prioridad, &Atom.to_string/1)
+    |> Map.update!(:estado, &Atom.to_string/1)
+    |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)
+  end
+
+  def desde_map(mapa) when is_map(mapa) do
+    campos = Map.keys(__MODULE__.__struct__()) -- [:__struct__]
+
+    with {:ok, attrs} <- normalizar(mapa, campos),
+         :ok <- validar_id(attrs),
+         {:ok, tipo} <- obtener_enum(attrs[:tipo], @tipos_permitidos, "tipo"),
+         {:ok, prioridad} <- obtener_enum(attrs[:prioridad], @prioridades_permitidas, "prioridad"),
+         {:ok, estado} <- obtener_enum(attrs[:estado], @estados_permitidos, "estado"),
+         {:ok, entidad} <-
+           construir(
+             attrs
+             |> Map.put(:tipo, tipo)
+             |> Map.put(:prioridad, prioridad)
+             |> Map.put(:estado, estado)
+           ) do
+      {:ok, entidad}
+    end
+  rescue
+    error in [ArgumentError, KeyError] ->
+      {:error, "Mapa de necesidad inválido: #{Exception.message(error)}"}
+  end
+
+  def desde_map(_), do: {:error, "La necesidad debe ser un mapa válido"}
+
+  defp normalizar(mapa, campos) do
+    Enum.reduce_while(mapa, {:ok, %{}}, fn {k, v}, {:ok, acc} ->
+      campo = if is_atom(k), do: k, else: Enum.find(campos, &(Atom.to_string(&1) == k))
+
+      if campo in campos and not Map.has_key?(acc, campo),
+        do: {:cont, {:ok, Map.put(acc, campo, v)}},
+        else: {:halt, {:error, "Campo desconocido o duplicado: #{inspect(k)}"}}
+    end)
+  end
+
+  defp validar_id(attrs) do
+    if is_binary(attrs[:id]) and attrs[:id] != "" and
+         is_binary(attrs[:codigo_necesidad]) and attrs[:codigo_necesidad] != "",
+       do: :ok,
+       else: {:error, "ID y código de necesidad son obligatorios"}
+  end
+
+  defp obtener_enum(valor, permitidos, campo) when is_binary(valor) do
+    case Enum.find(permitidos, &(Atom.to_string(&1) == valor)) do
+      nil -> {:error, "Valor inválido para #{campo}"}
+      atom -> {:ok, atom}
+    end
+  end
+
+  defp obtener_enum(valor, permitidos, _campo)
+       when valor in [
+              :alimento,
+              :medicina,
+              :agua,
+              :refugio,
+              :personal,
+              :transporte,
+              :otro,
+              :baja,
+              :media,
+              :alta,
+              :critica,
+              :pendiente,
+              :en_proceso,
+              :cubierta,
+              :cancelada
+            ] do
+    if valor in permitidos, do: {:ok, valor}, else: {:error, "Enum inválido"}
+  end
+
+  defp obtener_enum(_valor, _permitidos, campo), do: {:error, "Valor inválido para #{campo}"}
+
+  defp construir(attrs) do
+    {:ok, struct!(__MODULE__, attrs)}
+  rescue
+    error in [ArgumentError, KeyError] ->
+      {:error, "Faltan campos de necesidad: #{Exception.message(error)}"}
   end
 end

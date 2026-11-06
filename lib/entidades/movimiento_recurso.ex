@@ -33,7 +33,7 @@ defmodule Emergencia.MovimientoRecurso do
   @doc """
   Crea un nuevo registro de MovimientoRecurso validando consistencia del movimiento.
   """
-  def nueva(cantidad, tipo_movimiento, opciones \\ []) do
+  def nuevo(cantidad, tipo_movimiento, opciones \\ []) do
     fecha = Keyword.get(opciones, :fecha, DateTime.utc_now())
     id_origen = Keyword.get(opciones, :id_inventario_origen)
     id_destino = Keyword.get(opciones, :id_inventario_destino)
@@ -52,16 +52,6 @@ defmodule Emergencia.MovimientoRecurso do
          fecha: fecha,
          tipo_movimiento: tipo_movimiento
        }}
-    end
-  end
-
-  @doc """
-  Crea un nuevo MovimientoRecurso o lanza ArgumentError en caso de falla.
-  """
-  def nueva!(cantidad, tipo_movimiento, opciones \\ []) do
-    case nueva(cantidad, tipo_movimiento, opciones) do
-      {:ok, movimiento} -> movimiento
-      {:error, motivo} -> raise ArgumentError, motivo
     end
   end
 
@@ -100,4 +90,75 @@ defmodule Emergencia.MovimientoRecurso do
   end
 
   defp validar_consistencia_movimiento(_tipo, _origen, _destino), do: :ok
+
+  def a_map(%__MODULE__{} = entidad) do
+    entidad
+    |> Map.from_struct()
+    |> Map.update!(:tipo_movimiento, &Atom.to_string/1)
+    |> Map.update!(:fecha, &DateTime.to_iso8601/1)
+    |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)
+  end
+
+  def desde_map(mapa) when is_map(mapa) do
+    campos = Map.keys(__MODULE__.__struct__()) -- [:__struct__]
+
+    with {:ok, attrs} <- normalizar(mapa, campos),
+         :ok <- validar_id(attrs),
+         {:ok, tipo} <- obtener_tipo(attrs[:tipo_movimiento]),
+         {:ok, fecha} <- obtener_fecha(attrs[:fecha]),
+         {:ok, entidad} <-
+           construir(attrs |> Map.put(:tipo_movimiento, tipo) |> Map.put(:fecha, fecha)) do
+      {:ok, entidad}
+    end
+  rescue
+    error in [ArgumentError, KeyError] ->
+      {:error, "Mapa de movimiento inválido: #{Exception.message(error)}"}
+  end
+
+  def desde_map(_), do: {:error, "El movimiento debe ser un mapa válido"}
+
+  defp normalizar(mapa, campos) do
+    Enum.reduce_while(mapa, {:ok, %{}}, fn {k, v}, {:ok, acc} ->
+      campo = if is_atom(k), do: k, else: Enum.find(campos, &(Atom.to_string(&1) == k))
+
+      if campo in campos and not Map.has_key?(acc, campo),
+        do: {:cont, {:ok, Map.put(acc, campo, v)}},
+        else: {:halt, {:error, "Campo desconocido o duplicado: #{inspect(k)}"}}
+    end)
+  end
+
+  defp validar_id(attrs),
+    do:
+      if(is_binary(attrs[:id]) and attrs[:id] != "",
+        do: :ok,
+        else: {:error, "ID de movimiento inválido"}
+      )
+
+  defp obtener_tipo(tipo) when tipo in @tipos_movimiento_permitidos, do: {:ok, tipo}
+
+  defp obtener_tipo(tipo) when is_binary(tipo) do
+    case Enum.find(@tipos_movimiento_permitidos, &(Atom.to_string(&1) == tipo)) do
+      nil -> {:error, "Tipo de movimiento inválido"}
+      valor -> {:ok, valor}
+    end
+  end
+
+  defp obtener_tipo(_), do: {:error, "Tipo de movimiento inválido"}
+  defp obtener_fecha(%DateTime{} = fecha), do: {:ok, fecha}
+
+  defp obtener_fecha(fecha) when is_binary(fecha) do
+    case DateTime.from_iso8601(fecha) do
+      {:ok, datetime, _} -> {:ok, datetime}
+      _ -> {:error, "Fecha de movimiento inválida"}
+    end
+  end
+
+  defp obtener_fecha(_), do: {:error, "Fecha de movimiento inválida"}
+
+  defp construir(attrs) do
+    {:ok, struct!(__MODULE__, attrs)}
+  rescue
+    error in [ArgumentError, KeyError] ->
+      {:error, "Faltan campos de movimiento: #{Exception.message(error)}"}
+  end
 end

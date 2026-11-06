@@ -70,16 +70,6 @@ defmodule Emergencia.ReporteMascota do
     end
   end
 
-  @doc """
-  Crea un nuevo ReporteMascota o lanza ArgumentError en caso de falla.
-  """
-  def nueva!(tipo, especie, color, tamano, id_zona, id_contacto, opciones \\ []) do
-    case nueva(tipo, especie, color, tamano, id_zona, id_contacto, opciones) do
-      {:ok, reporte} -> reporte
-      {:error, motivo} -> raise ArgumentError, motivo
-    end
-  end
-
   # ============================================================================
   # Funciones privadas de validación
   # ============================================================================
@@ -99,5 +89,90 @@ defmodule Emergencia.ReporteMascota do
       {:error,
        "El campo #{campo} con valor :#{valor} es inválido. Opciones: #{inspect(permitidos)}"}
     end
+  end
+
+  def a_map(%__MODULE__{} = entidad) do
+    entidad
+    |> Map.from_struct()
+    |> Map.update!(:tipo, &Atom.to_string/1)
+    |> Map.update!(:tamano, &Atom.to_string/1)
+    |> Map.update!(:estado, &Atom.to_string/1)
+    |> Map.update!(:fecha_reporte, &DateTime.to_iso8601/1)
+    |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)
+  end
+
+  def desde_map(mapa) when is_map(mapa) do
+    campos = Map.keys(__MODULE__.__struct__()) -- [:__struct__]
+
+    with {:ok, attrs} <- normalizar(mapa, campos),
+         :ok <- validar_id(attrs),
+         {:ok, tipo} <- obtener_enum(attrs[:tipo], @tipos_permitidos, :tipo),
+         {:ok, tamano} <- obtener_enum(attrs[:tamano], @tamanos_permitidos, :tamano),
+         {:ok, estado} <- obtener_enum(attrs[:estado], @estados_permitidos, :estado),
+         {:ok, fecha} <- obtener_fecha(attrs[:fecha_reporte]),
+         {:ok, entidad} <-
+           construir(
+             attrs
+             |> Map.put(:tipo, tipo)
+             |> Map.put(:tamano, tamano)
+             |> Map.put(:estado, estado)
+             |> Map.put(:fecha_reporte, fecha)
+           ) do
+      {:ok, entidad}
+    end
+  rescue
+    error in [ArgumentError, KeyError] ->
+      {:error, "Mapa de reporte de mascota inválido: #{Exception.message(error)}"}
+  end
+
+  def desde_map(_), do: {:error, "El reporte de mascota debe ser un mapa válido"}
+
+  defp normalizar(mapa, campos) do
+    Enum.reduce_while(mapa, {:ok, %{}}, fn {k, v}, {:ok, acc} ->
+      campo = if is_atom(k), do: k, else: Enum.find(campos, &(Atom.to_string(&1) == k))
+
+      if campo in campos and not Map.has_key?(acc, campo),
+        do: {:cont, {:ok, Map.put(acc, campo, v)}},
+        else: {:halt, {:error, "Campo desconocido o duplicado: #{inspect(k)}"}}
+    end)
+  end
+
+  defp validar_id(attrs),
+    do:
+      if(is_binary(attrs[:id]) and attrs[:id] != "",
+        do: :ok,
+        else: {:error, "ID de reporte inválido"}
+      )
+
+  defp obtener_enum(valor, permitidos, _campo)
+       when valor in @tipos_permitidos or valor in @tamanos_permitidos or
+              valor in @estados_permitidos do
+    if valor in permitidos, do: {:ok, valor}, else: {:error, "Valor de reporte inválido"}
+  end
+
+  defp obtener_enum(valor, permitidos, campo) when is_binary(valor) do
+    case Enum.find(permitidos, &(Atom.to_string(&1) == valor)) do
+      nil -> {:error, "Campo #{campo} inválido"}
+      atom -> {:ok, atom}
+    end
+  end
+
+  defp obtener_enum(_, _, campo), do: {:error, "Campo #{campo} inválido"}
+  defp obtener_fecha(%DateTime{} = fecha), do: {:ok, fecha}
+
+  defp obtener_fecha(fecha) when is_binary(fecha) do
+    case DateTime.from_iso8601(fecha) do
+      {:ok, datetime, _} -> {:ok, datetime}
+      _ -> {:error, "Fecha de reporte inválida"}
+    end
+  end
+
+  defp obtener_fecha(_), do: {:error, "Fecha de reporte inválida"}
+
+  defp construir(attrs) do
+    {:ok, struct!(__MODULE__, attrs)}
+  rescue
+    error in [ArgumentError, KeyError] ->
+      {:error, "Faltan campos de reporte: #{Exception.message(error)}"}
   end
 end

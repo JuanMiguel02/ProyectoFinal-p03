@@ -44,13 +44,6 @@ defmodule Emergencia.MensajeDestinatario do
     end
   end
 
-  def nuevo!(id_envio, id_persona, estado \\ :pendiente, opciones \\ []) do
-    case nuevo(id_envio, id_persona, estado, opciones) do
-      {:ok, mensaje_destinatario} -> mensaje_destinatario
-      {:error, motivo} -> raise ArgumentError, motivo
-    end
-  end
-
   @doc """
   Transiciona el estado de la notificación a :entregado y asigna el timestamp UTC actual.
   Si el mensaje ya figuraba como entregado, previene la sobrescritura del timestamp original.
@@ -61,5 +54,80 @@ defmodule Emergencia.MensajeDestinatario do
 
   def marcar_entregado(%__MODULE__{} = registro) do
     {:ok, %{registro | estado: :entregado, fecha_entrega: DateTime.utc_now()}}
+  end
+
+  def a_map(%__MODULE__{} = entidad) do
+    entidad
+    |> Map.from_struct()
+    |> Map.update!(:estado, &Atom.to_string/1)
+    |> Map.update!(:fecha_entrega, fn
+      %DateTime{} = fecha -> DateTime.to_iso8601(fecha)
+      nil -> nil
+    end)
+    |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)
+  end
+
+  def desde_map(mapa) when is_map(mapa) do
+    campos = Map.keys(__MODULE__.__struct__()) -- [:__struct__]
+
+    with {:ok, attrs} <- normalizar(mapa, campos),
+         :ok <- validar_id(attrs),
+         {:ok, estado} <- obtener_estado(attrs[:estado]),
+         {:ok, fecha} <- obtener_fecha(attrs[:fecha_entrega]),
+         {:ok, entidad} <-
+           construir(attrs |> Map.put(:estado, estado) |> Map.put(:fecha_entrega, fecha)) do
+      {:ok, entidad}
+    end
+  rescue
+    error in [ArgumentError, KeyError] ->
+      {:error, "Mapa de destinatario inválido: #{Exception.message(error)}"}
+  end
+
+  def desde_map(_), do: {:error, "El destinatario debe ser un mapa válido"}
+
+  defp normalizar(mapa, campos) do
+    Enum.reduce_while(mapa, {:ok, %{}}, fn {k, v}, {:ok, acc} ->
+      campo = if is_atom(k), do: k, else: Enum.find(campos, &(Atom.to_string(&1) == k))
+
+      if campo in campos and not Map.has_key?(acc, campo),
+        do: {:cont, {:ok, Map.put(acc, campo, v)}},
+        else: {:halt, {:error, "Campo desconocido o duplicado: #{inspect(k)}"}}
+    end)
+  end
+
+  defp validar_id(attrs),
+    do:
+      if(is_binary(attrs[:id_mensaje_destinatario]) and attrs[:id_mensaje_destinatario] != "",
+        do: :ok,
+        else: {:error, "ID del destinatario inválido"}
+      )
+
+  defp obtener_estado(estado) when estado in @estados_permitidos, do: {:ok, estado}
+
+  defp obtener_estado(estado) when is_binary(estado) do
+    case Enum.find(@estados_permitidos, &(Atom.to_string(&1) == estado)) do
+      nil -> {:error, "Estado de entrega inválido"}
+      valor -> {:ok, valor}
+    end
+  end
+
+  defp obtener_estado(_), do: {:error, "Estado de entrega inválido"}
+  defp obtener_fecha(nil), do: {:ok, nil}
+  defp obtener_fecha(%DateTime{} = fecha), do: {:ok, fecha}
+
+  defp obtener_fecha(fecha) when is_binary(fecha) do
+    case DateTime.from_iso8601(fecha) do
+      {:ok, datetime, _} -> {:ok, datetime}
+      _ -> {:error, "Fecha de entrega inválida"}
+    end
+  end
+
+  defp obtener_fecha(_), do: {:error, "Fecha de entrega inválida"}
+
+  defp construir(attrs) do
+    {:ok, struct!(__MODULE__, attrs)}
+  rescue
+    error in [ArgumentError, KeyError] ->
+      {:error, "Faltan campos del destinatario: #{Exception.message(error)}"}
   end
 end

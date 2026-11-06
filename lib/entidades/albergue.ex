@@ -30,7 +30,7 @@ defmodule Emergencia.Albergue do
   @doc """
   Crea un nuevo Albergue validando la consistencia entre capacidad y ocupación.
   """
-  def nueva(codigo, nombre, id_zona, capacidad_maxima, opciones \\ []) do
+  def nuevo(codigo, nombre, id_zona, capacidad_maxima, opciones \\ []) do
     ocupacion = Keyword.get(opciones, :ocupacion_actual, 0)
     id_final = GeneradorID.generar_uuid()
 
@@ -52,8 +52,8 @@ defmodule Emergencia.Albergue do
   @doc """
   Crea un nuevo Albergue o lanza ArgumentError en caso de falla.
   """
-  def nueva!(codigo, nombre, id_zona, capacidad_maxima, opciones \\ []) do
-    case nueva(codigo, nombre, id_zona, capacidad_maxima, opciones) do
+  def nuevo!(codigo, nombre, id_zona, capacidad_maxima, opciones \\ []) do
+    case nuevo(codigo, nombre, id_zona, capacidad_maxima, opciones) do
       {:ok, albergue} -> albergue
       {:error, motivo} -> raise ArgumentError, motivo
     end
@@ -85,5 +85,54 @@ defmodule Emergencia.Albergue do
       true ->
         :ok
     end
+  end
+
+  def a_map(%__MODULE__{} = albergue), do: serializar(albergue)
+
+  def desde_map(mapa) when is_map(mapa) do
+    with {:ok, atributos} <- normalizar(mapa),
+         :ok <- validar_ids(atributos),
+         {:ok, albergue} <- construir(atributos) do
+      {:ok, albergue}
+    end
+  rescue
+    error in [ArgumentError, KeyError] ->
+      {:error, "Mapa de albergue inválido: #{Exception.message(error)}"}
+  end
+
+  def desde_map(_), do: {:error, "El albergue debe ser un mapa válido"}
+
+  defp serializar(entidad) do
+    entidad
+    |> Map.from_struct()
+    |> Map.new(fn {campo, valor} -> {Atom.to_string(campo), valor} end)
+  end
+
+  defp normalizar(mapa) do
+    campos = Map.keys(__MODULE__.__struct__()) -- [:__struct__]
+
+    Enum.reduce_while(mapa, {:ok, %{}}, fn {clave, valor}, {:ok, acc} ->
+      campo =
+        if is_atom(clave), do: clave, else: Enum.find(campos, &(Atom.to_string(&1) == clave))
+
+      if campo in campos and not Map.has_key?(acc, campo),
+        do: {:cont, {:ok, Map.put(acc, campo, valor)}},
+        else: {:halt, {:error, "Campo desconocido o duplicado: #{inspect(clave)}"}}
+    end)
+  end
+
+  defp validar_ids(atributos) do
+    if texto?(atributos[:id]) and texto?(atributos[:codigo_albergue]),
+      do: :ok,
+      else: {:error, "ID y código de albergue son obligatorios"}
+  end
+
+  defp texto?(valor), do: is_binary(valor) and String.trim(valor) != ""
+
+  defp construir(atributos) do
+    {:ok, struct!(__MODULE__, atributos)}
+  rescue
+    error in [ArgumentError, KeyError] ->
+      {:error, "Faltan campos de albergue: #{Exception.message(error)}"}
   end
 end
