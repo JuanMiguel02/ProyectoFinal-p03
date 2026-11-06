@@ -5,7 +5,7 @@ defmodule Emergencia.Usuario do
   @tipos_permitidos [:ciudadano, :voluntario, :coordinador, :administrador]
 
   @enforce_keys [
-    :id_usuario,
+    :id,
     :codigo_usuario,
     :nombre_usuario,
     :contrasena,
@@ -14,7 +14,7 @@ defmodule Emergencia.Usuario do
   ]
 
   defstruct [
-    :id_usuario,
+    :id,
     :codigo_usuario,
     :nombre_usuario,
     :contrasena,
@@ -27,7 +27,7 @@ defmodule Emergencia.Usuario do
   @type tipo_usuario :: :ciudadano | :voluntario | :coordinador | :administrador
 
   @type t :: %__MODULE__{
-          id_usuario: String.t(),
+          id: String.t(),
           codigo_usuario: String.t(),
           nombre_usuario: String.t(),
           contrasena: String.t(),
@@ -45,7 +45,7 @@ defmodule Emergencia.Usuario do
     if tipo in @tipos_permitidos do
       {:ok,
        %__MODULE__{
-         id_usuario: GeneradorID.generar_uuid(),
+         id: GeneradorID.generar_uuid(),
          codigo_usuario: GeneradorID.generar("USR"),
          nombre_usuario: username,
          contrasena: contrasena,
@@ -79,12 +79,12 @@ defmodule Emergencia.Usuario do
   """
   def desde_map(mapa) when is_map(mapa) do
     with {:ok, tipo_usuario} <- obtener_tipo(obtener(mapa, "tipo_usuario")),
-         :ok <- validar_id(obtener(mapa, "id_usuario")),
+         :ok <- validar_id(obtener(mapa, "id")),
          :ok <- validar_codigo(obtener(mapa, "codigo_usuario")),
          :ok <- validar_campos(mapa) do
       {:ok,
        %__MODULE__{
-         id_usuario: obtener(mapa, "id_usuario"),
+         id: obtener(mapa, "id"),
          codigo_usuario: obtener(mapa, "codigo_usuario"),
          nombre_usuario: obtener(mapa, "nombre_usuario"),
          contrasena: obtener(mapa, "contrasena"),

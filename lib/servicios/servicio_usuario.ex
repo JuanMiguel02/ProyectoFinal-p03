@@ -35,8 +35,8 @@ defmodule Emergencia.Servicios.ServicioUsuario do
          :ok <- validar_unicidad_nombre_usuario(estado_global.usuarios, username),
          {:ok, nuevo_usuario} <-
            Usuario.nuevo(username, contrasena, nombre_completo, tipo, id_zona),
-         :ok <- validar_unicidad_id(estado_global.usuarios, nuevo_usuario.id_usuario) do
-      id_final = nuevo_usuario.id_usuario
+         :ok <- validar_unicidad_id(estado_global.usuarios, nuevo_usuario.id) do
+      id_final = nuevo_usuario.id
 
       nuevos_usuarios =
         Map.put(
@@ -85,7 +85,7 @@ defmodule Emergencia.Servicios.ServicioUsuario do
       nuevos_usuarios =
         Map.put(
           estado_global.usuarios,
-          usuario.id_usuario,
+          usuario.id,
           usuario_conectado
         )
 
@@ -97,7 +97,7 @@ defmodule Emergencia.Servicios.ServicioUsuario do
 
       case ServicioActividad.registrar(
              estado_actualizado,
-             usuario.id_usuario,
+             usuario.id,
              "LOGIN",
              descripcion
            ) do
@@ -215,7 +215,7 @@ defmodule Emergencia.Servicios.ServicioUsuario do
   en una lista de usuarios reconstruidos.
   """
   def validar_usuarios_cargados(usuarios) do
-    ids = Enum.map(usuarios, & &1.id_usuario)
+    ids = Enum.map(usuarios, & &1.id)
 
     usernames =
       Enum.map(usuarios, fn usuario ->
