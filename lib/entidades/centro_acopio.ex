@@ -1,14 +1,17 @@
 defmodule Emergencia.CentroAcopio do
+  alias Emergencia.GeneradorID
+
   @moduledoc """
   Representa un centro de acopio asignado a una zona para la recepción,
   almacenamiento y distribución de recursos e insumos de emergencia.
   """
 
-  @enforce_keys [:id, :nombre, :direccion, :capacidad, :id_zona]
-  defstruct [:id, :nombre, :direccion, :capacidad, :id_zona]
+  @enforce_keys [:id, :codigo_centro_acopio, :nombre, :direccion, :capacidad, :id_zona]
+  defstruct [:id, :codigo_centro_acopio, :nombre, :direccion, :capacidad, :id_zona]
 
   @type t :: %__MODULE__{
           id: String.t(),
+          codigo_centro_acopio: String.t(),
           nombre: String.t(),
           direccion: String.t(),
           capacidad: pos_integer(),
@@ -18,12 +21,15 @@ defmodule Emergencia.CentroAcopio do
   @doc """
   Crea un nuevo Centro de Acopio validando sus datos obligatorios y capacidad.
   """
-  def nueva(id, nombre, direccion, capacidad, id_zona) do
-    with :ok <- validar_obligatorios(id, nombre, direccion, id_zona),
+  def nueva(nombre, direccion, capacidad, id_zona) do
+    id_final = GeneradorID.generar_uuid()
+
+    with :ok <- validar_obligatorios(nombre, direccion, id_zona),
          :ok <- validar_capacidad(capacidad) do
       {:ok,
        %__MODULE__{
-         id: id,
+         id: id_final,
+         codigo_centro_acopio: GeneradorID.generar("CAP"),
          nombre: nombre,
          direccion: direccion,
          capacidad: capacidad,
@@ -35,8 +41,8 @@ defmodule Emergencia.CentroAcopio do
   @doc """
   Crea un nuevo Centro de Acopio o lanza ArgumentError en caso de falla.
   """
-  def nueva!(id, nombre, direccion, capacidad, id_zona) do
-    case nueva(id, nombre, direccion, capacidad, id_zona) do
+  def nueva!(nombre, direccion, capacidad, id_zona) do
+    case nueva(nombre, direccion, capacidad, id_zona) do
       {:ok, centro} -> centro
       {:error, motivo} -> raise ArgumentError, motivo
     end
@@ -46,9 +52,9 @@ defmodule Emergencia.CentroAcopio do
   # Funciones privadas de validación
   # ============================================================================
 
-  defp validar_obligatorios(id, nombre, direccion, id_zona) do
-    if is_nil(id) or is_nil(nombre) or is_nil(direccion) or is_nil(id_zona) do
-      {:error, "ID, nombre, dirección e ID de zona son obligatorios"}
+  defp validar_obligatorios(nombre, direccion, id_zona) do
+    if is_nil(nombre) or is_nil(direccion) or is_nil(id_zona) do
+      {:error, "Nombre, dirección e ID de zona son obligatorios"}
     else
       :ok
     end

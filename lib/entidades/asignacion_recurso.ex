@@ -1,4 +1,6 @@
 defmodule Emergencia.AsignacionRecurso do
+  alias Emergencia.GeneradorID
+
   @estados_permitidos [:asignado, :entregado, :cancelado]
 
   @enforce_keys [:id, :id_necesidad, :id_inventario, :cantidad_asignada, :fecha_asignada, :estado]
@@ -17,31 +19,35 @@ defmodule Emergencia.AsignacionRecurso do
   @doc """
   Crea una nueva asignación de recurso. Asigna la fecha actual y estado :asignado por defecto.
   """
-  def nueva(id, id_necesidad, id_inventario, cantidad, opciones \\ []) do
+  def nueva(id_necesidad, id_inventario, cantidad, opciones \\ []) do
     fecha = Keyword.get(opciones, :fecha_asignada, DateTime.utc_now())
     estado = Keyword.get(opciones, :estado, :asignado)
 
     cond do
-      is_nil(id) or is_nil(id_necesidad) or is_nil(id_inventario) ->
-        {:error, "ID de asignación, ID de necesidad e ID de inventario son obligatorios"}
+      is_nil(id_necesidad) or is_nil(id_inventario) ->
+        {:error, "ID de necesidad e ID de inventario son obligatorios"}
+
       not is_integer(cantidad) or cantidad <= 0 ->
         {:error, "La cantidad asignada debe ser un número entero mayor a cero"}
+
       estado not in @estados_permitidos ->
         {:error, "Estado :#{estado} inválido. Opciones: #{inspect(@estados_permitidos)}"}
+
       true ->
-        {:ok, %__MODULE__{
-          id: id,
-          id_necesidad: id_necesidad,
-          id_inventario: id_inventario,
-          cantidad_asignada: cantidad,
-          fecha_asignada: fecha,
-          estado: estado
-        }}
+        {:ok,
+         %__MODULE__{
+           id: GeneradorID.generar_uuid(),
+           id_necesidad: id_necesidad,
+           id_inventario: id_inventario,
+           cantidad_asignada: cantidad,
+           fecha_asignada: fecha,
+           estado: estado
+         }}
     end
   end
 
-  def nueva!(id, id_necesidad, id_inventario, cantidad, opciones \\ []) do
-    case nueva(id, id_necesidad, id_inventario, cantidad, opciones) do
+  def nueva!(id_necesidad, id_inventario, cantidad, opciones \\ []) do
+    case nueva(id_necesidad, id_inventario, cantidad, opciones) do
       {:ok, asignacion} -> asignacion
       {:error, motivo} -> raise ArgumentError, motivo
     end

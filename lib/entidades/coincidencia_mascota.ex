@@ -1,4 +1,6 @@
 defmodule Emergencia.CoincidenciaMascota do
+  alias Emergencia.GeneradorID
+
   @moduledoc """
   Representa la vinculación o emparejamiento entre un reporte de mascota perdida
   y uno de mascota encontrada, gestionando el ciclo de confirmación del hallazgo.
@@ -21,16 +23,16 @@ defmodule Emergencia.CoincidenciaMascota do
   @doc """
   Crea una nueva CoincidenciaMascota vinculando un reporte de pérdida y uno de hallazgo.
   """
-  def nueva(id, id_reporte_perdida, id_reporte_encontrada, opciones \\ []) do
+  def nueva(id_reporte_perdida, id_reporte_encontrada, opciones \\ []) do
     estado = Keyword.get(opciones, :estado, :pendiente)
     fecha = Keyword.get(opciones, :fecha_coincidencia, DateTime.utc_now())
 
-    with :ok <- validar_obligatorios(id, id_reporte_perdida, id_reporte_encontrada),
+    with :ok <- validar_obligatorios(id_reporte_perdida, id_reporte_encontrada),
          :ok <- validar_reportes_distintos(id_reporte_perdida, id_reporte_encontrada),
          :ok <- validar_enum(:estado, estado, @estados_permitidos) do
       {:ok,
        %__MODULE__{
-         id: id,
+         id: GeneradorID.generar_uuid(),
          id_reporte_perdida: id_reporte_perdida,
          id_reporte_encontrada: id_reporte_encontrada,
          fecha_coincidencia: fecha,
@@ -42,8 +44,8 @@ defmodule Emergencia.CoincidenciaMascota do
   @doc """
   Crea una nueva CoincidenciaMascota o lanza ArgumentError en caso de falla.
   """
-  def nueva!(id, id_reporte_perdida, id_reporte_encontrada, opciones \\ []) do
-    case nueva(id, id_reporte_perdida, id_reporte_encontrada, opciones) do
+  def nueva!(id_reporte_perdida, id_reporte_encontrada, opciones \\ []) do
+    case nueva(id_reporte_perdida, id_reporte_encontrada, opciones) do
       {:ok, coincidencia} -> coincidencia
       {:error, motivo} -> raise ArgumentError, motivo
     end
@@ -53,9 +55,9 @@ defmodule Emergencia.CoincidenciaMascota do
   # Funciones privadas de validación
   # ============================================================================
 
-  defp validar_obligatorios(id, id_reporte_perdida, id_reporte_encontrada) do
-    if is_nil(id) or is_nil(id_reporte_perdida) or is_nil(id_reporte_encontrada) do
-      {:error, "ID de coincidencia, ID de reporte de pérdida e ID de reporte de encontrada son obligatorios"}
+  defp validar_obligatorios(id_reporte_perdida, id_reporte_encontrada) do
+    if is_nil(id_reporte_perdida) or is_nil(id_reporte_encontrada) do
+      {:error, "ID de reporte de pérdida e ID de reporte de encontrada son obligatorios"}
     else
       :ok
     end
@@ -73,7 +75,8 @@ defmodule Emergencia.CoincidenciaMascota do
     if valor in permitidos do
       :ok
     else
-      {:error, "El campo #{campo} con valor :#{valor} es inválido. Opciones: #{inspect(permitidos)}"}
+      {:error,
+       "El campo #{campo} con valor :#{valor} es inválido. Opciones: #{inspect(permitidos)}"}
     end
   end
 end

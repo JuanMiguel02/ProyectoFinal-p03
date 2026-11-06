@@ -4,13 +4,17 @@ defmodule Emergencia.Recurso do
   especificando su categoría, unidad de medida y conservando su historial de cambios.
   """
 
+  alias Emergencia.GeneradorID
+
   @categorias_permitidas [:alimento, :medicina, :herramienta, :vestimenta, :equipo, :otro]
 
-  @enforce_keys [:codigo, :nombre, :categoria, :unidad_medida]
-  defstruct [:codigo, :nombre, :categoria, :unidad_medida, historial: []]
+  @enforce_keys [:id, :codigo_recurso, :codigo, :nombre, :categoria, :unidad_medida]
+  defstruct [:id, :codigo_recurso, :codigo, :nombre, :categoria, :unidad_medida, historial: []]
 
   @type categoria_recurso :: :alimento | :medicina | :herramienta | :vestimenta | :equipo | :otro
   @type t :: %__MODULE__{
+          id: String.t(),
+          codigo_recurso: String.t(),
           codigo: String.t(),
           nombre: String.t(),
           categoria: categoria_recurso(),
@@ -26,6 +30,8 @@ defmodule Emergencia.Recurso do
          :ok <- validar_enum(:categoria, categoria, @categorias_permitidas) do
       {:ok,
        %__MODULE__{
+         id: GeneradorID.generar_uuid(),
+         codigo_recurso: GeneradorID.generar("REC"),
          codigo: codigo,
          nombre: nombre,
          categoria: categoria,
@@ -61,7 +67,8 @@ defmodule Emergencia.Recurso do
     if valor in permitidos do
       :ok
     else
-      {:error, "El campo #{campo} con valor :#{valor} es inválido. Opciones: #{inspect(permitidos)}"}
+      {:error,
+       "El campo #{campo} con valor :#{valor} es inválido. Opciones: #{inspect(permitidos)}"}
     end
   end
 end

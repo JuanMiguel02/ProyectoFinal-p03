@@ -1,8 +1,10 @@
-defmodule Emergencia.Servicios.ServicioPersona do
+defmodule Emergencia.Servicios.ServicioPersonas do
   @moduledoc """
   Servicio puro para la gestión de personas afectadas, actualización de su estado
   de localización, trazabilidad de historial y búsquedas avanzadas para familiares.
   """
+  alias Emergencia.Persona
+  alias Emergencia.Servicios.ServicioActividad
 
   @estados_permitidos [
     :sin_informacion,
@@ -17,28 +19,36 @@ defmodule Emergencia.Servicios.ServicioPersona do
   # 1. Registro de Persona Afectada
   # ============================================================================
 
-@doc """
+  @doc """
   Registra una nueva persona en el sistema. Los datos opcionales (edad,
   dato_referencia, id_familia) se pasan dentro de `opciones`.
 
   ## Ejemplo:
       # Sin conocer la edad:
-      registrar_persona(estado, "P-1", "Ana Gomez", "12345", "Z-Norte", :reportada)
+      registrar_persona(estado, "Ana Gomez", "12345", "Z-Norte", :reportada)
 
       # Con edad y datos de referencia opcionales:
-      registrar_persona(estado, "P-1", "Ana Gomez", "12345", "Z-Norte", :reportada, edad: 34, dato_referencia: "Cicatriz en la mejilla")
-  """
-  def registrar_persona(estado_global, id, nombre, documento, id_zona, estado, opciones \\ []) do
-    with :ok <- validar_unicidad_id(estado_global.personas, id),
-         {:ok, nueva_persona} <- Persona.nueva(id, nombre, documento, id_zona, estado, opciones) do
+      registrar_persona(estado, "Ana Gomez", "12345", "Z-Norte", :reportada, edad: 34, dato_referencia: "Cicatriz en la mejilla")
 
-      nuevas_personas = Map.put(estado_global.personas, id, nueva_persona)
+  La persona recibe automáticamente un UUID interno y un código público `PER-####`.
+  """
+  def registrar_persona(estado_global, nombre, documento, id_zona, estado, opciones \\ []) do
+    with :ok <- validar_id_no_proporcionado(opciones),
+         :ok <- validar_estado(estado),
+         {:ok, nueva_persona} <-
+           Persona.nueva(nombre, documento, id_zona, estado, opciones),
+         :ok <- validar_unicidad_id(estado_global.personas, nueva_persona.id) do
+      id_final = nueva_persona.id
+      nuevas_personas = Map.put(estado_global.personas, id_final, nueva_persona)
       estado_actualizado = %{estado_global | personas: nuevas_personas}
 
-      # Registro de auditoría
       id_autor = Keyword.get(opciones, :id_usuario_registro, "SISTEMA")
-      desc = "Registro inicial de persona '#{nombre}' (#{documento}) en estado :#{estado}"
-      {:ok, estado_final} = ActividadService.registrar(estado_actualizado, id_autor, "REGISTRO_PERSONA", desc)
+
+      desc =
+        "Registro de persona '#{nombre}' (#{documento}) con ID #{id_final} en estado :#{estado}"
+
+      {:ok, estado_final} =
+        ServicioActividad.registrar(estado_actualizado, id_autor, "REGISTRO_PERSONA", desc)
 
       {:ok, nueva_persona, estado_final}
     end
@@ -56,13 +66,19 @@ defmodule Emergencia.Servicios.ServicioPersona do
     with {:ok, persona} <- obtener_persona(estado_global.personas, id_persona),
          :ok <- validar_estado(nuevo_estado),
          {:ok, persona_actualizada} <- aplicar_cambio_estado(persona, nuevo_estado) do
-
       nuevas_personas = Map.put(estado_global.personas, id_persona, persona_actualizada)
       estado_actualizado = %{estado_global | personas: nuevas_personas}
 
       # Registro de auditoría
       desc = "Cambio de estado de persona '#{persona.nombre}' a :#{nuevo_estado}"
-      {:ok, estado_final} = ActividadService.registrar(estado_actualizado, id_usuario_actualizador, "CAMBIO_ESTADO_PERSONA", desc)
+
+      {:ok, estado_final} =
+        ServicioActividad.registrar(
+          estado_actualizado,
+          id_usuario_actualizador,
+          "CAMBIO_ESTADO_PERSONA",
+          desc
+        )
 
       {:ok, persona_actualizada, estado_final}
     end
@@ -92,7 +108,9 @@ defmodule Emergencia.Servicios.ServicioPersona do
   de una persona por su ID o Documento.
   """
   def consultar_historial(mapa_personas, documento_o_id) do
-    case Enum.find(Map.values(mapa_personas), fn p -> p.id == documento_o_id or p.documento == documento_o_id end) do
+    case Enum.find(Map.values(mapa_personas), fn p ->
+           p.id == documento_o_id or p.documento == documento_o_id
+         end) do
       nil -> {:error, "No se encontró ningún registro para '#{documento_o_id}'"}
       persona -> {:ok, persona.nombre, persona.estado, persona.historial_estados}
     end
@@ -112,6 +130,14 @@ defmodule Emergencia.Servicios.ServicioPersona do
   defp validar_unicidad_id(mapa_personas, id) do
     if Map.has_key?(mapa_personas, id) do
       {:error, "Ya existe una persona registrada con el ID '#{id}'"}
+    else
+      :ok
+    end
+  end
+
+  defp validar_id_no_proporcionado(opciones) do
+    if Keyword.has_key?(opciones, :id) do
+      {:error, "El ID de persona se genera automáticamente y no debe proporcionarse"}
     else
       :ok
     end
@@ -151,5 +177,4 @@ defmodule Emergencia.Servicios.ServicioPersona do
         true
     end)
   end
-
 end

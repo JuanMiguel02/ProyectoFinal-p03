@@ -1,20 +1,41 @@
 defmodule Emergencia.Necesidad do
+  alias Emergencia.GeneradorID
+
   @tipos_permitidos [:alimento, :medicina, :agua, :refugio, :personal, :transporte, :otro]
   @prioridades_permitidas [:baja, :media, :alta, :critica]
   @estados_permitidos [:pendiente, :en_proceso, :cubierta, :cancelada]
 
-  @enforce_keys [:id, :tipo, :cantidad_requerida, :id_zona, :prioridad, :estado]
+  @enforce_keys [
+    :id,
+    :codigo_necesidad,
+    :tipo,
+    :cantidad_requerida,
+    :id_zona,
+    :prioridad,
+    :estado
+  ]
   defstruct [
-    :id, :tipo, :descripcion, :cantidad_requerida, :id_zona,
-    :prioridad, :id_responsable, :estado, :entidad_asociada,
-    :id_destinatario, :tipo_destinatario
+    :id,
+    :codigo_necesidad,
+    :tipo,
+    :descripcion,
+    :cantidad_requerida,
+    :id_zona,
+    :prioridad,
+    :id_responsable,
+    :estado,
+    :entidad_asociada,
+    :id_destinatario,
+    :tipo_destinatario
   ]
 
-  @type tipo_necesidad :: :alimento | :medicina | :agua | :refugio | :personal | :transporte | :otro
+  @type tipo_necesidad ::
+          :alimento | :medicina | :agua | :refugio | :personal | :transporte | :otro
   @type prioridad :: :baja | :media | :alta | :critica
   @type estado_necesidad :: :pendiente | :en_proceso | :cubierta | :cancelada
   @type t :: %__MODULE__{
           id: String.t(),
+          codigo_necesidad: String.t(),
           tipo: tipo_necesidad(),
           descripcion: String.t() | nil,
           cantidad_requerida: pos_integer(),
@@ -30,17 +51,18 @@ defmodule Emergencia.Necesidad do
   @doc """
   Crea una nueva Necesidad validando mediante el pipeline 'with'.
   """
-  def nueva(id, tipo, cantidad, id_zona, prioridad, opciones \\ []) do
+  def nueva(tipo, cantidad, id_zona, prioridad, opciones \\ []) do
     estado = Keyword.get(opciones, :estado, :pendiente)
 
-    with :ok <- validar_obligatorios(id, tipo, id_zona, prioridad),
+    with :ok <- validar_obligatorios(tipo, id_zona, prioridad),
          :ok <- validar_enum(:tipo, tipo, @tipos_permitidos),
          :ok <- validar_enum(:prioridad, prioridad, @prioridades_permitidas),
          :ok <- validar_enum(:estado, estado, @estados_permitidos),
          :ok <- validar_cantidad(cantidad) do
       {:ok,
        %__MODULE__{
-         id: id,
+         id: GeneradorID.generar_uuid(),
+         codigo_necesidad: GeneradorID.generar("NEC"),
          tipo: tipo,
          descripcion: Keyword.get(opciones, :descripcion),
          cantidad_requerida: cantidad,
@@ -58,8 +80,8 @@ defmodule Emergencia.Necesidad do
   @doc """
   Crea una nueva Necesidad o lanza ArgumentError si falla la validación.
   """
-  def nueva!(id, tipo, cantidad, id_zona, prioridad, opciones \\ []) do
-    case nueva(id, tipo, cantidad, id_zona, prioridad, opciones) do
+  def nueva!(tipo, cantidad, id_zona, prioridad, opciones \\ []) do
+    case nueva(tipo, cantidad, id_zona, prioridad, opciones) do
       {:ok, necesidad} -> necesidad
       {:error, motivo} -> raise ArgumentError, motivo
     end
@@ -69,9 +91,9 @@ defmodule Emergencia.Necesidad do
   # Funciones privadas de validación
   # ============================================================================
 
-  defp validar_obligatorios(id, tipo, id_zona, prioridad) do
-    if is_nil(id) or is_nil(tipo) or is_nil(id_zona) or is_nil(prioridad) do
-      {:error, "ID, tipo, ID de zona y prioridad son obligatorios"}
+  defp validar_obligatorios(tipo, id_zona, prioridad) do
+    if is_nil(tipo) or is_nil(id_zona) or is_nil(prioridad) do
+      {:error, "Tipo, ID de zona y prioridad son obligatorios"}
     else
       :ok
     end
@@ -81,7 +103,8 @@ defmodule Emergencia.Necesidad do
     if valor in permitidos do
       :ok
     else
-      {:error, "El campo #{campo} con valor :#{valor} es inválido. Opciones: #{inspect(permitidos)}"}
+      {:error,
+       "El campo #{campo} con valor :#{valor} es inválido. Opciones: #{inspect(permitidos)}"}
     end
   end
 

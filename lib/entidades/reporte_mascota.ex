@@ -1,4 +1,6 @@
 defmodule Emergencia.ReporteMascota do
+  alias Emergencia.GeneradorID
+
   @moduledoc """
   Registra los reportes de mascotas extraviadas o encontradas en una zona afectada,
   detallando sus características físicas, estado del reporte y usuario de contacto.
@@ -10,9 +12,17 @@ defmodule Emergencia.ReporteMascota do
 
   @enforce_keys [:id, :tipo, :especie, :color, :tamano, :estado, :id_zona, :id_usuario_contacto]
   defstruct [
-    :id, :tipo, :especie, :nombre, :caracteristicas,
-    :color, :tamano, :estado, :fecha_reporte,
-    :id_zona, :id_usuario_contacto
+    :id,
+    :tipo,
+    :especie,
+    :nombre,
+    :caracteristicas,
+    :color,
+    :tamano,
+    :estado,
+    :fecha_reporte,
+    :id_zona,
+    :id_usuario_contacto
   ]
 
   @type tipo_reporte :: :perdida | :encontrada
@@ -35,17 +45,17 @@ defmodule Emergencia.ReporteMascota do
   @doc """
   Crea un nuevo ReporteMascota validando los tipos y campos obligatorios.
   """
-  def nueva(id, tipo, especie, color, tamano, id_zona, id_contacto, opciones \\ []) do
+  def nueva(tipo, especie, color, tamano, id_zona, id_contacto, opciones \\ []) do
     estado = Keyword.get(opciones, :estado, :activa)
     fecha = Keyword.get(opciones, :fecha_reporte, DateTime.utc_now())
 
-    with :ok <- validar_obligatorios(id, especie, color, id_zona, id_contacto),
+    with :ok <- validar_obligatorios(especie, color, id_zona, id_contacto),
          :ok <- validar_enum(:tipo, tipo, @tipos_permitidos),
          :ok <- validar_enum(:tamano, tamano, @tamanos_permitidos),
          :ok <- validar_enum(:estado, estado, @estados_permitidos) do
       {:ok,
        %__MODULE__{
-         id: id,
+         id: GeneradorID.generar_uuid(),
          tipo: tipo,
          especie: String.downcase(String.trim(especie)),
          nombre: Keyword.get(opciones, :nombre),
@@ -63,8 +73,8 @@ defmodule Emergencia.ReporteMascota do
   @doc """
   Crea un nuevo ReporteMascota o lanza ArgumentError en caso de falla.
   """
-  def nueva!(id, tipo, especie, color, tamano, id_zona, id_contacto, opciones \\ []) do
-    case nueva(id, tipo, especie, color, tamano, id_zona, id_contacto, opciones) do
+  def nueva!(tipo, especie, color, tamano, id_zona, id_contacto, opciones \\ []) do
+    case nueva(tipo, especie, color, tamano, id_zona, id_contacto, opciones) do
       {:ok, reporte} -> reporte
       {:error, motivo} -> raise ArgumentError, motivo
     end
@@ -74,9 +84,9 @@ defmodule Emergencia.ReporteMascota do
   # Funciones privadas de validación
   # ============================================================================
 
-  defp validar_obligatorios(id, especie, color, id_zona, id_contacto) do
-    if is_nil(id) or is_nil(especie) or is_nil(color) or is_nil(id_zona) or is_nil(id_contacto) do
-      {:error, "ID, especie, color, ID de zona e ID de usuario de contacto son obligatorios"}
+  defp validar_obligatorios(especie, color, id_zona, id_contacto) do
+    if is_nil(especie) or is_nil(color) or is_nil(id_zona) or is_nil(id_contacto) do
+      {:error, "Especie, color, ID de zona e ID de usuario de contacto son obligatorios"}
     else
       :ok
     end
@@ -86,7 +96,8 @@ defmodule Emergencia.ReporteMascota do
     if valor in permitidos do
       :ok
     else
-      {:error, "El campo #{campo} con valor :#{valor} es inválido. Opciones: #{inspect(permitidos)}"}
+      {:error,
+       "El campo #{campo} con valor :#{valor} es inválido. Opciones: #{inspect(permitidos)}"}
     end
   end
 end
