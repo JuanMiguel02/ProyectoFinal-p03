@@ -13,7 +13,8 @@ defmodule Emergencia.Supervisor do
   @impl true
   def init(_opciones) do
     hijos = [
-      Emergencia.UsuariosServidor
+      Emergencia.UsuariosServidor,
+      Emergencia.MensajesServidor
     ]
 
     Supervisor.init(hijos, strategy: :one_for_one)
