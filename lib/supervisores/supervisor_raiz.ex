@@ -1,4 +1,3 @@
-
 defmodule Emergencia.Supervisor do
   use Supervisor
 
@@ -14,7 +13,8 @@ defmodule Emergencia.Supervisor do
   def init(_opciones) do
     hijos = [
       Emergencia.UsuariosServidor,
-      Emergencia.MensajesServidor
+      Emergencia.MensajesServidor,
+      Emergencia.ActividadesServidor
     ]
 
     Supervisor.init(hijos, strategy: :one_for_one)
