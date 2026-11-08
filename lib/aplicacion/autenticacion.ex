@@ -7,7 +7,6 @@ defmodule Emergencia.Aplicacion.Autenticacion do
   alias Emergencia.Cliente.Sesion
   alias Emergencia.UsuariosServidor
   alias Emergencia.ActividadesServidor
-  alias Emergencia.Servicios.ServicioUsuario
 
   # ============================================================
   #  INICIO DE SESIÓN

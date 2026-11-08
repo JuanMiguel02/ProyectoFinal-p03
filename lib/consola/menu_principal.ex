@@ -10,7 +10,6 @@ defmodule Emergencia.Consola.MenuPrincipal do
   alias Emergencia.Consola.MenuPersonas
   alias Emergencia.Consola.MenuAlbergues
   alias Emergencia.Consola.MenuAutenticacion
-  alias Emergencia.Aplicacion.Autenticacion
   alias Util
 
   def iniciar(sesion) do
@@ -101,14 +100,19 @@ defmodule Emergencia.Consola.MenuPrincipal do
   end
 
   defp cerrar_sesion(sesion) do
-    case MenuAutenticacion.cerrar(sesion) do
-      :ok ->
-        MenuAutenticacion.mostrar()
+  case MenuAutenticacion.cerrar(sesion) do
+    :ok ->
+      MenuAutenticacion.mostrar()
 
-      {:error, _motivo} ->
-        iniciar(sesion)
-    end
+    {:error, motivo} ->
+      Util.mostrar(
+        "\nNo se pudo cerrar la sesión: #{inspect(motivo)}",
+        :error
+      )
+
+      iniciar(sesion)
   end
+end
 
   defp mostrar_modulo_no_disponible(nombre) do
     Util.mostrar("\nEl módulo de #{nombre} todavía no está disponible.", :mensaje)

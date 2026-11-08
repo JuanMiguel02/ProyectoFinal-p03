@@ -5,6 +5,7 @@ defmodule Emergencia.Consola.MenuAutenticacion do
   """
 
   alias Emergencia.Aplicacion.Autenticacion
+  alias Emergencia.Aplicacion.GestionUsuarios
   alias Emergencia.Consola.MenuPrincipal
   alias Util
 
@@ -101,7 +102,7 @@ defmodule Emergencia.Consola.MenuAutenticacion do
         {:error, :tipo_invalido}
 
       tipo ->
-        case Autenticacion.registrar_usuario(
+        case GestionUsuarios.registrar_usuario(
                nombre_usuario,
                contrasena,
                nombre_completo,

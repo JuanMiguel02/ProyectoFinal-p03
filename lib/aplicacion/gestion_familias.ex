@@ -11,13 +11,13 @@ defmodule Emergencia.Aplicacion.GestionFamilias do
 
   def registrar_familia(%Sesion{} = sesion, nombre) do
     with :ok <- Autenticacion.autorizar(sesion, :registrar_persona),
-         {:ok, familia} <- PoblacionServidor.registra_familia(nombre) do
+         {:ok, familia} <- PoblacionServidor.registrar_familia(nombre) do
 
         registrar_con_advertencia(
         familia,
         sesion.id_usuario,
         :registro_familia,
-        "El usuario #{sesion.nombre_usuario} registró a la familia #{familia.codigo_persona}"
+        "El usuario #{sesion.nombre_usuario} registró a la familia #{familia.codigo_familia}"
         )
 
       end

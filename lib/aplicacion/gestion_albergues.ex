@@ -48,7 +48,9 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
    @doc """
   Registra la salida de una persona de su albergue.
   """
-  def registrar_salida(%Sesion{} = sesion, id_persona, nuevo_estado_persona \\ :localizada) do
+  def registrar_salida(sesion, id_persona, nuevo_estado_persona \\ :localizada)
+
+  def registrar_salida(%Sesion{} = sesion, id_persona, nuevo_estado_persona) do
     with :ok <- Autenticacion.autorizar(sesion, :gestionar_albergues),
          {:ok, registro} <- PoblacionServidor.registrar_salida(id_persona, nuevo_estado_persona) do
 

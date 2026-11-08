@@ -216,6 +216,10 @@ defmodule Emergencia.Servicios.ServicioPersonas do
       {:documento, documento} when is_binary(documento) ->
         String.contains?(persona.documento, documento)
 
+      {:codigo_persona, codigo} when is_binary(codigo) ->
+        String.downcase(persona.codigo_persona) ==
+          String.downcase(codigo)
+
       {:id_zona, id_zona} ->
         persona.id_zona == id_zona
 

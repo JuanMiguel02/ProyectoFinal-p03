@@ -1,17 +1,22 @@
 [
   {
-    "id": "f1000000-0000-4000-8000-000000000001",
+    "codigo_familia": "FAM-0004",
+    "id": "0bd1b18c-2580-4ea6-a1f7-e828d7efddc4",
+    "nombre": "FLIA ROJAS"
+  },
+  {
     "codigo_familia": "FAM-0001",
+    "id": "f1000000-0000-4000-8000-000000000001",
     "nombre": "Familia Rodríguez"
   },
   {
-    "id": "f1000000-0000-4000-8000-000000000002",
     "codigo_familia": "FAM-0002",
+    "id": "f1000000-0000-4000-8000-000000000002",
     "nombre": "Familia Gómez"
   },
   {
-    "id": "f1000000-0000-4000-8000-000000000003",
     "codigo_familia": "FAM-0003",
+    "id": "f1000000-0000-4000-8000-000000000003",
     "nombre": "Familia Martínez"
   }
 ]
