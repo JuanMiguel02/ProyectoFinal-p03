@@ -48,8 +48,8 @@ defmodule EmergenciaServiciosTest do
 
       # 2. Registrar recurso maestro
       assert {:ok, recurso, est2} =
-               ServicioRecursos.registrar_recurso(est1, "R-001", "Agua Potable", :alimento, "litros")
-      assert recurso.codigo == "R-001"
+               ServicioRecursos.registrar_recurso(est1, "Agua Potable", :alimento, "litros")
+      assert recurso.codigo_recurso == "REC-0001"
 
       # 3. Agregar inventario (ingreso)
       assert {:ok, inventario, est3} =
@@ -71,7 +71,7 @@ defmodule EmergenciaServiciosTest do
       {:ok, necesidad, est1} =
         ServicioRecursos.registrar_necesidad(estado_inicial, :medicina, 100, "zona_1", :alta)
       {:ok, recurso, est2} =
-        ServicioRecursos.registrar_recurso(est1, "R-002", "Analgésicos", :medicina, "pastillas")
+        ServicioRecursos.registrar_recurso(est1, "Analgésicos", :medicina, "pastillas")
       {:ok, inventario, est3} =
         ServicioRecursos.agregar_inventario(est2, "centro_1", :centro_acopio, recurso.id, 30)
 

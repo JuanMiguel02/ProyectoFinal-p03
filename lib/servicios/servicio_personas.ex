@@ -5,6 +5,7 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   """
   alias Emergencia.Persona
   alias Emergencia.EstadoPoblacion
+  alias Emergencia.GeneradorID
 
   @estados_permitidos [
     :sin_informacion,
@@ -33,14 +34,15 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   La persona recibe automáticamente un UUID interno y un código público `PER-####`.
   """
   def registrar(estado, nombre, documento, id_zona, estado_persona, opciones \\ []) do
+    codigo_persona = GeneradorID.generar("PER", estado.personas, & &1.codigo_persona)
     with :ok <- validar_id_no_proporcionado(opciones),
          :ok <- validar_nombre(nombre),
          :ok <- validar_documento(documento),
          :ok <- validar_id_zona(id_zona),
          :ok <- validar_estado(estado_persona),
          :ok <- validar_documento_unico(estado.personas, documento),
-         {:ok, nueva_persona} <-
-           Persona.nueva(nombre, documento, id_zona, estado_persona, opciones) do
+         {:ok, nueva_persona} <- Persona.nueva(nombre, codigo_persona, documento, id_zona, estado_persona, opciones) do
+
       nuevas_personas = Map.put(estado.personas, nueva_persona.id, nueva_persona)
 
       estado_actualizado = %{estado | personas: nuevas_personas}

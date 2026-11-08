@@ -13,7 +13,7 @@ defmodule Emergencia.Familia do
   @doc """
   Crea una nueva Familia de forma segura.
   """
-  def nueva(nombre) do
+  def nueva(nombre, codigo) do
     cond do
       is_nil(nombre) ->
         {:error, "El nombre es obligatorio"}
@@ -25,7 +25,7 @@ defmodule Emergencia.Familia do
         {:ok,
          %__MODULE__{
            id: GeneradorID.generar_uuid(),
-           codigo_familia: GeneradorID.generar("FAM"),
+           codigo_familia: codigo,
            nombre: nombre
          }}
     end

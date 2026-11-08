@@ -6,13 +6,15 @@ defmodule Emergencia.Servicios.ServicioFamilia do
 
   alias Emergencia.Familia
   alias Emergencia.EstadoPoblacion
+  alias Emergencia.GeneradorID
 
   # ============================================================================
   # Registro de familias
   # ============================================================================
 
   def registrar(%EstadoPoblacion{} = estado, nombre) do
-    with {:ok, familia} <- Familia.nueva(nombre) do
+    codigo_familia = GeneradorID.generar("FAM", estado.familias, & &1.codigo_familia)
+    with {:ok, familia} <- Familia.nueva(nombre, codigo_familia) do
       nuevas_familias = Map.put(estado.familias, familia.id, familia)
 
       nuevo_estado = %{estado | familias: nuevas_familias}

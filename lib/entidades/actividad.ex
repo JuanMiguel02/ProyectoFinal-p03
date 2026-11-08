@@ -17,13 +17,26 @@ defmodule Emergencia.Actividad do
   """
   def nueva(descripcion, operacion, id_usuario, opciones \\ []) do
     fecha = Keyword.get(opciones, :fecha, DateTime.utc_now())
+    operacion_texto = if is_atom(operacion), do: Atom.to_string(operacion), else: operacion
 
     cond do
       is_nil(descripcion) or is_nil(operacion) or is_nil(id_usuario) ->
         {:error, "Descripción, operación e ID de usuario son obligatorios"}
 
-      String.trim(descripcion) == "" or String.trim(operacion) == "" ->
+      not is_binary(descripcion) ->
+        {:error, "La descripción debe ser texto"}
+
+      not (is_atom(operacion) or is_binary(operacion)) ->
+        {:error, "La operación debe ser texto o un átomo válido"}
+
+      not is_binary(id_usuario) ->
+        {:error, "El ID de usuario debe ser texto"}
+
+      String.trim(descripcion) == "" or String.trim(operacion_texto) == "" ->
         {:error, "La descripción y la operación no pueden estar vacías"}
+
+      String.trim(id_usuario) == "" ->
+        {:error, "El ID de usuario no puede estar vacío"}
 
       true ->
         {:ok,
@@ -31,7 +44,7 @@ defmodule Emergencia.Actividad do
            id: GeneradorID.generar_uuid(),
            fecha: fecha,
            descripcion: descripcion,
-           operacion: operacion,
+           operacion: operacion_texto,
            id_usuario: id_usuario
          }}
     end

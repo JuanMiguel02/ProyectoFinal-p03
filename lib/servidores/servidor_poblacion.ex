@@ -26,8 +26,8 @@ defmodule Emergencia.PoblacionServidor do
   # Albergues
   # ----------------------------------------------------------------------------
 
-  def registrar_albergue(codigo, nombre, id_zona, capacidad_maxima) do
-    GenServer.call(__MODULE__, {:registrar_albergue, codigo, nombre, id_zona, capacidad_maxima})
+  def registrar_albergue(nombre, id_zona, capacidad_maxima) do
+    GenServer.call(__MODULE__, {:registrar_albergue, nombre, id_zona, capacidad_maxima})
   end
 
   def ingresar_persona(id_persona, id_albergue) do
@@ -120,8 +120,8 @@ defmodule Emergencia.PoblacionServidor do
   end
 
   @impl true
-  def handle_call({:registrar_albergue, codigo, nombre, id_zona, capacidad_maxima}, _from, estado) do
-    resultado = ServicioAlbergue.registrar(estado, codigo, nombre, id_zona, capacidad_maxima)
+  def handle_call({:registrar_albergue, nombre, id_zona, capacidad_maxima}, _from, estado) do
+    resultado = ServicioAlbergue.registrar(estado, nombre, id_zona, capacidad_maxima)
     guardar_resultado(resultado, estado)
   end
 

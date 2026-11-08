@@ -5,6 +5,7 @@ defmodule Emergencia.Servicios.ServicioUsuario do
   """
 
   alias Emergencia.Usuario
+  alias Emergencia.GeneradorID
 
   @tipos_permitidos [:ciudadano, :voluntario, :coordinador, :administrador]
 
@@ -16,26 +17,26 @@ defmodule Emergencia.Servicios.ServicioUsuario do
   Registra un usuario si cumple las validaciones
   y su nombre de usuario e ID son únicos.
   """
- def registrar(estado, nombre_usuario, contrasena, nombre_completo, tipo, opciones \\ []) do
-  id_zona = Keyword.get(opciones, :id_zona)
+  def registrar(estado, nombre_usuario, contrasena, nombre_completo, tipo, opciones \\ []) do
+    id_zona = Keyword.get(opciones, :id_zona)
+    codigo_usuario = GeneradorID.generar("USR", estado.usuarios, & &1.codigo_usuario)
 
-  with :ok <- validar_id_no_proporcionado(opciones),
-       :ok <- validar_nombre_usuario(nombre_usuario),
-       :ok <- validar_contrasena(contrasena),
-       :ok <- validar_nombre_completo(nombre_completo),
-       :ok <- validar_tipo(tipo),
-       :ok <- validar_unicidad_nombre_usuario(estado.usuarios, nombre_usuario),
-       {:ok, nuevo_usuario} <-
-         Usuario.nuevo(nombre_usuario, contrasena, nombre_completo, tipo, id_zona),
-       :ok <- validar_unicidad_id(estado.usuarios, nuevo_usuario.id) do
+    with :ok <- validar_id_no_proporcionado(opciones),
+         :ok <- validar_nombre_usuario(nombre_usuario),
+         :ok <- validar_contrasena(contrasena),
+         :ok <- validar_nombre_completo(nombre_completo),
+         :ok <- validar_tipo(tipo),
+         :ok <- validar_unicidad_nombre_usuario(estado.usuarios, nombre_usuario),
+         {:ok, nuevo_usuario} <- Usuario.nuevo(nombre_usuario, contrasena, nombre_completo, tipo, codigo_usuario, id_zona),
+         :ok <- validar_unicidad_id(estado.usuarios, nuevo_usuario.id) do
 
-    nuevos_usuarios = Map.put(estado.usuarios, nuevo_usuario.id, nuevo_usuario)
+      nuevos_usuarios = Map.put(estado.usuarios, nuevo_usuario.id, nuevo_usuario)
 
-    nuevo_estado = %{estado | usuarios: nuevos_usuarios}
+      nuevo_estado = %{estado | usuarios: nuevos_usuarios}
 
-    {:ok, nuevo_usuario, nuevo_estado}
+      {:ok, nuevo_usuario, nuevo_estado}
+    end
   end
-end
 
   # ============================================================
   # 2. AUTENTICACIÓN
@@ -44,20 +45,21 @@ end
   @doc """
   Autentica un usuario y actualiza su estado de conexión.
   """
-def autenticar(estado, nombre_usuario, contrasena) do
-  with {:ok, usuario} <-
-         buscar_por_nombre_usuario(estado.usuarios, nombre_usuario),
-       :ok <- verificar_contrasena(usuario, contrasena) do
-    usuario_conectado = %{usuario | conectado: true}
+  def autenticar(estado, nombre_usuario, contrasena) do
+    with {:ok, usuario} <-
+           buscar_por_nombre_usuario(estado.usuarios, nombre_usuario),
+         :ok <- verificar_contrasena(usuario, contrasena) do
+      usuario_conectado = %{usuario | conectado: true}
 
-    nuevos_usuarios =
-      Map.put(estado.usuarios, usuario.id, usuario_conectado)
+      nuevos_usuarios =
+        Map.put(estado.usuarios, usuario.id, usuario_conectado)
 
-    nuevo_estado = %{estado | usuarios: nuevos_usuarios}
+      nuevo_estado = %{estado | usuarios: nuevos_usuarios}
 
-    {:ok, usuario_conectado, nuevo_estado}
+      {:ok, usuario_conectado, nuevo_estado}
+    end
   end
-end
+
   # ============================================================
   # 3. DESCONEXIÓN
   # ============================================================
@@ -66,23 +68,16 @@ end
   Desconecta un usuario activo.
   """
   def desconectar(estado_global, id_usuario) do
-    with {:ok, usuario} <-
-           Map.fetch(estado_global.usuarios, id_usuario) do
-      usuario_desconectado = %{usuario | conectado: false}
+    case Map.fetch(estado_global.usuarios, id_usuario) do
+      {:ok, usuario} ->
+        usuario_desconectado = %{usuario | conectado: false}
+        nuevos_usuarios = Map.put(estado_global.usuarios, id_usuario, usuario_desconectado)
+        estado_actualizado = %{estado_global | usuarios: nuevos_usuarios}
 
-      nuevos_usuarios =
-        Map.put(
-          estado_global.usuarios,
-          id_usuario,
-          usuario_desconectado
-        )
+        {:ok, usuario_desconectado, estado_actualizado}
 
-      estado_actualizado =
-        %{estado_global | usuarios: nuevos_usuarios}
-
-
-       {:ok, usuario_desconectado, estado_actualizado}
-
+      :error ->
+        {:error, "El usuario con ID '#{id_usuario}' no existe"}
     end
   end
 
@@ -94,11 +89,19 @@ end
   Comprueba si un usuario puede realizar una operación.
   """
   def autorizar(%Usuario{tipo_usuario: tipo}, operacion) do
+    autorizar(tipo, operacion)
+  end
+
+  def autorizar(tipo, operacion) when tipo in @tipos_permitidos do
     if permitido?(tipo, operacion) do
       :ok
     else
       {:error, "Acceso denegado: el rol :#{tipo} no tiene permiso para '#{operacion}'"}
     end
+  end
+
+  def autorizar(_tipo, _operacion) do
+    {:error, "Tipo de usuario no válido"}
   end
 
   defp permitido?(:administrador, _operacion), do: true

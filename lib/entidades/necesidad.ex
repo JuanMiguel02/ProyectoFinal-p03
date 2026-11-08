@@ -51,7 +51,7 @@ defmodule Emergencia.Necesidad do
   @doc """
   Crea una nueva Necesidad validando mediante el pipeline 'with'.
   """
-  def nueva(tipo, cantidad, id_zona, prioridad, opciones \\ []) do
+  def nueva(codigo, tipo, cantidad, id_zona, prioridad, opciones \\ []) do
     estado = Keyword.get(opciones, :estado, :pendiente)
 
     with :ok <- validar_obligatorios(tipo, id_zona, prioridad),
@@ -62,7 +62,7 @@ defmodule Emergencia.Necesidad do
       {:ok,
        %__MODULE__{
          id: GeneradorID.generar_uuid(),
-         codigo_necesidad: GeneradorID.generar("NEC"),
+         codigo_necesidad: codigo,
          tipo: tipo,
          descripcion: Keyword.get(opciones, :descripcion),
          cantidad_requerida: cantidad,

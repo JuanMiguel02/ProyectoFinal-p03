@@ -2,18 +2,20 @@ defmodule Emergencia.Servicios.ServicioRecursos do
   @moduledoc """
   Servicio puro para la gestión de recursos, inventarios, necesidades y asignaciones.
   """
-  alias Emergencia.{Necesidad, Recurso, InventarioUbicacion, AsignacionRecurso, MovimientoRecurso}
+  alias Emergencia.{Necesidad, Recurso, InventarioUbicacion, AsignacionRecurso, MovimientoRecurso, GeneradorID}
 
   def registrar_necesidad(estado, tipo, cantidad, id_zona, prioridad, opciones \\ []) do
-    with {:ok, necesidad} <- Necesidad.nueva(tipo, cantidad, id_zona, prioridad, opciones) do
+    codigo_necesidad = GeneradorID.generar("NEC", estado.necesidades, & &1.codigo_necesidad)
+    with {:ok, necesidad} <- Necesidad.nueva(codigo_necesidad, tipo, cantidad, id_zona, prioridad, opciones) do
       nuevas_necesidades = Map.put(estado.necesidades, necesidad.id, necesidad)
       nuevo_estado = %{estado | necesidades: nuevas_necesidades}
       {:ok, necesidad, nuevo_estado}
     end
   end
 
-  def registrar_recurso(estado, codigo, nombre, categoria, unidad_medida) do
-    with {:ok, recurso} <- Recurso.nuevo(codigo, nombre, categoria, unidad_medida) do
+  def registrar_recurso(estado, nombre, categoria, unidad_medida) do
+    codigo_recurso = GeneradorID.generar("REC", estado.recursos, & &1.codigo_recurso)
+    with {:ok, recurso} <- Recurso.nuevo(codigo_recurso, nombre, categoria, unidad_medida) do
       nuevos_recursos = Map.put(estado.recursos, recurso.id, recurso)
       nuevo_estado = %{estado | recursos: nuevos_recursos}
       {:ok, recurso, nuevo_estado}
@@ -21,7 +23,7 @@ defmodule Emergencia.Servicios.ServicioRecursos do
   end
 
   def agregar_inventario(estado, id_ubicacion, tipo_ubicacion, id_recurso, cantidad) do
-    with {:ok, inventario} <- InventarioUbicacion.nueva(id_ubicacion, tipo_ubicacion, id_recurso, cantidad),
+    with {:ok, inventario} <- InventarioUbicacion.nuevo(id_ubicacion, tipo_ubicacion, id_recurso, cantidad),
          {:ok, movimiento} <- MovimientoRecurso.nuevo(cantidad, :ingreso, id_inventario_destino: inventario.id) do
 
       nuevo_estado = %{
