@@ -15,7 +15,10 @@ defmodule Emergencia.Supervisor do
       Emergencia.UsuariosServidor,
       Emergencia.MensajesServidor,
       Emergencia.ActividadesServidor,
-      Emergencia.PoblacionServidor
+      Emergencia.PoblacionServidor,
+      Emergencia.TerritorioServidor,
+      Emergencia.RecursosServidor,
+      Emergencia.MascotasServidor
     ]
 
     Supervisor.init(hijos, strategy: :one_for_one)
