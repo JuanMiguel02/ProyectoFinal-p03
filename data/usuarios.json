@@ -1,0 +1,12 @@
+[
+  {
+    "codigo_usuario": "USR-0001",
+    "conectado": false,
+    "contrasena": "secret",
+    "id": "2bb26cdd-9c41-494c-ba77-595b028d0bd4",
+    "nombre_completo": "Ana",
+    "nombre_usuario": "ana",
+    "tipo_usuario": "ciudadano",
+    "zona_principal_id": null
+  }
+]

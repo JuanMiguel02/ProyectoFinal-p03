@@ -1,145 +1,123 @@
 defmodule Emergencia.Servicios.ServicioComunicacion do
   @moduledoc """
   Servicio puro para la creación y despacho de mensajes, gestión de destinatarios,
-  confirmación de entregas y consulta de notificaciones para personas afectadas.
+  confirmación de entregas y consulta de notificaciones.
   """
-  alias Emergencia.Servicios.ServicioActividad
+
+  alias Emergencia.{EstadoMensajes, Mensaje, MensajeDestinatario}
+
   # ============================================================================
-  # 1. Enviar / Despachar Mensaje (Uno o múltiples destinatarios)
+  # 1. Enviar mensajes
   # ============================================================================
 
   @doc """
-  Crea un nuevo mensaje y sus correspondientes registros de entrega para una
-  lista de IDs de personas destinatarias.
+  Crea un mensaje y sus registros de destinatarios.
+
+  Los IDs de las personas deben haber sido obtenidos y validados previamente
+  por el dominio de población.
   """
   def enviar_mensaje(
-        estado_global,
+        %EstadoMensajes{} = estado,
         id_remitente,
         contenido,
         lista_ids_personas,
         opciones \\ []
       ) do
-    with :ok <- validar_destinatarios_existentes(estado_global.personas, lista_ids_personas),
-         {:ok, nuevo_mensaje} <- Emergencia.Mensaje.nuevo(id_remitente, contenido, opciones),
+    with :ok <- validar_destinatarios(lista_ids_personas),
+         {:ok, nuevo_mensaje} <- Mensaje.nuevo(id_remitente, contenido, opciones),
          {:ok, destinatarios_map, lista_destinatarios} <-
            generar_destinatarios(nuevo_mensaje.id_envio, lista_ids_personas) do
-      id_mensaje = nuevo_mensaje.id_envio
-      nuevos_mensajes = Map.put(estado_global.mensajes, id_mensaje, nuevo_mensaje)
-      nuevos_destinatarios = Map.merge(estado_global.mensajes_destinatarios, destinatarios_map)
-
-      estado_actualizado = %{
-        estado_global
-        | mensajes: nuevos_mensajes,
-          mensajes_destinatarios: nuevos_destinatarios
+      nuevo_estado = %{
+        estado
+        | mensajes:
+            Map.put(estado.mensajes, nuevo_mensaje.id_envio, nuevo_mensaje),
+          mensajes_destinatarios:
+            Map.merge(estado.mensajes_destinatarios, destinatarios_map)
       }
 
-      # Registro de auditoría
-      total_dest = length(lista_ids_personas)
-      desc = "Envío de mensaje '#{id_mensaje}' a #{total_dest} destinatarios"
-
-      case ServicioActividad.registrar(
-             estado_actualizado,
-             id_remitente,
-             "ENVIO_MENSAJE",
-             desc
-           ) do
-        {:ok, estado_final} ->
-          {:ok, {nuevo_mensaje, lista_destinatarios}, estado_final}
-
-        {:error, motivo} ->
-          {:error, motivo}
-      end
+      {:ok, {nuevo_mensaje, lista_destinatarios}, nuevo_estado}
     end
   end
 
   # ============================================================================
-  # 2. Confirmación de Entrega
+  # 2. Confirmar entrega
   # ============================================================================
 
   @doc """
-  Actualiza el estado de entrega de un destinatario específico a :entregado
-  registrando la estampa de tiempo actual.
+  Marca un registro de destinatario como entregado.
   """
-  def confirmar_entrega(estado_global, id_mensaje_destinatario, id_usuario_actualizador) do
-    with {:ok, reg_destinatario} <-
-           Map.fetch(estado_global.mensajes_destinatarios, id_mensaje_destinatario),
-         {:ok, reg_actualizado} <-
-           Emergencia.MensajeDestinatario.marcar_entregado(reg_destinatario) do
-      nuevos_destinatarios =
-        Map.put(estado_global.mensajes_destinatarios, id_mensaje_destinatario, reg_actualizado)
+  def confirmar_entrega(%EstadoMensajes{} = estado, id_mensaje_destinatario) do
+    with {:ok, registro} <-
+           obtener_destinatario(
+             estado.mensajes_destinatarios,
+             id_mensaje_destinatario
+           ),
+         {:ok, registro_actualizado} <-
+           MensajeDestinatario.marcar_entregado(registro) do
+      nuevo_estado = %{
+        estado
+        | mensajes_destinatarios:
+            Map.put(
+              estado.mensajes_destinatarios,
+              id_mensaje_destinatario,
+              registro_actualizado
+            )
+      }
 
-      estado_actualizado = %{estado_global | mensajes_destinatarios: nuevos_destinatarios}
-
-      desc = "Confirmación de entrega de notificación '#{id_mensaje_destinatario}'"
-
-      case ServicioActividad.registrar(
-             estado_actualizado,
-             id_usuario_actualizador,
-             "CONFIRMAR_ENTREGA",
-             desc
-           ) do
-        {:ok, estado_final} ->
-          {:ok, reg_actualizado, estado_final}
-
-        {:error, motivo} ->
-          {:error, motivo}
-      end
-    else
-      :error -> {:error, "El registro de entrega '#{id_mensaje_destinatario}' no existe"}
-      {:error, motivo} -> {:error, motivo}
+      {:ok, registro_actualizado, nuevo_estado}
     end
   end
 
   # ============================================================================
-  # 3. Consultas y Reportes de Mensajería
+  # 3. Consultar mensajes de una persona
   # ============================================================================
 
   @doc """
-  Retorna todas las notificaciones recibidas por una persona específica,
-  junto con el mensaje original y el estado de entrega.
+  Retorna los mensajes asociados a una persona, junto con su estado de entrega.
   """
-  def obtener_mensajes_persona(estado_global, id_persona) do
+  def obtener_mensajes_persona(%EstadoMensajes{} = estado, id_persona) do
     notificaciones =
-      estado_global.mensajes_destinatarios
+      estado.mensajes_destinatarios
       |> Map.values()
       |> Enum.filter(&(&1.id_persona == id_persona))
-      |> Enum.map(fn reg ->
-        mensaje = Map.get(estado_global.mensajes, reg.id_envio)
-
+      |> Enum.map(fn registro ->
         %{
-          id_registro: reg.id_mensaje_destinatario,
-          mensaje: mensaje,
-          estado_entrega: reg.estado,
-          fecha_entrega: reg.fecha_entrega
+          id_registro: registro.id_mensaje_destinatario,
+          mensaje: Map.get(estado.mensajes, registro.id_envio),
+          estado_entrega: registro.estado,
+          fecha_entrega: registro.fecha_entrega
         }
       end)
+      |> Enum.reject(&is_nil(&1.mensaje))
 
     {:ok, notificaciones}
   end
 
+  # ============================================================================
+  # 4. Consultar estado de un envío
+  # ============================================================================
+
   @doc """
-  Genera un resumen métrico de un mensaje en específico (destinatarios totales,
-  entregados y pendientes).
+  Retorna un resumen del estado de entrega de un mensaje.
   """
-  def consultar_estado_envio(estado_global, id_mensaje) do
-    case Map.fetch(estado_global.mensajes, id_mensaje) do
+  def consultar_estado_envio(%EstadoMensajes{} = estado, id_mensaje) do
+    case Map.fetch(estado.mensajes, id_mensaje) do
       {:ok, mensaje} ->
         registros =
-          estado_global.mensajes_destinatarios
+          estado.mensajes_destinatarios
           |> Map.values()
           |> Enum.filter(&(&1.id_envio == id_mensaje))
 
         pendientes = Enum.count(registros, &(&1.estado == :pendiente))
         entregados = Enum.count(registros, &(&1.estado == :entregado))
 
-        resumen = %{
-          mensaje: mensaje,
-          total_destinatarios: length(registros),
-          entregados: entregados,
-          pendientes: pendientes
-        }
-
-        {:ok, resumen}
+        {:ok,
+         %{
+           mensaje: mensaje,
+           total_destinatarios: length(registros),
+           entregados: entregados,
+           pendientes: pendientes
+         }}
 
       :error ->
         {:error, "El mensaje con ID '#{id_mensaje}' no existe"}
@@ -147,38 +125,57 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
   end
 
   # ============================================================================
-  # Funciones Privadas de Validación y Helper
+  # 5. Funciones privadas
   # ============================================================================
 
-  defp validar_destinatarios_existentes(mapa_personas, lista_ids) do
-    if Enum.empty?(lista_ids) do
-      {:error, "La lista de destinatarios no puede estar vacía"}
-    else
-      inexistentes = Enum.reject(lista_ids, &Map.has_key?(mapa_personas, &1))
+  defp validar_destinatarios(lista_ids) when is_list(lista_ids) do
+    cond do
+      Enum.empty?(lista_ids) ->
+        {:error, "La lista de destinatarios no puede estar vacía"}
 
-      if Enum.empty?(inexistentes) do
+      not Enum.all?(lista_ids, &(is_binary(&1) and String.trim(&1) != "")) ->
+        {:error, "Todos los IDs de destinatarios deben ser válidos"}
+
+      length(lista_ids) != length(Enum.uniq(lista_ids)) ->
+        {:error, "La lista de destinatarios contiene IDs duplicados"}
+
+      true ->
         :ok
-      else
-        {:error,
-         "Las siguientes personas no existen en la base de datos: #{inspect(inexistentes)}"}
-      end
     end
   end
+
+  defp validar_destinatarios(_),
+    do: {:error, "La lista de destinatarios debe ser válida"}
 
   defp generar_destinatarios(id_mensaje, lista_ids) do
     resultados =
       Enum.map(lista_ids, fn id_persona ->
-        Emergencia.MensajeDestinatario.nuevo(id_mensaje, id_persona, :pendiente)
+        MensajeDestinatario.nuevo(id_mensaje, id_persona, :pendiente)
       end)
 
-    errores = Enum.filter(resultados, &match?({:error, _}, &1))
+    case Enum.find(resultados, &match?({:error, _}, &1)) do
+      nil ->
+        registros = Enum.map(resultados, fn {:ok, registro} -> registro end)
 
-    if Enum.empty?(errores) do
-      registros = Enum.map(resultados, fn {:ok, reg} -> reg end)
-      mapa = Map.new(registros, fn reg -> {reg.id_mensaje_destinatario, reg} end)
-      {:ok, mapa, registros}
-    else
-      {:error, "Error al generar destinatarios: #{inspect(errores)}"}
+        mapa =
+          Map.new(registros, fn registro ->
+            {registro.id_mensaje_destinatario, registro}
+          end)
+
+        {:ok, mapa, registros}
+
+      {:error, motivo} ->
+        {:error, motivo}
+    end
+  end
+
+  defp obtener_destinatario(mapa, id) do
+    case Map.fetch(mapa, id) do
+      {:ok, registro} ->
+        {:ok, registro}
+
+      :error ->
+        {:error, "El registro de entrega '#{id}' no existe"}
     end
   end
 end
