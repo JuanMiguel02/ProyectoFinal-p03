@@ -23,7 +23,7 @@ defmodule Emergencia.InventarioUbicacion do
   @doc """
   Crea un nuevo registro de Inventario en una Ubicación determinada.
   """
-  def nueva(id_ubicacion, tipo_ubicacion, id_recurso, cantidad) do
+  def nuevo(id_ubicacion, tipo_ubicacion, id_recurso, cantidad) do
     with :ok <- validar_obligatorios(id_ubicacion, id_recurso),
          :ok <- validar_enum(:tipo_ubicacion, tipo_ubicacion, @tipos_ubicacion_permitidos),
          :ok <- validar_cantidad(cantidad) do

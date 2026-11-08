@@ -8,14 +8,13 @@ defmodule Emergencia.Recurso do
 
   @categorias_permitidas [:alimento, :medicina, :herramienta, :vestimenta, :equipo, :otro]
 
-  @enforce_keys [:id, :codigo_recurso, :codigo, :nombre, :categoria, :unidad_medida]
-  defstruct [:id, :codigo_recurso, :codigo, :nombre, :categoria, :unidad_medida, historial: []]
+  @enforce_keys [:id, :codigo_recurso, :nombre, :categoria, :unidad_medida]
+  defstruct [:id, :codigo_recurso, :nombre, :categoria, :unidad_medida, historial: []]
 
   @type categoria_recurso :: :alimento | :medicina | :herramienta | :vestimenta | :equipo | :otro
   @type t :: %__MODULE__{
           id: String.t(),
           codigo_recurso: String.t(),
-          codigo: String.t(),
           nombre: String.t(),
           categoria: categoria_recurso(),
           unidad_medida: String.t(),
@@ -31,8 +30,7 @@ defmodule Emergencia.Recurso do
       {:ok,
        %__MODULE__{
          id: GeneradorID.generar_uuid(),
-         codigo_recurso: GeneradorID.generar("REC"),
-         codigo: codigo,
+         codigo_recurso: codigo,
          nombre: nombre,
          categoria: categoria,
          unidad_medida: unidad_medida,

@@ -5,6 +5,7 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   """
   alias Emergencia.Persona
   alias Emergencia.EstadoPoblacion
+  alias Emergencia.GeneradorID
 
   @estados_permitidos [
     :sin_informacion,
@@ -16,7 +17,7 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   ]
 
   # ============================================================================
-  # 1. Registro de Persona Afectada
+  # Registro de Persona Afectada
   # ============================================================================
 
   @doc """
@@ -33,14 +34,15 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   La persona recibe automáticamente un UUID interno y un código público `PER-####`.
   """
   def registrar(estado, nombre, documento, id_zona, estado_persona, opciones \\ []) do
+    codigo_persona = GeneradorID.generar("PER", estado.personas, & &1.codigo_persona)
     with :ok <- validar_id_no_proporcionado(opciones),
          :ok <- validar_nombre(nombre),
          :ok <- validar_documento(documento),
          :ok <- validar_id_zona(id_zona),
          :ok <- validar_estado(estado_persona),
          :ok <- validar_documento_unico(estado.personas, documento),
-         {:ok, nueva_persona} <-
-           Persona.nueva(nombre, documento, id_zona, estado_persona, opciones) do
+         {:ok, nueva_persona} <- Persona.nueva(nombre, codigo_persona, documento, id_zona, estado_persona, opciones) do
+
       nuevas_personas = Map.put(estado.personas, nueva_persona.id, nueva_persona)
 
       estado_actualizado = %{estado | personas: nuevas_personas}
@@ -50,7 +52,7 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   end
 
   # ============================================================================
-  # 2. Actualización de Estado e Historial de Trazabilidad
+  # Actualización de Estado e Historial de Trazabilidad
   # ============================================================================
 
   @doc """
@@ -69,7 +71,7 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   end
 
   # ============================================================================
-  # 3. Búsquedas Multicriterio (Familiares y Coordinación)
+  # Búsquedas Multicriterio (Familiares y Coordinación)
   # ============================================================================
 
   def buscar_personas(%EstadoPoblacion{} = estado, criterios) do
@@ -79,6 +81,19 @@ defmodule Emergencia.Servicios.ServicioPersonas do
       |> Enum.filter(&cumple_criterios?(&1, criterios))
 
     {:ok, personas}
+  end
+
+  def asignar_a_familia(%EstadoPoblacion{} = estado, id_persona, id_familia) do
+    with {:ok, persona} <- obtener_persona(estado.personas, id_persona),
+         :ok <- validar_familia_existente(estado.familias, id_familia) do
+
+          persona_actualizada = %{persona | id_familia: id_familia}
+          nuevas_personas = Map.put(estado.personas, persona.id, persona_actualizada)
+          nuevo_estado = %{estado | personas: nuevas_personas}
+
+          {:ok, persona_actualizada, nuevo_estado}
+         end
+
   end
 
   @doc """
@@ -116,6 +131,13 @@ defmodule Emergencia.Servicios.ServicioPersonas do
     end
   end
 
+  defp validar_familia_existente(familias, id_familia) do
+    if Map.has_key?(familias, id_familia) do
+      :ok
+    else
+      {:error, "La familia no existe"}
+    end
+  end
   defp validar_documento_unico(personas, documento) do
     existe =
       Enum.any?(personas, fn {_id, persona} ->

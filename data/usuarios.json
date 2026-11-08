@@ -2,11 +2,21 @@
   {
     "codigo_usuario": "USR-0001",
     "conectado": false,
-    "contrasena": "secret",
-    "id": "2bb26cdd-9c41-494c-ba77-595b028d0bd4",
-    "nombre_completo": "Ana",
-    "nombre_usuario": "ana",
+    "contrasena": "12345",
+    "id": "088f5080-c2a3-4ca4-a5c9-0384b62fb0c8",
+    "nombre_completo": "Paco Jones Martinez",
+    "nombre_usuario": "Paco67",
     "tipo_usuario": "ciudadano",
+    "zona_principal_id": null
+  },
+  {
+    "codigo_usuario": "USR-0002",
+    "conectado": false,
+    "contrasena": "505",
+    "id": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "nombre_completo": "Julian Casablancas",
+    "nombre_usuario": "julian24",
+    "tipo_usuario": "voluntario",
     "zona_principal_id": null
   }
 ]

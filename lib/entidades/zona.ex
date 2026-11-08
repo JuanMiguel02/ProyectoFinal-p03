@@ -16,22 +16,25 @@ defmodule Emergencia.Zona do
           sectores: list()
         }
 
-  def nueva(nombre, nivel, personas) do
+  def nueva(nombre, nivel, personas, codigo_zona) do
     cond do
-      is_nil(nombre) ->
+      not is_binary(nombre) or String.trim(nombre) == "" ->
         {:error, "El nombre es obligatorio"}
 
       nivel not in @niveles_permitidos ->
         {:error, "Nivel de afectación :#{nivel} inválido"}
 
-      personas < 0 ->
+      not is_integer(personas) or personas < 0 ->
         {:error, "Las personas estimadas no pueden ser negativas"}
+
+      not is_binary(codigo_zona) or String.trim(codigo_zona) == "" ->
+        {:error, "El código de zona es obligatorio"}
 
       true ->
         {:ok,
          %__MODULE__{
            id: GeneradorID.generar_uuid(),
-           codigo_zona: GeneradorID.generar("ZON"),
+           codigo_zona: codigo_zona,
            nombre: nombre,
            nivel_afectacion: nivel,
            personas_estimadas: personas,

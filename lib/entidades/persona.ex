@@ -39,7 +39,7 @@ defmodule Emergencia.Persona do
           historial_estados: list()
         }
 
-  def nueva(nombre, documento, id_zona, estado, opciones \\ []) do
+  def nueva(nombre, codigo, documento, id_zona, estado, opciones \\ []) do
     edad = Keyword.get(opciones, :edad)
     dato_ref = Keyword.get(opciones, :dato_referencia)
     id_fam = Keyword.get(opciones, :id_familia)
@@ -60,7 +60,7 @@ defmodule Emergencia.Persona do
         {:ok,
          %__MODULE__{
            id: GeneradorID.generar_uuid(),
-           codigo_persona: GeneradorID.generar("PER"),
+           codigo_persona: codigo,
            nombre: nombre,
            documento: documento,
            dato_referencia: dato_ref,

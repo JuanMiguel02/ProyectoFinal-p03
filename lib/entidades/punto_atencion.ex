@@ -16,7 +16,7 @@ defmodule Emergencia.PuntoAtencion do
           ubicacion: String.t()
         }
 
-  def nueva(nombre, tipo, ubicacion, descripcion \\ nil) do
+  def nuevo(nombre, codigo, tipo, ubicacion, descripcion \\ nil) do
     cond do
       is_nil(nombre) or is_nil(ubicacion) ->
         {:error, "Nombre y ubicación son obligatorios"}
@@ -28,7 +28,7 @@ defmodule Emergencia.PuntoAtencion do
         {:ok,
          %__MODULE__{
            id: GeneradorID.generar_uuid(),
-           codigo_punto_atencion: GeneradorID.generar("PAT"),
+           codigo_punto_atencion: codigo,
            nombre: nombre,
            descripcion: descripcion,
            tipo: tipo,
@@ -36,19 +36,6 @@ defmodule Emergencia.PuntoAtencion do
          }}
     end
   end
-
-  def nueva!(nombre, tipo, ubicacion, descripcion \\ nil) do
-    case nueva(nombre, tipo, ubicacion, descripcion) do
-      {:ok, punto} -> punto
-      {:error, motivo} -> raise ArgumentError, motivo
-    end
-  end
-
-  def nuevo(nombre, tipo, ubicacion, descripcion \\ nil),
-    do: nueva(nombre, tipo, ubicacion, descripcion)
-
-  def nuevo!(nombre, tipo, ubicacion, descripcion \\ nil),
-    do: nueva!(nombre, tipo, ubicacion, descripcion)
 
   def a_map(%__MODULE__{} = entidad) do
     entidad

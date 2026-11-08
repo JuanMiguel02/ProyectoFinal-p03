@@ -13,7 +13,7 @@ defmodule Emergencia.Familia do
   @doc """
   Crea una nueva Familia de forma segura.
   """
-  def nueva(nombre) do
+  def nueva(nombre, codigo) do
     cond do
       is_nil(nombre) ->
         {:error, "El nombre es obligatorio"}
@@ -25,24 +25,11 @@ defmodule Emergencia.Familia do
         {:ok,
          %__MODULE__{
            id: GeneradorID.generar_uuid(),
-           codigo_familia: GeneradorID.generar("FAM"),
+           codigo_familia: codigo,
            nombre: nombre
          }}
     end
   end
-
-  @doc """
-  Crea una nueva Familia o lanza excepción si los datos son inválidos.
-  """
-  def nueva!(nombre) do
-    case nueva(nombre) do
-      {:ok, familia} -> familia
-      {:error, motivo} -> raise ArgumentError, motivo
-    end
-  end
-
-  def nuevo(nombre), do: nueva(nombre)
-  def nuevo!(nombre), do: nueva!(nombre)
 
   def a_map(%__MODULE__{} = familia),
     do: familia |> Map.from_struct() |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)

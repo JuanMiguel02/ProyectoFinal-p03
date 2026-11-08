@@ -20,8 +20,8 @@ defmodule Emergencia.RecursosServidor do
     GenServer.call(__MODULE__, {:registrar_necesidad, tipo, cantidad, id_zona, prioridad, opciones})
   end
 
-  def registrar_recurso(codigo, nombre, categoria, unidad_medida) do
-    GenServer.call(__MODULE__, {:registrar_recurso, codigo, nombre, categoria, unidad_medida})
+  def registrar_recurso(nombre, categoria, unidad_medida) do
+    GenServer.call(__MODULE__, {:registrar_recurso, nombre, categoria, unidad_medida})
   end
 
   def agregar_inventario(id_ubicacion, tipo_ubicacion, id_recurso, cantidad) do
@@ -62,8 +62,8 @@ defmodule Emergencia.RecursosServidor do
   end
 
   @impl true
-  def handle_call({:registrar_recurso, codigo, nombre, categoria, unidad_medida}, _from, estado) do
-    case ServicioRecursos.registrar_recurso(estado, codigo, nombre, categoria, unidad_medida) do
+  def handle_call({:registrar_recurso, nombre, categoria, unidad_medida}, _from, estado) do
+    case ServicioRecursos.registrar_recurso(estado, nombre, categoria, unidad_medida) do
       {:ok, resultado, nuevo_estado} -> procesar_persistencia(resultado, nuevo_estado, estado)
       {:error, motivo} -> {:reply, {:error, motivo}, estado}
     end

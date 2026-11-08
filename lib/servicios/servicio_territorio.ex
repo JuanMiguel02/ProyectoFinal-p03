@@ -2,13 +2,15 @@ defmodule Emergencia.Servicios.ServicioTerritorio do
   @moduledoc """
   Servicio puro para la gestión de zonas afectadas, sectores y centros de acopio.
   """
-  alias Emergencia.{Zona, Sector}
+  alias Emergencia.{GeneradorID, Zona, Sector}
 
   @doc """
   Registra una nueva zona afectada en el estado global.
   """
   def registrar_zona(estado_global, nombre, nivel, personas_estimadas, _id_usuario \\ "SISTEMA") do
-    with {:ok, nueva_zona} <- Zona.nueva(nombre, nivel, personas_estimadas),
+    codigo_zona = GeneradorID.generar("ZON", estado_global.zonas, & &1.codigo_zona)
+
+    with {:ok, nueva_zona} <- Zona.nueva(nombre, nivel, personas_estimadas, codigo_zona),
          :ok <- validar_unicidad_zona(estado_global.zonas, nueva_zona.codigo_zona) do
       nuevas_zonas = Map.put(estado_global.zonas, nueva_zona.id, nueva_zona)
       estado_actualizado = %{estado_global | zonas: nuevas_zonas}
@@ -20,8 +22,10 @@ defmodule Emergencia.Servicios.ServicioTerritorio do
   Registra un sector y lo asocia a una zona existente.
   """
   def registrar_sector(estado_global, id_zona, nombre, nivel, personas_afectadas, _id_usuario \\ "SISTEMA") do
+    codigo_sector = GeneradorID.generar("SEC", estado_global.sectores, & &1.codigo_sector)
+
     with {:ok, zona} <- obtener_zona(estado_global.zonas, id_zona),
-         {:ok, nuevo_sector} <- Sector.nuevo(nombre, nivel, personas_afectadas) do
+         {:ok, nuevo_sector} <- Sector.nuevo(nombre, codigo_sector, nivel, personas_afectadas) do
 
       nuevos_sectores = Map.put(estado_global.sectores, nuevo_sector.id, nuevo_sector)
       zona_actualizada = %{zona | sectores: [nuevo_sector | zona.sectores]}

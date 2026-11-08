@@ -2,6 +2,7 @@ defmodule Emergencia.Servicios.ServicioAlbergue do
   alias Emergencia.Persona
   alias Emergencia.Albergue
   alias Emergencia.RegistroAlbergue
+  alias Emergencia.GeneradorID
 
   @moduledoc """
   Gestiona los albergues, sus ocupaciones y los movimientos
@@ -12,9 +13,11 @@ defmodule Emergencia.Servicios.ServicioAlbergue do
   # Registrar albergue
   # ===========================================================================
 
-  def registrar(estado, codigo, nombre, id_zona, capacidad_maxima) do
-    with :ok <- validar_codigo_unico(estado.albergues, codigo),
-         {:ok, albergue} <- Albergue.nuevo(codigo, nombre, id_zona, capacidad_maxima) do
+  def registrar(estado, nombre, id_zona, capacidad_maxima) do
+    codigo_albergue = GeneradorID.generar("ALB", estado.albergues, & &1.codigo)
+
+    with :ok <- validar_codigo_unico(estado.albergues, codigo_albergue),
+         {:ok, albergue} <- Albergue.nuevo(codigo_albergue, nombre, id_zona, capacidad_maxima) do
       nuevos_albergues = Map.put(estado.albergues, albergue.id, albergue)
 
       nuevo_estado = %{estado | albergues: nuevos_albergues}
@@ -34,7 +37,6 @@ defmodule Emergencia.Servicios.ServicioAlbergue do
          :ok <- validar_disponibilidad(albergue),
          {:ok, persona_actualizada} <- Persona.cambiar_estado(persona, :en_albergue),
          {:ok, registro} <- RegistroAlbergue.nuevo(id_albergue, id_persona, :ingreso, opciones) do
-
       nuevo_albergue = %{albergue | ocupacion_actual: albergue.ocupacion_actual + 1}
       nuevos_albergues = Map.put(estado.albergues, id_albergue, nuevo_albergue)
       nuevas_personas = Map.put(estado.personas, id_persona, persona_actualizada)

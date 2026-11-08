@@ -1,0 +1,30 @@
+[
+  {
+    "descripcion": "El usuario USR-0002 creó su propia cuenta como voluntario",
+    "fecha": "2026-11-08T04:17:35.622000Z",
+    "id": "19cc64cd-ae1d-496c-939d-60dc64ba20bb",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "registro_usuario"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T04:21:02.774000Z",
+    "id": "25222985-6e7b-43de-a020-18030ad0ffe9",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario USR-0001 creó su propia cuenta como ciudadano",
+    "fecha": "2026-11-08T04:16:33.682000Z",
+    "id": "99c9173b-29cd-48da-9fe9-ba7ab4f80ada",
+    "id_usuario": "088f5080-c2a3-4ca4-a5c9-0384b62fb0c8",
+    "operacion": "registro_usuario"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T04:17:59.223000Z",
+    "id": "c75b0e13-b103-4bda-8a3c-09c31b57c2bc",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  }
+]

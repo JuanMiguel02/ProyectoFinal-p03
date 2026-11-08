@@ -5,7 +5,6 @@ defmodule Emergencia.EstadoUsuarios do
             sesiones: %{}
 end
 
-
 defmodule Emergencia.UsuariosServidor do
   use GenServer
 
@@ -25,17 +24,17 @@ defmodule Emergencia.UsuariosServidor do
     )
   end
 
-  def registrar(username, contrasena, nombre_completo, tipo, opciones \\ []) do
+  def registrar(nombre_usuario, contrasena, nombre_completo, tipo, opciones \\ []) do
     GenServer.call(
       __MODULE__,
-      {:registrar, username, contrasena, nombre_completo, tipo, opciones}
+      {:registrar, nombre_usuario, contrasena, nombre_completo, tipo, opciones}
     )
   end
 
-  def autenticar(username, contrasena) do
+  def autenticar(nombre_usuario, contrasena) do
     GenServer.call(
       __MODULE__,
-      {:autenticar, username, contrasena}
+      {:autenticar, nombre_usuario, contrasena}
     )
   end
 
@@ -56,9 +55,7 @@ defmodule Emergencia.UsuariosServidor do
           sesiones: %{}
         }
 
-        case ServicioUsuario.validar_usuarios_cargados(
-               Map.values(usuarios)
-             ) do
+        case ServicioUsuario.validar_usuarios_cargados(Map.values(usuarios)) do
           :ok ->
             {:ok, estado}
 
@@ -77,13 +74,13 @@ defmodule Emergencia.UsuariosServidor do
 
   @impl true
   def handle_call(
-        {:registrar, username, contrasena, nombre_completo, tipo, opciones},
+        {:registrar, nombre_usuario, contrasena, nombre_completo, tipo, opciones},
         _from,
         estado
       ) do
     case ServicioUsuario.registrar(
            estado,
-           username,
+           nombre_usuario,
            contrasena,
            nombre_completo,
            tipo,
@@ -110,15 +107,15 @@ defmodule Emergencia.UsuariosServidor do
   # AUTENTICACIÓN
   # ============================================================
 
- @impl true
-  def handle_call({:autenticar, username, contrasena}, from, estado) do
+  @impl true
+  def handle_call({:autenticar, nombre_usuario, contrasena}, from, estado) do
     pid_cliente = elem(from, 0)
 
     case ServicioUsuario.autenticar(
-          estado,
-          username,
-          contrasena
-        ) do
+           estado,
+           nombre_usuario,
+           contrasena
+         ) do
       {:ok, usuario, nuevo_estado} ->
         if Map.has_key?(estado.sesiones, usuario.id) do
           {:reply, {:error, :usuario_ya_conectado}, estado}
@@ -149,30 +146,26 @@ defmodule Emergencia.UsuariosServidor do
     pid_cliente = elem(from, 0)
 
     case Enum.find(estado.sesiones, fn {_id, sesion} ->
-          sesion.pid == pid_cliente
-        end) do
+           sesion.pid == pid_cliente
+         end) do
       {id_usuario, sesion} ->
-        Process.demonitor(sesion.monitor, [:flush])
+        case ServicioUsuario.desconectar(estado, id_usuario) do
+          {:ok, _usuario, estado_actualizado} ->
+            Process.demonitor(sesion.monitor, [:flush])
 
-        usuario = Map.fetch!(estado.usuarios, id_usuario)
-        usuario_actualizado = %{usuario | conectado: false}
+            sesiones =
+              Map.delete(estado_actualizado.sesiones, id_usuario)
 
-        usuarios =
-          Map.put(
-            estado.usuarios,
-            id_usuario,
-            usuario_actualizado
-          )
+            nuevo_estado = %{
+              estado_actualizado
+              | sesiones: sesiones
+            }
 
-        sesiones = Map.delete(estado.sesiones, id_usuario)
+            {:reply, :ok, nuevo_estado}
 
-        nuevo_estado = %{
-          estado
-          | usuarios: usuarios,
-            sesiones: sesiones
-        }
-
-        {:reply, :ok, nuevo_estado}
+          {:error, motivo} ->
+            {:reply, {:error, motivo}, estado}
+        end
 
       nil ->
         {:reply, {:error, :sesion_no_encontrada}, estado}
@@ -185,29 +178,24 @@ defmodule Emergencia.UsuariosServidor do
         estado
       ) do
     case Enum.find(estado.sesiones, fn {_id, sesion} ->
-          sesion.monitor == monitor
-        end) do
+           sesion.monitor == monitor
+         end) do
       {id_usuario, _sesion} ->
-        usuario = Map.fetch!(estado.usuarios, id_usuario)
+        case ServicioUsuario.desconectar(estado, id_usuario) do
+          {:ok, _usuario, estado_actualizado} ->
+            sesiones =
+              Map.delete(estado_actualizado.sesiones, id_usuario)
 
-        usuario_actualizado = %{usuario | conectado: false}
+            nuevo_estado = %{
+              estado_actualizado
+              | sesiones: sesiones
+            }
 
-        usuarios =
-          Map.put(
-            estado.usuarios,
-            id_usuario,
-            usuario_actualizado
-          )
+            {:noreply, nuevo_estado}
 
-        sesiones = Map.delete(estado.sesiones, id_usuario)
-
-        nuevo_estado = %{
-          estado
-          | usuarios: usuarios,
-            sesiones: sesiones
-        }
-
-        {:noreply, nuevo_estado}
+          {:error, _motivo} ->
+            {:noreply, estado}
+        end
 
       nil ->
         {:noreply, estado}

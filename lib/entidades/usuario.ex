@@ -41,13 +41,13 @@ defmodule Emergencia.Usuario do
   Función segura: Retorna {:ok, usuario} o {:error, motivo}.
   Por defecto, el usuario se crea desconectado.
   """
-  def nuevo(username, contrasena, nombre_completo, tipo, zona_id \\ nil) do
+  def nuevo(nombre_usuario, contrasena, nombre_completo, tipo, codigo, zona_id \\ nil) do
     if tipo in @tipos_permitidos do
       {:ok,
        %__MODULE__{
          id: GeneradorID.generar_uuid(),
-         codigo_usuario: GeneradorID.generar("USR"),
-         nombre_usuario: username,
+         codigo_usuario: codigo,
+         nombre_usuario: nombre_usuario,
          contrasena: contrasena,
          nombre_completo: nombre_completo,
          tipo_usuario: tipo,

@@ -23,7 +23,7 @@ defmodule Emergencia.Sector do
           puntos_atencion: list()
         }
 
-  def nuevo(nombre, nivel, personas) do
+  def nuevo(nombre, codigo, nivel, personas) do
     cond do
       is_nil(nombre) ->
         {:error, "El nombre es obligatorio"}
@@ -38,7 +38,7 @@ defmodule Emergencia.Sector do
         {:ok,
          %__MODULE__{
            id: GeneradorID.generar_uuid(),
-           codigo_sector: GeneradorID.generar("SEC"),
+           codigo_sector: codigo,
            nombre: nombre,
            nivel_afectacion: nivel,
            personas_afectadas: personas,

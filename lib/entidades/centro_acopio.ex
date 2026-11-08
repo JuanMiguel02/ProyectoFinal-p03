@@ -21,15 +21,14 @@ defmodule Emergencia.CentroAcopio do
   @doc """
   Crea un nuevo Centro de Acopio validando sus datos obligatorios y capacidad.
   """
-  def nueva(nombre, direccion, capacidad, id_zona) do
-    id_final = GeneradorID.generar_uuid()
+  def nueva(nombre, codigo, direccion, capacidad, id_zona) do
 
     with :ok <- validar_obligatorios(nombre, direccion, id_zona),
          :ok <- validar_capacidad(capacidad) do
       {:ok,
        %__MODULE__{
-         id: id_final,
-         codigo_centro_acopio: GeneradorID.generar("CAP"),
+         id: GeneradorID.generar_uuid(),
+         codigo_centro_acopio: codigo,
          nombre: nombre,
          direccion: direccion,
          capacidad: capacidad,
