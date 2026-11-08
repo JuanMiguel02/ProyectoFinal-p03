@@ -4,15 +4,6 @@ defmodule Emergencia.Application do
 
   @impl true
   def start(_tipo, _argumentos) do
-    hijos = [
-      Emergencia.Supervisor
-    ]
-
-    opciones = [
-      strategy: :one_for_one,
-      name: Emergencia.Application.Supervisor
-    ]
-
-    Supervisor.start_link(hijos, opciones)
+    Emergencia.Supervisor.start_link([])
   end
 end

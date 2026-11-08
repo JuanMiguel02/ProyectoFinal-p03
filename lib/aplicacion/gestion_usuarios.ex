@@ -13,9 +13,9 @@ defmodule Emergencia.Aplicacion.GestionUsuarios do
   # 1. REGISTRO PÚBLICO
   # ============================================================
 
-  def registrar_usuario(nombre_usuario,contrasena, nombre_completo tipo) when tipo in [:ciudadano, :voluntario] do
+  def registrar_usuario(nombre_usuario,contrasena, nombre_completo, tipo) when tipo in [:ciudadano, :voluntario] do
 
-    case UsuariosServidor.registrar( nombre_usuario,contrasena,nombre_completo,tipo) do
+    case UsuariosServidor.registrar(nombre_usuario, contrasena, nombre_completo, tipo) do
 
       {:ok, usuario} ->
         registrar_con_advertencia(

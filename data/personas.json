@@ -1,0 +1,50 @@
+[
+  {
+    "id": "a1000000-0000-4000-8000-000000000001",
+    "codigo_persona": "PER-0001",
+    "nombre": "Carlos Rodríguez",
+    "documento": "1000000001",
+    "dato_referencia": "Contacto de emergencia: 3001112233",
+    "edad": 42,
+    "id_zona": "z1000000-0000-4000-8000-000000000001",
+    "id_familia": "f1000000-0000-4000-8000-000000000001",
+    "estado": "localizada",
+    "historial_estados": []
+  },
+  {
+    "id": "a1000000-0000-4000-8000-000000000002",
+    "codigo_persona": "PER-0002",
+    "nombre": "Laura Rodríguez",
+    "documento": "1000000002",
+    "dato_referencia": "Contacto de emergencia: 3001112233",
+    "edad": 38,
+    "id_zona": "z1000000-0000-4000-8000-000000000001",
+    "id_familia": "f1000000-0000-4000-8000-000000000001",
+    "estado": "localizada",
+    "historial_estados": []
+  },
+  {
+    "id": "a1000000-0000-4000-8000-000000000003",
+    "codigo_persona": "PER-0003",
+    "nombre": "Andrés Gómez",
+    "documento": "1000000003",
+    "dato_referencia": "Contacto de emergencia: 3002223344",
+    "edad": 25,
+    "id_zona": "z1000000-0000-4000-8000-000000000001",
+    "id_familia": "f1000000-0000-4000-8000-000000000002",
+    "estado": "localizada",
+    "historial_estados": []
+  },
+  {
+    "id": "a1000000-0000-4000-8000-000000000004",
+    "codigo_persona": "PER-0004",
+    "nombre": "María Martínez",
+    "documento": "1000000004",
+    "dato_referencia": "Contacto de emergencia: 3003334455",
+    "edad": 31,
+    "id_zona": "z1000000-0000-4000-8000-000000000001",
+    "id_familia": "f1000000-0000-4000-8000-000000000003",
+    "estado": "localizada",
+    "historial_estados": []
+  }
+]
