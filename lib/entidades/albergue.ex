@@ -6,10 +6,9 @@ defmodule Emergencia.Albergue do
   de capacidad máxima y el control de ocupación en tiempo real.
   """
 
-  @enforce_keys [:id, :codigo_albergue, :codigo, :nombre, :id_zona, :capacidad_maxima]
+  @enforce_keys [:id, :codigo, :nombre, :id_zona, :capacidad_maxima]
   defstruct [
     :id,
-    :codigo_albergue,
     :codigo,
     :nombre,
     :id_zona,
@@ -19,7 +18,6 @@ defmodule Emergencia.Albergue do
 
   @type t :: %__MODULE__{
           id: String.t(),
-          codigo_albergue: String.t(),
           codigo: String.t(),
           nombre: String.t(),
           id_zona: String.t(),
@@ -39,23 +37,12 @@ defmodule Emergencia.Albergue do
       {:ok,
        %__MODULE__{
          id: id_final,
-         codigo_albergue: GeneradorID.generar("ALB"),
          codigo: codigo,
          nombre: nombre,
          id_zona: id_zona,
          capacidad_maxima: capacidad_maxima,
          ocupacion_actual: ocupacion
        }}
-    end
-  end
-
-  @doc """
-  Crea un nuevo Albergue o lanza ArgumentError en caso de falla.
-  """
-  def nuevo!(codigo, nombre, id_zona, capacidad_maxima, opciones \\ []) do
-    case nuevo(codigo, nombre, id_zona, capacidad_maxima, opciones) do
-      {:ok, albergue} -> albergue
-      {:error, motivo} -> raise ArgumentError, motivo
     end
   end
 
@@ -122,7 +109,7 @@ defmodule Emergencia.Albergue do
   end
 
   defp validar_ids(atributos) do
-    if texto?(atributos[:id]) and texto?(atributos[:codigo_albergue]),
+    if texto?(atributos[:id]) and texto?(atributos[:codigo]),
       do: :ok,
       else: {:error, "ID y código de albergue son obligatorios"}
   end

@@ -14,7 +14,8 @@ defmodule Emergencia.Supervisor do
     hijos = [
       Emergencia.UsuariosServidor,
       Emergencia.MensajesServidor,
-      Emergencia.ActividadesServidor
+      Emergencia.ActividadesServidor,
+      Emergencia.PoblacionServidor
     ]
 
     Supervisor.init(hijos, strategy: :one_for_one)

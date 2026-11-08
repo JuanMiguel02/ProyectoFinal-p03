@@ -39,6 +39,14 @@ defmodule Emergencia.RegistroAlbergue do
     end
   end
 
+  def registrar_salida(%__MODULE__{tipo_movimiento: :ingreso} = registro) do
+    nuevo(registro.id_albergue, registro.id_persona, :salida)
+  end
+
+  def registrar_salida(%__MODULE__{tipo_movimiento: :salida}) do
+    {:error, "El registro ya corresponde a una salida"}
+  end
+
   # ============================================================================
   # Funciones privadas de validación
   # ============================================================================

@@ -73,6 +73,28 @@ defmodule Emergencia.Persona do
     end
   end
 
+  def cambiar_estado(%__MODULE__{} = persona, nuevo_estado) do
+  if nuevo_estado in @estados_permitidos do
+    if persona.estado == nuevo_estado do
+      {:error, "La persona ya tiene ese estado"}
+    else
+      historial = [
+        {nuevo_estado, DateTime.utc_now()}
+        | persona.historial_estados
+      ]
+
+      {:ok,
+       %{
+         persona
+         | estado: nuevo_estado,
+           historial_estados: historial
+       }}
+    end
+  else
+    {:error, "Estado de persona inválido"}
+  end
+end
+
   def a_map(%__MODULE__{} = persona) do
     persona
     |> Map.from_struct()

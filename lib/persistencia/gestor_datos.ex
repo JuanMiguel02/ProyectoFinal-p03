@@ -52,7 +52,7 @@ defmodule Emergencia.GestorDatos do
   @dominios %{
   usuarios: [:usuarios],
   territorio: [:zonas, :sectores, :centros_acopio],
-  poblacion: [:personas, :familias, :albergues],
+  poblacion: [:personas, :familias, :albergues, :registros_albergues],
   recursos: [
     :recursos,
     :inventarios,
