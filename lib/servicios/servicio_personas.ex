@@ -74,6 +74,10 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   # Búsquedas Multicriterio (Familiares y Coordinación)
   # ============================================================================
 
+  def consultar_persona(personas, id_persona) do
+    obtener_persona(personas, id_persona)
+  end
+
   def buscar_personas(%EstadoPoblacion{} = estado, criterios) do
     personas =
       estado.personas
