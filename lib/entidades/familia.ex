@@ -31,19 +31,6 @@ defmodule Emergencia.Familia do
     end
   end
 
-  @doc """
-  Crea una nueva Familia o lanza excepción si los datos son inválidos.
-  """
-  def nueva!(nombre) do
-    case nueva(nombre) do
-      {:ok, familia} -> familia
-      {:error, motivo} -> raise ArgumentError, motivo
-    end
-  end
-
-  def nuevo(nombre), do: nueva(nombre)
-  def nuevo!(nombre), do: nueva!(nombre)
-
   def a_map(%__MODULE__{} = familia),
     do: familia |> Map.from_struct() |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)
 

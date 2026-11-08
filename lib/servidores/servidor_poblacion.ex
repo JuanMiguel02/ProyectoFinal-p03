@@ -12,6 +12,7 @@ defmodule Emergencia.PoblacionServidor do
   alias Emergencia.EstadoPoblacion
   alias Emergencia.Servicios.ServicioAlbergue
   alias Emergencia.Servicios.ServicioPersonas
+  alias Emergencia.Servicios.ServicioFamilia
 
   # ============================================================================
   # API pública
@@ -72,6 +73,30 @@ defmodule Emergencia.PoblacionServidor do
     GenServer.call(__MODULE__, {:consultar_historial_persona, documento_o_id})
   end
 
+  def asignar_familia(id_persona, id_familia) do
+    GenServer.call(__MODULE__, {:asignar_familia, id_persona, id_familia})
+  end
+
+  # ============================================================================
+  # Familias
+  # ============================================================================
+
+  def registrar_familia(nombre) do
+    GenServer.call(__MODULE__, {:registrar_familia, nombre})
+  end
+
+  def buscar_familia(id_o_codigo) do
+    GenServer.call(__MODULE__, {:buscar_familia, id_o_codigo})
+  end
+
+  def listar_familias do
+    GenServer.call(__MODULE__, :listar_familias)
+  end
+
+  def consultar_integrantes(id_o_codigo_familia) do
+    GenServer.call(__MODULE__, {:consultar_integrantes, id_o_codigo_familia})
+  end
+
   # ============================================================================
   # Callbacks de GenServer
   # ============================================================================
@@ -95,14 +120,8 @@ defmodule Emergencia.PoblacionServidor do
   end
 
   @impl true
-  def handle_call(
-        {:registrar_albergue, codigo, nombre, id_zona, capacidad_maxima},
-        _from,
-        estado
-      ) do
-    resultado =
-      ServicioAlbergue.registrar(estado, codigo, nombre, id_zona, capacidad_maxima)
-
+  def handle_call({:registrar_albergue, codigo, nombre, id_zona, capacidad_maxima}, _from, estado) do
+    resultado = ServicioAlbergue.registrar(estado, codigo, nombre, id_zona, capacidad_maxima)
     guardar_resultado(resultado, estado)
   end
 
@@ -137,14 +156,8 @@ defmodule Emergencia.PoblacionServidor do
   end
 
   @impl true
-  def handle_call(
-        {:registrar_persona, nombre, documento, id_zona, estado_persona, opciones},
-        _from,
-        estado
-      ) do
-    resultado =
-      ServicioPersonas.registrar(estado, nombre, documento, id_zona, estado_persona, opciones)
-
+  def handle_call({:registrar_persona, nombre, documento, id_zona, estado_persona, opciones},_from, estado) do
+    resultado = ServicioPersonas.registrar(estado, nombre, documento, id_zona, estado_persona, opciones)
     guardar_resultado(resultado, estado)
   end
 
@@ -163,6 +176,36 @@ defmodule Emergencia.PoblacionServidor do
   @impl true
   def handle_call({:consultar_historial_persona, documento_o_id}, _from, estado) do
     respuesta = ServicioPersonas.consultar_historial(estado, documento_o_id)
+    {:reply, respuesta, estado}
+  end
+
+  @impl true
+  def handle_call({:asignar_familia, id_persona, id_familia}, _from, estado) do
+    resultado = ServicioPersonas.asignar_a_familia(estado, id_persona, id_familia)
+    guardar_resultado(resultado, estado)
+  end
+
+  @impl true
+  def handle_call({:registrar_familia, nombre}, _from, estado) do
+    resultado = ServicioFamilia.registrar(estado, nombre)
+    guardar_resultado(resultado, estado)
+  end
+
+  @impl true
+  def handle_call({:buscar_familia, id_o_codigo}, _from, estado) do
+    respuesta = ServicioFamilia.buscar_familia(estado, id_o_codigo)
+    {:reply, respuesta, estado}
+  end
+
+  @impl true
+  def handle_call(:listar_familias, _from, estado) do
+    respuesta = ServicioFamilia.listar_familias(estado)
+    {:reply, respuesta, estado}
+  end
+
+  @impl true
+  def handle_call({:consultar_integrantes, id_o_codigo_familia}, _from, estado) do
+    respuesta = ServicioFamilia.consultar_integrantes(estado, id_o_codigo_familia)
     {:reply, respuesta, estado}
   end
 

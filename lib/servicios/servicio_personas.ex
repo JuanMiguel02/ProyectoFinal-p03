@@ -16,7 +16,7 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   ]
 
   # ============================================================================
-  # 1. Registro de Persona Afectada
+  # Registro de Persona Afectada
   # ============================================================================
 
   @doc """
@@ -50,7 +50,7 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   end
 
   # ============================================================================
-  # 2. Actualización de Estado e Historial de Trazabilidad
+  # Actualización de Estado e Historial de Trazabilidad
   # ============================================================================
 
   @doc """
@@ -69,7 +69,7 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   end
 
   # ============================================================================
-  # 3. Búsquedas Multicriterio (Familiares y Coordinación)
+  # Búsquedas Multicriterio (Familiares y Coordinación)
   # ============================================================================
 
   def buscar_personas(%EstadoPoblacion{} = estado, criterios) do
@@ -79,6 +79,19 @@ defmodule Emergencia.Servicios.ServicioPersonas do
       |> Enum.filter(&cumple_criterios?(&1, criterios))
 
     {:ok, personas}
+  end
+
+  def asignar_a_familia(%EstadoPoblacion{} = estado, id_persona, id_familia) do
+    with {:ok, persona} <- obtener_persona(estado.personas, id_persona),
+         :ok <- validar_familia_existente(estado.familias, id_familia) do
+
+          persona_actualizada = %{persona | id_familia: id_familia}
+          nuevas_personas = Map.put(estado.personas, persona.id, persona_actualizada)
+          nuevo_estado = %{estado | personas: nuevas_personas}
+
+          {:ok, persona_actualizada, nuevo_estado}
+         end
+
   end
 
   @doc """
@@ -116,6 +129,13 @@ defmodule Emergencia.Servicios.ServicioPersonas do
     end
   end
 
+  defp validar_familia_existente(familias, id_familia) do
+    if Map.has_key?(familias, id_familia) do
+      :ok
+    else
+      {:error, "La familia no existe"}
+    end
+  end
   defp validar_documento_unico(personas, documento) do
     existe =
       Enum.any?(personas, fn {_id, persona} ->
