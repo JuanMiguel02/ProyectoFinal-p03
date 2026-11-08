@@ -4,18 +4,19 @@ defmodule Emergencia.Consola.MenuAutenticacion do
   y la autenticación en el sistema.
   """
   alias Emergencia.Aplicacion.Autenticacion
+  alias Util
 
   # ============================================================
   # 1. MENÚ DE AUTENTICACIÓN
   # ============================================================
 
   def mostrar do
-    IO.puts("\n========== AUTENTICACIÓN ==========")
-    IO.puts("1. Iniciar sesión")
-    IO.puts("2. Registrarse")
-    IO.puts("3. Salir")
+    Util.mostrar("\n========== AUTENTICACIÓN ==========", :mensaje)
+    Util.mostrar("1. Iniciar sesión", :mensaje)
+    Util.mostrar("2. Registrarse", :mensaje)
+    Util.mostrar("3. Salir", :mensaje)
 
-    opcion = leer_texto("\nSeleccione una opción: ")
+    opcion = Util.ingresar("\nSeleccione una opción: ", :texto)
 
     case opcion do
       "1" -> iniciar()
@@ -23,10 +24,10 @@ defmodule Emergencia.Consola.MenuAutenticacion do
         registrar()
         mostrar()
       "3" ->
-          IO.puts("\nHasta pronto.")
+          Util.mostrar("\nHasta pronto.", :mensaje)
           mostrar()
        _ ->
-          IO.puts("\nOpción no válida.")
+          Util.mostrar("\nOpción no válida.", :error)
           mostrar()
     end
   end
@@ -35,23 +36,23 @@ defmodule Emergencia.Consola.MenuAutenticacion do
   # 2. INICIO DE SESIÓN
   # ============================================================
   def iniciar do
-    IO.puts("\n========== INICIO DE SESIÓN ==========")
+    Util.mostrar("\n========== INICIO DE SESIÓN ==========", :mensaje)
 
-    nombre_usuario = leer_texto("Nombre de usuario: ")
-    contrasena = leer_texto("Contraseña: ")
+    nombre_usuario = Util.ingresar("Nombre de usuario: ", :texto)
+    contrasena = Util.ingresar("Contraseña: ", :texto)
 
     case Autenticacion.iniciar_sesion(nombre_usuario, contrasena) do
       {:ok, sesion} ->
-        IO.puts("\nBienvenido, #{sesion.nombre_completo}")
+        Util.mostrar("\nBienvenido, #{sesion.nombre_completo}", :mensaje)
         {:ok, sesion}
 
       {:ok, sesion, advertencia} ->
-        IO.puts("\nBienvenido, #{sesion.nombre_completo}")
+        Util.mostrar("\nBienvenido, #{sesion.nombre_completo}", :mensaje)
         mostrar_advertencia(advertencia)
         {:ok, sesion}
 
       {:error, motivo} ->
-        IO.puts("\nNo se pudo iniciar sesión: #{inspect(motivo)}")
+        Util.mostrar("\nNo se pudo iniciar sesión: #{inspect(motivo)}", :error)
         {:error, motivo}
     end
   end
@@ -61,17 +62,17 @@ defmodule Emergencia.Consola.MenuAutenticacion do
   # ============================================================
 
   def registrar do
-     IO.puts("\n========== REGISTRO DE USUARIO ==========")
+    Util.mostrar("\n========== REGISTRO DE USUARIO ==========", :mensaje)
 
-    nombre_usuario = leer_texto("Nombre de usuario: ")
-    contrasena = leer_texto("Contraseña: ")
-    nombre_completo = leer_texto("Nombre completo: ")
+    nombre_usuario = Util.ingresar("Nombre de usuario: ", :texto)
+    contrasena = Util.ingresar("Contraseña: ", :texto)
+    nombre_completo = Util.ingresar("Nombre completo: ", :texto)
 
     tipo = seleccionar_tipo_usuario()
 
     case tipo do
       nil ->
-        IO.puts("\nTipo de usuario no válido.")
+        Util.mostrar("\nTipo de usuario no válido.", :error)
         {:error, :tipo_invalido}
 
       tipo ->
@@ -83,18 +84,18 @@ defmodule Emergencia.Consola.MenuAutenticacion do
              ) do
 
           {:ok, usuario} ->
-            IO.puts("\nUsuario registrado correctamente.")
-            IO.puts("Código de usuario: #{usuario.codigo_usuario}")
+            Util.mostrar("\nUsuario registrado correctamente.", :mensaje)
+            Util.mostrar("Código de usuario: #{usuario.codigo_usuario}", :mensaje)
             {:ok, usuario}
 
           {:ok, usuario, advertencia} ->
-            IO.puts("\nUsuario registrado correctamente.")
-            IO.puts("Código de usuario: #{usuario.codigo_usuario}")
+            Util.mostrar("\nUsuario registrado correctamente.", :mensaje)
+            Util.mostrar("Código de usuario: #{usuario.codigo_usuario}", :mensaje)
             mostrar_advertencia(advertencia)
             {:ok, usuario}
 
           {:error, motivo} ->
-            IO.puts("\nNo se pudo registrar el usuario: #{inspect(motivo)}")
+            Util.mostrar("\nNo se pudo registrar el usuario: #{inspect(motivo)}", :error)
             {:error, motivo}
         end
     end
@@ -105,11 +106,11 @@ defmodule Emergencia.Consola.MenuAutenticacion do
   # ============================================================
 
   defp seleccionar_tipo_usuario do
-    IO.puts("\nSeleccione el tipo de usuario:")
-    IO.puts("1. Ciudadano")
-    IO.puts("2. Voluntario")
+    Util.mostrar("\nSeleccione el tipo de usuario:", :mensaje)
+    Util.mostrar("1. Ciudadano", :mensaje)
+    Util.mostrar("2. Voluntario", :mensaje)
 
-    case leer_texto("Opción: ") do
+    case Util.ingresar("Opción: ", :texto) do
       "1" -> :ciudadano
       "2" -> :voluntario
       _ -> nil
@@ -122,16 +123,16 @@ defmodule Emergencia.Consola.MenuAutenticacion do
   def cerrar(sesion) do
     case Autenticacion.cerrar_sesion(sesion) do
       :ok ->
-        IO.puts("\nSesión cerrada correctamente.")
+        Util.mostrar("\nSesión cerrada correctamente.", :mensaje)
         :ok
 
       {:ok, advertencia} ->
-        IO.puts("\nSesión cerrada correctamente.")
+        Util.mostrar("\nSesión cerrada correctamente.", :mensaje)
         mostrar_advertencia(advertencia)
         :ok
 
       {:error, motivo} ->
-        IO.puts("\nNo se pudo cerrar la sesión: #{inspect(motivo)}")
+        Util.mostrar("\nNo se pudo cerrar la sesión: #{inspect(motivo)}", :error)
         {:error, motivo}
     end
   end
@@ -140,18 +141,12 @@ defmodule Emergencia.Consola.MenuAutenticacion do
   # 6. FUNCIONES AUXILIARES
   # ============================================================
 
-  defp leer_texto(mensaje) do
-    mensaje
-    |> IO.gets()
-    |> String.trim()
-  end
-
   defp mostrar_advertencia({:advertencia, motivo}) do
-    IO.puts("\nAdvertencia: #{inspect(motivo)}")
+    Util.mostrar("\nAdvertencia: #{inspect(motivo)}", :error)
   end
 
   defp mostrar_advertencia(motivo) do
-    IO.puts("\nAdvertencia: #{inspect(motivo)}")
+    Util.mostrar("\nAdvertencia: #{inspect(motivo)}", :error)
   end
 
 end
