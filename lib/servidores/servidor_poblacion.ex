@@ -11,6 +11,7 @@ defmodule Emergencia.PoblacionServidor do
   alias Emergencia.GestorDatos
   alias Emergencia.EstadoPoblacion
   alias Emergencia.Servicios.ServicioAlbergue
+  alias Emergencia.Servicios.ServicioPersonas
 
   # ============================================================================
   # API pública
@@ -49,6 +50,29 @@ defmodule Emergencia.PoblacionServidor do
   end
 
   # ============================================================================
+  # Personas
+  # ============================================================================
+
+  def registrar_persona(nombre, documento, id_zona, estado_persona, opciones \\ []) do
+    GenServer.call(
+      __MODULE__,
+      {:registrar_persona, nombre, documento, id_zona, estado_persona, opciones}
+    )
+  end
+
+  def cambiar_estado_persona(id_persona, nuevo_estado) do
+    GenServer.call(__MODULE__, {:cambiar_estado_persona, id_persona, nuevo_estado})
+  end
+
+  def buscar_personas(criterios) do
+    GenServer.call(__MODULE__, {:buscar_personas, criterios})
+  end
+
+  def consultar_historial_persona(documento_o_id) do
+    GenServer.call(__MODULE__, {:consultar_historial_persona, documento_o_id})
+  end
+
+  # ============================================================================
   # Callbacks de GenServer
   # ============================================================================
 
@@ -71,8 +95,14 @@ defmodule Emergencia.PoblacionServidor do
   end
 
   @impl true
-  def handle_call({:registrar_albergue, codigo, nombre, id_zona, capacidad_maxima},_from,estado) do
-    resultado = Emergencia.Servicios.ServicioAlbergue.registrar(estado, codigo, nombre, id_zona, capacidad_maxima)
+  def handle_call(
+        {:registrar_albergue, codigo, nombre, id_zona, capacidad_maxima},
+        _from,
+        estado
+      ) do
+    resultado =
+      ServicioAlbergue.registrar(estado, codigo, nombre, id_zona, capacidad_maxima)
+
     guardar_resultado(resultado, estado)
   end
 
@@ -103,6 +133,36 @@ defmodule Emergencia.PoblacionServidor do
   @impl true
   def handle_call(:reporte_ocupacion, _from, estado) do
     respuesta = ServicioAlbergue.reporte_ocupacion(estado)
+    {:reply, respuesta, estado}
+  end
+
+  @impl true
+  def handle_call(
+        {:registrar_persona, nombre, documento, id_zona, estado_persona, opciones},
+        _from,
+        estado
+      ) do
+    resultado =
+      ServicioPersonas.registrar(estado, nombre, documento, id_zona, estado_persona, opciones)
+
+    guardar_resultado(resultado, estado)
+  end
+
+  @impl true
+  def handle_call({:cambiar_estado_persona, id_persona, nuevo_estado}, _from, estado) do
+    resultado = ServicioPersonas.cambiar_estado(estado, id_persona, nuevo_estado)
+    guardar_resultado(resultado, estado)
+  end
+
+  @impl true
+  def handle_call({:buscar_personas, criterios}, _from, estado) do
+    respuesta = ServicioPersonas.buscar_personas(estado, criterios)
+    {:reply, respuesta, estado}
+  end
+
+  @impl true
+  def handle_call({:consultar_historial_persona, documento_o_id}, _from, estado) do
+    respuesta = ServicioPersonas.consultar_historial(estado, documento_o_id)
     {:reply, respuesta, estado}
   end
 

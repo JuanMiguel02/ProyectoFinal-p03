@@ -81,7 +81,7 @@ defmodule Emergencia.UsuariosServidor do
         _from,
         estado
       ) do
-    case ServicioUsuario.registrar_usuario(
+    case ServicioUsuario.registrar(
            estado,
            username,
            contrasena,

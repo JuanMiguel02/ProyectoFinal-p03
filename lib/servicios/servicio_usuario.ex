@@ -16,27 +16,20 @@ defmodule Emergencia.Servicios.ServicioUsuario do
   Registra un usuario si cumple las validaciones
   y su nombre de usuario e ID son únicos.
   """
- def registrar_usuario(
-      estado,
-      username,
-      contrasena,
-      nombre_completo,
-      tipo,
-      opciones \\ []
-    ) do
+ def registrar(estado, nombre_usuario, contrasena, nombre_completo, tipo, opciones \\ []) do
   id_zona = Keyword.get(opciones, :id_zona)
 
   with :ok <- validar_id_no_proporcionado(opciones),
-       :ok <- validar_nombre_usuario(username),
+       :ok <- validar_nombre_usuario(nombre_usuario),
        :ok <- validar_contrasena(contrasena),
        :ok <- validar_nombre_completo(nombre_completo),
        :ok <- validar_tipo(tipo),
-       :ok <- validar_unicidad_nombre_usuario(estado.usuarios, username),
+       :ok <- validar_unicidad_nombre_usuario(estado.usuarios, nombre_usuario),
        {:ok, nuevo_usuario} <-
-         Usuario.nuevo(username, contrasena, nombre_completo, tipo, id_zona),
+         Usuario.nuevo(nombre_usuario, contrasena, nombre_completo, tipo, id_zona),
        :ok <- validar_unicidad_id(estado.usuarios, nuevo_usuario.id) do
-    nuevos_usuarios =
-      Map.put(estado.usuarios, nuevo_usuario.id, nuevo_usuario)
+
+    nuevos_usuarios = Map.put(estado.usuarios, nuevo_usuario.id, nuevo_usuario)
 
     nuevo_estado = %{estado | usuarios: nuevos_usuarios}
 
@@ -157,16 +150,16 @@ end
   def validar_usuarios_cargados(usuarios) do
     ids = Enum.map(usuarios, & &1.id)
 
-    usernames =
+    nombre_usuarios =
       Enum.map(usuarios, fn usuario ->
-        normalizar_username(usuario.nombre_usuario)
+        normalizar_nombre_usuario(usuario.nombre_usuario)
       end)
 
     cond do
       length(ids) != length(Enum.uniq(ids)) ->
         {:error, "Hay usuarios con IDs duplicados"}
 
-      length(usernames) != length(Enum.uniq(usernames)) ->
+      length(nombre_usuarios) != length(Enum.uniq(nombre_usuarios)) ->
         {:error, "Hay nombres de usuario duplicados"}
 
       true ->
@@ -186,9 +179,9 @@ end
     end
   end
 
-  defp validar_nombre_usuario(username)
-       when is_binary(username) do
-    if String.trim(username) != "" do
+  defp validar_nombre_usuario(nombre_usuario)
+       when is_binary(nombre_usuario) do
+    if String.trim(nombre_usuario) != "" do
       :ok
     else
       {:error, "El nombre de usuario no puede estar vacío"}
@@ -238,23 +231,23 @@ end
     end
   end
 
-  defp validar_unicidad_nombre_usuario(mapa_usuarios, username) do
-    username_normalizado = normalizar_username(username)
+  defp validar_unicidad_nombre_usuario(mapa_usuarios, nombre_usuario) do
+    nombre_usuario_normalizado = normalizar_nombre_usuario(nombre_usuario)
 
     existe? =
       Enum.any?(mapa_usuarios, fn {_id, usuario} ->
-        normalizar_username(usuario.nombre_usuario) == username_normalizado
+        normalizar_nombre_usuario(usuario.nombre_usuario) == nombre_usuario_normalizado
       end)
 
     if existe? do
-      {:error, "El nombre de usuario '#{username}' ya está en uso"}
+      {:error, "El nombre de usuario '#{nombre_usuario}' ya está en uso"}
     else
       :ok
     end
   end
 
-  defp normalizar_username(username) do
-    username
+  defp normalizar_nombre_usuario(nombre_usuario) do
+    nombre_usuario
     |> String.trim()
     |> String.downcase()
   end
@@ -263,11 +256,11 @@ end
   # 7. BÚSQUEDA Y CONTRASEÑA
   # ============================================================
 
-  defp buscar_por_nombre_usuario(mapa_usuarios, username) do
-    username_normalizado = normalizar_username(username)
+  defp buscar_por_nombre_usuario(mapa_usuarios, nombre_usuario) do
+    nombre_usuario_normalizado = normalizar_nombre_usuario(nombre_usuario)
 
     case Enum.find(mapa_usuarios, fn {_id, usuario} ->
-           normalizar_username(usuario.nombre_usuario) == username_normalizado
+           normalizar_nombre_usuario(usuario.nombre_usuario) == nombre_usuario_normalizado
          end) do
       {_id, usuario} ->
         {:ok, usuario}

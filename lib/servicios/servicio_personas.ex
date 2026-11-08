@@ -4,7 +4,7 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   de localización, trazabilidad de historial y búsquedas avanzadas para familiares.
   """
   alias Emergencia.Persona
-  alias Emergencia.Servicios.ServicioActividad
+  alias Emergencia.EstadoPoblacion
 
   @estados_permitidos [
     :sin_informacion,
@@ -32,43 +32,20 @@ defmodule Emergencia.Servicios.ServicioPersonas do
 
   La persona recibe automáticamente un UUID interno y un código público `PER-####`.
   """
-  def registrar_persona(estado_global, nombre, documento, id_zona, estado, opciones \\ []) do
+  def registrar(estado, nombre, documento, id_zona, estado_persona, opciones \\ []) do
     with :ok <- validar_id_no_proporcionado(opciones),
          :ok <- validar_nombre(nombre),
          :ok <- validar_documento(documento),
          :ok <- validar_id_zona(id_zona),
-         :ok <- validar_estado(estado),
-         {:ok, nueva_persona} <- Persona.nueva(nombre, documento, id_zona, estado, opciones),
-         :ok <- validar_unicidad_id(estado_global.personas, nueva_persona.id) do
-      id_final = nueva_persona.id
+         :ok <- validar_estado(estado_persona),
+         :ok <- validar_documento_unico(estado.personas, documento),
+         {:ok, nueva_persona} <-
+           Persona.nueva(nombre, documento, id_zona, estado_persona, opciones) do
+      nuevas_personas = Map.put(estado.personas, nueva_persona.id, nueva_persona)
 
-      nuevas_personas =
-        Map.put(
-          estado_global.personas,
-          id_final,
-          nueva_persona
-        )
+      estado_actualizado = %{estado | personas: nuevas_personas}
 
-      estado_actualizado =
-        %{estado_global | personas: nuevas_personas}
-
-      id_autor = Keyword.get(opciones, :id_usuario_registro, "SISTEMA")
-
-      descripcion =
-        "Registro de persona '#{nombre}' (#{documento}) con ID #{id_final} en estado :#{estado}"
-
-      case ServicioActividad.registrar(
-             estado_actualizado,
-             id_autor,
-             "REGISTRO_PERSONA",
-             descripcion
-           ) do
-        {:ok, estado_final} ->
-          {:ok, nueva_persona, estado_final}
-
-        {:error, motivo} ->
-          {:error, motivo}
-      end
+      {:ok, nueva_persona, estado_actualizado}
     end
   end
 
@@ -80,27 +57,14 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   Actualiza el estado de localización de una persona y preserva la estampa
   de tiempo en su historial de estados.
   """
-  def cambiar_estado(estado_global, id_persona, nuevo_estado, id_usuario_actualizador) do
-    with {:ok, persona} <- obtener_persona(estado_global.personas, id_persona),
+  def cambiar_estado(%EstadoPoblacion{} = estado, id_persona, nuevo_estado) do
+    with {:ok, persona} <- obtener_persona(estado.personas, id_persona),
          :ok <- validar_estado(nuevo_estado),
-         {:ok, persona_actualizada} <- aplicar_cambio_estado(persona, nuevo_estado) do
-      nuevas_personas = Map.put(estado_global.personas, id_persona, persona_actualizada)
-      estado_actualizado = %{estado_global | personas: nuevas_personas}
+         {:ok, persona_actualizada} <- Persona.cambiar_estado(persona, nuevo_estado) do
+      nuevas_personas = Map.put(estado.personas, persona.id, persona_actualizada)
+      estado_actualizado = %{estado | personas: nuevas_personas}
 
-      descripcion = "Cambio de estado de persona '#{persona.nombre}' a :#{nuevo_estado}"
-
-      case ServicioActividad.registrar(
-             estado_actualizado,
-             id_usuario_actualizador,
-             "CAMBIO_ESTADO_PERSONA",
-             descripcion
-           ) do
-        {:ok, estado_final} ->
-          {:ok, persona_actualizada, estado_final}
-
-        {:error, motivo} ->
-          {:error, motivo}
-      end
+      {:ok, persona_actualizada, estado_actualizado}
     end
   end
 
@@ -108,31 +72,33 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   # 3. Búsquedas Multicriterio (Familiares y Coordinación)
   # ============================================================================
 
-  @doc """
-  Busca personas aplicando filtros opcionales (nombre, documento, id_zona, estado).
-  Recibe un mapa o keyword list con los criterios de búsqueda.
+  def buscar_personas(%EstadoPoblacion{} = estado, criterios) do
+    personas =
+      estado.personas
+      |> Map.values()
+      |> Enum.filter(&cumple_criterios?(&1, criterios))
 
-  ## Ejemplos:
-      buscar_personas(mapa, nombre: "Juan")
-      buscar_personas(mapa, documento: "12345", estado: :en_albergue)
-      buscar_personas(mapa, id_zona: "Z-Norte")
-  """
-  def buscar_personas(mapa_personas, criterios) do
-    mapa_personas
-    |> Map.values()
-    |> Enum.filter(&cumple_criterios?(&1, criterios))
+    {:ok, personas}
   end
 
   @doc """
   Consulta rápida para obtener el historial completo de ubicaciones y estados
   de una persona por su ID o Documento.
   """
-  def consultar_historial(mapa_personas, documento_o_id) do
-    case Enum.find(Map.values(mapa_personas), fn p ->
-           p.id == documento_o_id or p.documento == documento_o_id
+  def consultar_historial(%EstadoPoblacion{} = estado, documento_o_id) do
+    case Enum.find(Map.values(estado.personas), fn persona ->
+           persona.id == documento_o_id or persona.documento == documento_o_id
          end) do
-      nil -> {:error, "No se encontró ningún registro para '#{documento_o_id}'"}
-      persona -> {:ok, persona.nombre, persona.estado, persona.historial_estados}
+      nil ->
+        {:error, "No se encontró ningún registro para '#{documento_o_id}'"}
+
+      persona ->
+        {:ok,
+         %{
+           nombre: persona.nombre,
+           estado: persona.estado,
+           historial_estados: persona.historial_estados
+         }}
     end
   end
 
@@ -140,16 +106,24 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   # Funciones Privadas de Filtrado y Validación
   # ============================================================================
 
-  defp obtener_persona(mapa_personas, id) do
-    case Map.fetch(mapa_personas, id) do
-      {:ok, persona} -> {:ok, persona}
-      :error -> {:error, "La persona con ID '#{id}' no existe"}
+  defp obtener_persona(personas, id_persona) do
+    case Map.fetch(personas, id_persona) do
+      {:ok, persona} ->
+        {:ok, persona}
+
+      :error ->
+        {:error, "La persona con ID '#{id_persona}' no existe"}
     end
   end
 
-  defp validar_unicidad_id(mapa_personas, id) do
-    if Map.has_key?(mapa_personas, id) do
-      {:error, "Ya existe una persona registrada con el ID '#{id}'"}
+  defp validar_documento_unico(personas, documento) do
+    existe =
+      Enum.any?(personas, fn {_id, persona} ->
+        persona.documento == documento
+      end)
+
+    if existe do
+      {:error, "Ya existe una persona registrada con ese documento"}
     else
       :ok
     end
@@ -159,25 +133,40 @@ defmodule Emergencia.Servicios.ServicioPersonas do
     campos_id = [:id, :codigo_persona]
 
     case Enum.find(campos_id, &Keyword.has_key?(opciones, &1)) do
-      nil -> :ok
-      campo -> {:error, "El campo #{campo} se genera automáticamente y no debe proporcionarse"}
+      nil ->
+        :ok
+
+      campo ->
+        {:error, "El campo #{campo} se genera automáticamente y no debe proporcionarse"}
     end
   end
 
   defp validar_nombre(nombre) when is_binary(nombre) do
-    if String.trim(nombre) != "", do: :ok, else: {:error, "El nombre no puede estar vacío"}
+    if String.trim(nombre) != "" do
+      :ok
+    else
+      {:error, "El nombre no puede estar vacío"}
+    end
   end
 
   defp validar_nombre(_), do: {:error, "El nombre debe ser texto"}
 
   defp validar_documento(documento) when is_binary(documento) do
-    if String.trim(documento) != "", do: :ok, else: {:error, "El documento no puede estar vacío"}
+    if String.trim(documento) != "" do
+      :ok
+    else
+      {:error, "El documento no puede estar vacío"}
+    end
   end
 
   defp validar_documento(_), do: {:error, "El documento debe ser texto"}
 
   defp validar_id_zona(id_zona) when is_binary(id_zona) do
-    if String.trim(id_zona) != "", do: :ok, else: {:error, "El ID de zona no puede estar vacío"}
+    if String.trim(id_zona) != "" do
+      :ok
+    else
+      {:error, "El ID de zona no puede estar vacío"}
+    end
   end
 
   defp validar_id_zona(_), do: {:error, "El ID de zona debe ser texto"}
@@ -190,27 +179,22 @@ defmodule Emergencia.Servicios.ServicioPersonas do
     end
   end
 
-  defp aplicar_cambio_estado(persona, nuevo_estado) do
-    nuevo_registro_historial = {nuevo_estado, DateTime.utc_now()}
-    historial_actualizado = [nuevo_registro_historial | persona.historial_estados]
-
-    {:ok, %{persona | estado: nuevo_estado, historial_estados: historial_actualizado}}
-  end
-
-  # Evalúa dinámicamente si una persona satisface todos los filtros pasados en la búsqueda
   defp cumple_criterios?(persona, criterios) do
     Enum.all?(criterios, fn
-      {:nombre, termino} ->
-        String.contains?(String.downcase(persona.nombre), String.downcase(termino))
+      {:nombre, termino} when is_binary(termino) ->
+        String.contains?(
+          String.downcase(persona.nombre),
+          String.downcase(termino)
+        )
 
-      {:documento, doc} ->
-        String.contains?(persona.documento, doc)
+      {:documento, documento} when is_binary(documento) ->
+        String.contains?(persona.documento, documento)
 
-      {:id_zona, zona_id} ->
-        persona.id_zona == zona_id
+      {:id_zona, id_zona} ->
+        persona.id_zona == id_zona
 
-      {:estado, est} ->
-        persona.estado == est
+      {:estado, estado} ->
+        persona.estado == estado
 
       _criterio_desconocido ->
         true
