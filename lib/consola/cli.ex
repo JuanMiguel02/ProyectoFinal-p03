@@ -109,35 +109,38 @@ defmodule Emergencia.Consola.CLI do
   # ============================================================================
 
  defp evaluar_comando(["connect", username, pass, tipo_str, zona_o_codigo], sesion) do
-    if sesion do
+if sesion do
       IO.puts("Ya hay una sesión activa. Usa 'disconnect' primero.")
       sesion
     else
-      tipo = String.to_atom(tipo_str)
-      zona_id = resolver_id_zona(zona_o_codigo)
+      # 1. Evitamos String.to_atom inseguro
+      tipos_validos = %{"ciudadano" => :ciudadano, "voluntario" => :voluntario, "coordinador" => :coordinador, "administrador" => :administrador}
+      tipo = Map.get(tipos_validos, String.downcase(tipo_str))
 
-      case UsuariosServidor.registrar(username, pass, username, tipo, id_zona: zona_id) do
-        {:ok, _} ->
-          case UsuariosServidor.autenticar(username, pass) do
-            {:ok, auth} ->
-              IO.puts("Conectado exitosamente.")
-              ActividadesServidor.registrar(auth.id, "LOGIN", "El usuario #{auth.nombre_usuario} inició sesión")
-              # Creamos el mapa de sesión usando auth.id (que es como se llama en el struct Usuario)
-              %{id_usuario: auth.id, nombre_usuario: auth.nombre_usuario, tipo_usuario: auth.tipo_usuario}
-            _ ->
-              IO.puts("Error al autenticar.")
-              nil
-          end
-        {:error, _} ->
-          case UsuariosServidor.autenticar(username, pass) do
-            {:ok, auth} ->
-              IO.puts("¡Bienvenido de nuevo, #{auth.nombre_completo}!")
-              ActividadesServidor.registrar(auth.id, "LOGIN", "El usuario #{auth.nombre_usuario} inició sesión")
-              %{id_usuario: auth.id, nombre_usuario: auth.nombre_usuario, tipo_usuario: auth.tipo_usuario}
-            {:error, m} ->
-              IO.puts("Error de autenticación: #{inspect(m)}")
-              nil
-          end
+      if is_nil(tipo) do
+        IO.puts("Error: Tipo de usuario no válido.")
+        nil
+      else
+        zona_id = resolver_id_zona(zona_o_codigo)
+
+        # 2. Obligamos a pasar por la capa de Aplicación (que valida roles) para el registro
+        # Simulamos que lo intenta hacer como ciudadano/voluntario si es público
+        case Emergencia.Aplicacion.GestionUsuarios.registrar_usuario(username, pass, username, tipo) do
+          {:ok, _} -> IO.puts("Cuenta creada exitosamente.")
+          {:error, _} -> :ok # Probablemente ya existe, intentamos login
+        end
+
+        case Emergencia.Aplicacion.Autenticacion.iniciar_sesion(username, pass) do
+          {:ok, auth} ->
+            IO.puts("Conectado exitosamente como #{auth.nombre_completo}.")
+            auth
+          {:ok, auth, _advertencia} ->
+            IO.puts("Conectado exitosamente como #{auth.nombre_completo}.")
+            auth
+          {:error, m} ->
+            IO.puts("Error de autenticación: #{inspect(m)}")
+            nil
+        end
       end
     end
   end
@@ -469,36 +472,15 @@ defmodule Emergencia.Consola.CLI do
   # 7. RESUMEN GENERAL
   # ============================================================================
 
-  defp evaluar_comando(["summary"], sesion) do
+ defp evaluar_comando(["summary"], sesion) do
     IO.puts("\n================ RESUMEN GLOBAL DEL SISTEMA ================")
 
-    zonas =
-      case GestorDatos.cargar_coleccion("zonas.json", Emergencia.Zona, :id) do
-        {:ok, z} -> map_size(z)
-        _ -> 0
-      end
-
-    necesidades =
-      case GestorDatos.cargar_coleccion("necesidades.json", Emergencia.Necesidad, :id) do
-        {:ok, n} -> map_size(n)
-        _ -> 0
-      end
-
-    personas =
-      case GestorDatos.cargar_coleccion("personas.json", Emergencia.Persona, :id) do
-        {:ok, p} -> map_size(p)
-        _ -> 0
-      end
-
-    albergues =
-      case GestorDatos.cargar_coleccion("albergues.json", Emergencia.Albergue, :id) do
-        {:ok, a} -> map_size(a)
-        _ -> 0
-      end
+    zonas = case TerritorioServidor.listar_zonas() do {:ok, z} -> length(z); _ -> 0 end
+    necesidades = case RecursosServidor.listar_necesidades() do {:ok, n} -> length(n); _ -> 0 end
+    albergues = case PoblacionServidor.listar_albergues() do {:ok, a} -> length(a); _ -> 0 end
 
     IO.puts(" - Zonas registradas: #{zonas}")
     IO.puts(" - Necesidades totales: #{necesidades}")
-    IO.puts(" - Personas censadas: #{personas}")
     IO.puts(" - Albergues operativos: #{albergues}")
     IO.puts("============================================================")
     sesion
@@ -514,37 +496,38 @@ defmodule Emergencia.Consola.CLI do
   # ============================================================================
 
   defp resolver_id_zona(entrada) do
-    case GestorDatos.cargar_coleccion("zonas.json", Emergencia.Zona, :id) do
-      {:ok, map} -> find_by_code_or_id(map, entrada, & &1.codigo_zona)
+    case TerritorioServidor.listar_zonas() do
+      {:ok, zonas} -> find_by_code_or_id(zonas, entrada, & &1.codigo_zona)
       _ -> entrada
     end
   end
 
   defp resolver_id_recurso(entrada) do
-    case GestorDatos.cargar_coleccion("recursos.json", Emergencia.Recurso, :id) do
-      {:ok, map} -> find_by_code_or_id(map, entrada, & &1.codigo_recurso)
+    case RecursosServidor.listar_recursos() do
+      {:ok, recs} -> find_by_code_or_id(recs, entrada, & &1.codigo_recurso)
       _ -> entrada
     end
   end
 
   defp resolver_id_necesidad(entrada) do
-    case GestorDatos.cargar_coleccion("necesidades.json", Emergencia.Necesidad, :id) do
-      {:ok, map} -> find_by_code_or_id(map, entrada, & &1.codigo_necesidad)
+    case RecursosServidor.listar_necesidades() do
+      {:ok, necs} -> find_by_code_or_id(necs, entrada, & &1.codigo_necesidad)
       _ -> entrada
     end
   end
 
   defp resolver_id_albergue(entrada) do
-    case GestorDatos.cargar_coleccion("albergues.json", Emergencia.Albergue, :id) do
-      {:ok, map} -> find_by_code_or_id(map, entrada, & &1.codigo)
+    case PoblacionServidor.listar_albergues() do
+      {:ok, albs} -> find_by_code_or_id(albs, entrada, & &1.codigo)
       _ -> entrada
     end
   end
 
   defp resolver_id_persona(entrada) do
-    case GestorDatos.cargar_coleccion("personas.json", Emergencia.Persona, :id) do
-      {:ok, map} ->
-        encontrada = Enum.find(Map.values(map), fn p -> p.id == entrada or p.codigo_persona == entrada or p.documento == entrada end)
+    # Usamos buscar_personas([]) que devuelve todos los registros
+    case PoblacionServidor.buscar_personas([]) do
+      {:ok, personas} ->
+        encontrada = Enum.find(personas, fn p -> p.id == entrada or p.codigo_persona == entrada or p.documento == entrada end)
         if encontrada, do: encontrada.id, else: entrada
       _ -> entrada
     end
@@ -553,8 +536,8 @@ defmodule Emergencia.Consola.CLI do
   defp resolver_id_ubicacion(entrada, tipo) do
     case tipo do
       :centro_acopio ->
-        case GestorDatos.cargar_coleccion("centros_acopio.json", Emergencia.CentroAcopio, :id) do
-          {:ok, map} -> find_by_code_or_id(map, entrada, & &1.codigo_centro_acopio)
+        case TerritorioServidor.listar_centros_acopio() do
+          {:ok, centros} -> find_by_code_or_id(centros, entrada, & &1.codigo_centro_acopio)
           _ -> entrada
         end
       :albergue -> resolver_id_albergue(entrada)
@@ -562,24 +545,19 @@ defmodule Emergencia.Consola.CLI do
     end
   end
 
-  defp find_by_code_or_id(map, entrada, code_fun) do
-    match = Enum.find(Map.values(map), fn ent -> ent.id == entrada or code_fun.(ent) == entrada end)
-    if match, do: match.id, else: entrada
-  end
-
   defp resolver_ubicacion_transferencia(entrada) do
-    centros = case GestorDatos.cargar_coleccion("centros_acopio.json", Emergencia.CentroAcopio, :id) do
-      {:ok, map} -> map
-      _ -> %{}
+    centros = case TerritorioServidor.listar_centros_acopio() do
+      {:ok, lista} -> lista
+      _ -> []
     end
 
-    albergues = case GestorDatos.cargar_coleccion("albergues.json", Emergencia.Albergue, :id) do
-      {:ok, map} -> map
-      _ -> %{}
+    albergues = case PoblacionServidor.listar_albergues() do
+      {:ok, lista} -> lista
+      _ -> []
     end
 
-    centro = Enum.find(Map.values(centros), fn c -> c.id == entrada or c.codigo_centro_acopio == entrada end)
-    albergue = Enum.find(Map.values(albergues), fn a -> a.id == entrada or a.codigo == entrada end)
+    centro = Enum.find(centros, fn c -> c.id == entrada or c.codigo_centro_acopio == entrada end)
+    albergue = Enum.find(albergues, fn a -> a.id == entrada or a.codigo == entrada end)
 
     cond do
       centro -> {centro.id, :centro_acopio}
@@ -593,5 +571,10 @@ defmodule Emergencia.Consola.CLI do
           {entrada, :albergue} # Fallback por defecto
         end
     end
+  end
+
+  defp find_by_code_or_id(lista, entrada, code_fun) when is_list(lista) do
+    match = Enum.find(lista, fn ent -> ent.id == entrada or code_fun.(ent) == entrada end)
+    if match, do: match.id, else: entrada
   end
 end

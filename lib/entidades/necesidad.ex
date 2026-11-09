@@ -1,15 +1,16 @@
 defmodule Emergencia.Necesidad do
   alias Emergencia.GeneradorID
 
-  @tipos_permitidos [:alimento, :medicina, :agua, :refugio, :personal, :transporte, :otro]
+  @tipos_permitidos [:alimento, :medicina, :agua, :refugio, :personal, :transporte, :otro, :primeros_auxilios, :rescate]
   @prioridades_permitidas [:baja, :media, :alta, :critica]
-  @estados_permitidos [:pendiente, :en_proceso, :cubierta, :cancelada]
+  @estados_permitidos [:pendiente, :asignada, :en_atencion, :atendida, :cancelada]
 
   @enforce_keys [
     :id,
     :codigo_necesidad,
     :tipo,
     :cantidad_requerida,
+    :cantidad_pendiente,
     :id_zona,
     :prioridad,
     :estado
@@ -20,6 +21,7 @@ defmodule Emergencia.Necesidad do
     :tipo,
     :descripcion,
     :cantidad_requerida,
+    :cantidad_pendiente,
     :id_zona,
     :prioridad,
     :id_responsable,
@@ -66,6 +68,7 @@ defmodule Emergencia.Necesidad do
          tipo: tipo,
          descripcion: Keyword.get(opciones, :descripcion),
          cantidad_requerida: cantidad,
+         cantidad_pendiente: cantidad,
          id_zona: id_zona,
          prioridad: prioridad,
          id_responsable: Keyword.get(opciones, :id_responsable),
@@ -192,4 +195,16 @@ defmodule Emergencia.Necesidad do
     error in [ArgumentError, KeyError] ->
       {:error, "Faltan campos de necesidad: #{Exception.message(error)}"}
   end
+
+  @doc "Cancela una necesidad"
+  def cancelar(%__MODULE__{estado: estado} = necesidad) when estado in [:pendiente, :asignada] do
+    {:ok, %{necesidad | estado: :cancelada}}
+  end
+  def cancelar(_), do: {:error, "Solo se pueden cancelar necesidades pendientes o asignadas"}
+
+  @doc "Cierra una necesidad marcándola como atendida"
+  def cerrar(%__MODULE__{estado: estado} = necesidad) when estado in [:asignada, :en_atencion] do
+    {:ok, %{necesidad | estado: :atendida}}
+  end
+  def cerrar(_), do: {:error, "Solo se pueden cerrar necesidades en proceso de atención"}
 end

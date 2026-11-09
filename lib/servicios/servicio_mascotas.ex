@@ -13,21 +13,53 @@ defmodule Emergencia.Servicios.ServicioMascotas do
   end
 
   def buscar_coincidencias(estado, id_reporte) do
-    with {:ok, reporte_origen} <- obtener_reporte(estado.reportes_mascotas, id_reporte) do
+   with {:ok, reporte_origen} <- obtener_reporte(estado.reportes_mascotas, id_reporte) do
       tipo_buscado = if reporte_origen.tipo == :perdida, do: :encontrada, else: :perdida
 
       coincidencias =
         estado.reportes_mascotas
         |> Map.values()
-        |> Enum.filter(fn r ->
-          r.tipo == tipo_buscado and
-          r.estado == :activa and
-          r.especie == reporte_origen.especie and
-          r.id_zona == reporte_origen.id_zona and
-          (r.tamano == reporte_origen.tamano or r.color == reporte_origen.color)
-        end)
+        |> Enum.filter(&(&1.tipo == tipo_buscado and &1.estado == :activa))
+        |> Enum.map(fn r -> {r, calcular_similitud(reporte_origen, r)} end)
+        |> Enum.filter(fn {_r, puntaje} -> puntaje >= 40 end) # Umbral mínimo de similitud
+        |> Enum.sort_by(fn {_r, puntaje} -> puntaje end, :desc) # Las más parecidas primero
+        |> Enum.map(fn {r, _puntaje} -> r end)
 
       {:ok, coincidencias}
+    end
+  end
+
+  defp calcular_similitud(r1, r2) do
+    puntaje = 0
+    puntaje = if r1.especie == r2.especie, do: puntaje + 50, else: puntaje
+    puntaje = if r1.color == r2.color, do: puntaje + 25, else: puntaje
+    puntaje = if r1.tamano == r2.tamano, do: puntaje + 15, else: puntaje
+    puntaje = if r1.id_zona == r2.id_zona, do: puntaje + 10, else: puntaje
+    puntaje
+  end
+
+  def confirmar_coincidencia(estado, id_coincidencia, _id_usuario \\ "SISTEMA") do
+    with {:ok, coincidencia} <- Map.fetch(estado.coincidencias_mascotas, id_coincidencia),
+         {:ok, rep_perdida} <- obtener_reporte(estado.reportes_mascotas, coincidencia.id_reporte_perdida),
+         {:ok, rep_encontrada} <- obtener_reporte(estado.reportes_mascotas, coincidencia.id_reporte_encontrada) do
+
+       coincidencia_act = %{coincidencia | estado: :confirmada}
+       rep_perdida_act = %{rep_perdida | estado: :resuelta}
+       rep_encontrada_act = %{rep_encontrada | estado: :resuelta}
+
+       nuevos_reportes =
+         estado.reportes_mascotas
+         |> Map.put(rep_perdida.id, rep_perdida_act)
+         |> Map.put(rep_encontrada.id, rep_encontrada_act)
+
+       nuevas_coincidencias = Map.put(estado.coincidencias_mascotas, id_coincidencia, coincidencia_act)
+
+       estado_actualizado = %{estado | reportes_mascotas: nuevos_reportes, coincidencias_mascotas: nuevas_coincidencias}
+
+       {:ok, coincidencia_act, estado_actualizado}
+    else
+      :error -> {:error, "Coincidencia no encontrada"}
+      error -> error
     end
   end
 
@@ -78,7 +110,7 @@ defmodule Emergencia.Servicios.ServicioMascotas do
   defp validar_no_resuelto(%ReporteMascota{estado: :resuelta}) do
     {:error, "El reporte de mascota ya ha sido resuelto y no puede procesarse nuevamente"}
   end
-  
+
   defp validar_no_resuelto(_), do: :ok
 
   @doc """

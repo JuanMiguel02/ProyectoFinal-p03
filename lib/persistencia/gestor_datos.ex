@@ -29,7 +29,6 @@ defmodule Emergencia.GestorDatos do
     {:personas, "personas.json", Persona, :id},
     {:familias, "familias.json", Familia, :id},
     {:zonas, "zonas.json", Zona, :id},
-    {:sectores, "sectores.json", Sector, :id},
     {:albergues, "albergues.json", Albergue, :id},
     {:registros_albergues, "registros_albergues.json", RegistroAlbergue, :id},
     {:centros_acopio, "centros_acopio.json", CentroAcopio, :id},
@@ -51,7 +50,7 @@ defmodule Emergencia.GestorDatos do
 
   @dominios %{
   usuarios: [:usuarios],
-  territorio: [:zonas, :sectores, :centros_acopio],
+  territorio: [:zonas, :centros_acopio],
   poblacion: [:personas, :familias, :albergues, :registros_albergues],
   recursos: [
     :recursos,
