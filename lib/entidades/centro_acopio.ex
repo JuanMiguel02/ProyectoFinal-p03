@@ -21,7 +21,7 @@ defmodule Emergencia.CentroAcopio do
   @doc """
   Crea un nuevo Centro de Acopio validando sus datos obligatorios y capacidad.
   """
-  def nueva(nombre, codigo, direccion, capacidad, id_zona) do
+  def nuevo(nombre, codigo, direccion, capacidad, id_zona) do
 
     with :ok <- validar_obligatorios(nombre, direccion, id_zona),
          :ok <- validar_capacidad(capacidad) do

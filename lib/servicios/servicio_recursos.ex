@@ -60,6 +60,52 @@ defmodule Emergencia.Servicios.ServicioRecursos do
     end
   end
 
+  @doc """
+  Suma recursivamente la cantidad disponible de un recurso en todas las ubicaciones.
+  """
+  def calcular_stock_global(estado, id_recurso) do
+    inventarios_lista = Map.values(estado.inventarios)
+    total = sumar_stock_recursivo(inventarios_lista, id_recurso, 0)
+    {:ok, total}
+  end
+
+  def transferir_recurso(estado, id_recurso, id_ubicacion_origen, id_ubicacion_destino, tipo_ubic_destino, cantidad) do
+    # Buscamos el inventario exacto en la ubicación de origen
+    inv_origen = Enum.find(Map.values(estado.inventarios), fn i ->
+      i.id_recurso == id_recurso and i.id_ubicacion == id_ubicacion_origen
+    end)
+
+    if is_nil(inv_origen) do
+      {:error, "No hay inventario registrado del recurso en el origen especificado"}
+    else
+      with :ok <- validar_disponibilidad(inv_origen, cantidad),
+           {:ok, inv_destino} <- InventarioUbicacion.nuevo(id_ubicacion_destino, tipo_ubic_destino, id_recurso, cantidad),
+           {:ok, movimiento} <- MovimientoRecurso.nuevo(cantidad, :transferencia, id_inventario_origen: inv_origen.id, id_inventario_destino: inv_destino.id) do
+
+        nuevo_inv_origen = %{inv_origen | cantidad_disponible: inv_origen.cantidad_disponible - cantidad}
+
+        nuevo_estado = %{
+          estado |
+          inventarios: estado.inventarios
+                       |> Map.put(nuevo_inv_origen.id, nuevo_inv_origen)
+                       |> Map.put(inv_destino.id, inv_destino),
+          movimientos_recursos: Map.put(estado.movimientos_recursos, movimiento.id, movimiento)
+        }
+
+        {:ok, movimiento, nuevo_estado}
+      end
+    end
+  end
+
+  defp sumar_stock_recursivo([], _id_recurso, total_acumulado), do: total_acumulado
+  defp sumar_stock_recursivo([inventario | resto], id_recurso, total_acumulado) do
+    if inventario.id_recurso == id_recurso do
+      sumar_stock_recursivo(resto, id_recurso, total_acumulado + inventario.cantidad_disponible)
+    else
+      sumar_stock_recursivo(resto, id_recurso, total_acumulado)
+    end
+  end
+
   defp obtener_entidad(mapa, id, nombre) do
     case Map.fetch(mapa, id) do
       {:ok, entidad} -> {:ok, entidad}

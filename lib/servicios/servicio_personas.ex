@@ -117,6 +117,24 @@ defmodule Emergencia.Servicios.ServicioPersonas do
     end
   end
 
+  @doc """
+  Cuenta recursivamente cuántas personas se encuentran en un estado específico.
+  """
+  def contar_por_estado(estado, estado_buscado) do
+    personas_lista = Map.values(estado.personas)
+    total = contar_estado_recursivo(personas_lista, estado_buscado, 0)
+    {:ok, total}
+  end
+
+  defp contar_estado_recursivo([], _estado_buscado, total_acumulado), do: total_acumulado
+  defp contar_estado_recursivo([persona | resto], estado_buscado, total_acumulado) do
+    if persona.estado == estado_buscado do
+      contar_estado_recursivo(resto, estado_buscado, total_acumulado + 1)
+    else
+      contar_estado_recursivo(resto, estado_buscado, total_acumulado)
+    end
+  end
+
   # ============================================================================
   # Funciones Privadas de Filtrado y Validación
   # ============================================================================

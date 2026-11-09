@@ -14,6 +14,27 @@
     "operacion": "inicio_sesion"
   },
   {
+    "descripcion": "El usuario laura inició sesión",
+    "fecha": "2026-11-09T03:56:06.727000Z",
+    "id": "433b6a29-3c38-412f-9335-9abc0ec30e20",
+    "id_usuario": "4c37d122-1263-47d3-b313-e8ad58ca4c0d",
+    "operacion": "LOGIN"
+  },
+  {
+    "descripcion": "El usuario laura inició sesión",
+    "fecha": "2026-11-09T03:54:57.965000Z",
+    "id": "45034ff5-ee77-44a3-a816-e04d9855ac5b",
+    "id_usuario": "4c37d122-1263-47d3-b313-e8ad58ca4c0d",
+    "operacion": "LOGIN"
+  },
+  {
+    "descripcion": "El usuario cerró sesión al salir del sistema",
+    "fecha": "2026-11-09T03:55:39.137000Z",
+    "id": "6735495f-5437-4323-9153-9b914fc3259a",
+    "id_usuario": "4c37d122-1263-47d3-b313-e8ad58ca4c0d",
+    "operacion": "LOGOUT"
+  },
+  {
     "descripcion": "El usuario USR-0001 creó su propia cuenta como ciudadano",
     "fecha": "2026-11-08T04:16:33.682000Z",
     "id": "99c9173b-29cd-48da-9fe9-ba7ab4f80ada",

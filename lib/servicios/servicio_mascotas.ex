@@ -78,5 +78,19 @@ defmodule Emergencia.Servicios.ServicioMascotas do
   defp validar_no_resuelto(%ReporteMascota{estado: :resuelta}) do
     {:error, "El reporte de mascota ya ha sido resuelto y no puede procesarse nuevamente"}
   end
+  
   defp validar_no_resuelto(_), do: :ok
+
+  @doc """
+  Función ejecutada en segundo plano por el Task para procesar emparejamientos.
+  """
+  def evaluar_coincidencias_background(reporte, estado) do
+    case buscar_coincidencias(estado, reporte.id) do
+      {:ok, coincidencias} when coincidencias != [] ->
+        # Aquí en un caso real se registraría la coincidencia o se enviaría un mensaje al coordinador
+        IO.puts("\n[NOTIFICACIÓN BACKGROUND] ¡Se encontraron #{length(coincidencias)} posibles coincidencias para el reporte de mascota '#{reporte.id}'!")
+      _ ->
+        IO.puts("\n[NOTIFICACIÓN BACKGROUND] No se encontraron coincidencias inmediatas para la mascota.")
+    end
+  end
 end

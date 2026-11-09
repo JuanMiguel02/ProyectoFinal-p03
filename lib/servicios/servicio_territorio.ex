@@ -2,7 +2,7 @@ defmodule Emergencia.Servicios.ServicioTerritorio do
   @moduledoc """
   Servicio puro para la gestión de zonas afectadas, sectores y centros de acopio.
   """
-  alias Emergencia.{GeneradorID, Zona, Sector}
+  alias Emergencia.{GeneradorID, Zona, Sector, CentroAcopio, PuntoAtencion}
 
   @doc """
   Registra una nueva zona afectada en el estado global.
@@ -69,5 +69,89 @@ defmodule Emergencia.Servicios.ServicioTerritorio do
   defp validar_unicidad_zona(zonas, codigo) do
     existe = Enum.any?(Map.values(zonas), fn z -> z.codigo_zona == codigo end)
     if existe, do: {:error, "Ya existe una zona con ese código"}, else: :ok
+  end
+
+  @doc """
+  Registra un Centro de Acopio y lo vincula a una zona existente.
+  """
+  def registrar_centro_acopio(estado_global, nombre, direccion, capacidad, id_zona) do
+    codigo_centro = GeneradorID.generar("CAC", estado_global.centros_acopio, & &1.codigo_centro_acopio)
+
+    with {:ok, _zona} <- obtener_zona(estado_global.zonas, id_zona),
+         {:ok, centro} <- CentroAcopio.nuevo(nombre, codigo_centro, direccion, capacidad, id_zona) do
+
+      nuevos_centros = Map.put(estado_global.centros_acopio, centro.id, centro)
+      estado_actualizado = %{estado_global | centros_acopio: nuevos_centros}
+
+      {:ok, centro, estado_actualizado}
+    end
+  end
+
+  @doc """
+  Registra un Punto de Atención y lo inyecta en la lista de puntos de un sector.
+  """
+  def registrar_punto_atencion(estado_global, id_sector, nombre, tipo, ubicacion, descripcion \\ nil) do
+    codigo_punto = GeneradorID.generar("PAT", %{}, fn _ -> nil end)
+
+    with {:ok, sector} <- obtener_sector(estado_global.sectores, id_sector),
+         {:ok, punto} <- PuntoAtencion.nuevo(nombre, codigo_punto, tipo, ubicacion, descripcion) do
+
+      # Insertamos el punto en la estructura del sector
+      sector_actualizado = %{sector | puntos_atencion: [punto | sector.puntos_atencion]}
+
+      # Actualizamos el mapa global de sectores
+      nuevos_sectores = Map.put(estado_global.sectores, sector_actualizado.id, sector_actualizado)
+
+      # Para mantener la consistencia, también actualizamos el sector dentro de su zona
+      {:ok, zona} = obtener_zona(estado_global.zonas, sector_actualizado.codigo_sector) # Asumiendo trazabilidad
+      zona_actualizada = actualizar_sector_en_zona(zona, sector_actualizado)
+      nuevas_zonas = Map.put(estado_global.zonas, zona_actualizada.id, zona_actualizada)
+
+      estado_actualizado = %{estado_global | sectores: nuevos_sectores, zonas: nuevas_zonas}
+
+      {:ok, punto, estado_actualizado}
+    end
+  end
+
+  @doc """
+  Devuelve la lista de todas las zonas registradas, ordenadas alfabéticamente.
+  """
+  def listar_zonas(estado_global) do
+    zonas =
+      estado_global.zonas
+      |> Map.values()
+      |> Enum.sort_by(& &1.nombre)
+
+    {:ok, zonas}
+  end
+
+  @doc """
+  Devuelve la lista de sectores pertenecientes a una zona específica.
+  """
+  def listar_sectores_por_zona(estado_global, id_zona) do
+    case Map.fetch(estado_global.zonas, id_zona) do
+      {:ok, zona} ->
+        # Los sectores ya están anidados dentro del struct de Zona
+        sectores_ordenados = Enum.sort_by(zona.sectores, & &1.nombre)
+        {:ok, sectores_ordenados}
+
+      :error ->
+        {:error, "La zona con ID '#{id_zona}' no existe"}
+    end
+  end
+
+  # Helpers privados necesarios para la consistencia
+  defp obtener_sector(sectores, id_sector) do
+    case Map.fetch(sectores, id_sector) do
+      {:ok, sector} -> {:ok, sector}
+      :error -> {:error, "El sector con ID '#{id_sector}' no existe"}
+    end
+  end
+
+  defp actualizar_sector_en_zona(zona, sector_actualizado) do
+    sectores_nuevos = Enum.map(zona.sectores, fn s ->
+      if s.id == sector_actualizado.id, do: sector_actualizado, else: s
+    end)
+    %{zona | sectores: sectores_nuevos}
   end
 end

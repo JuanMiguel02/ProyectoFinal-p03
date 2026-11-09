@@ -24,6 +24,26 @@ defmodule Emergencia.TerritorioServidor do
     GenServer.call(__MODULE__, {:registrar_sector, id_zona, nombre, nivel, personas_afectadas, id_usuario})
   end
 
+  def listar_zonas() do
+    GenServer.call(__MODULE__, :listar_zonas)
+  end
+
+  def listar_sectores(id_zona) do
+    GenServer.call(__MODULE__, {:listar_sectores, id_zona})
+  end
+
+  ### ============================================================================
+  ### API pública (Agregar a Emergencia.TerritorioServidor)
+  ### ============================================================================
+
+  def registrar_centro_acopio(nombre, direccion, capacidad, id_zona) do
+    GenServer.call(__MODULE__, {:registrar_centro_acopio, nombre, direccion, capacidad, id_zona})
+  end
+
+  def registrar_punto_atencion(id_sector, nombre, tipo, ubicacion, descripcion \\ nil) do
+    GenServer.call(__MODULE__, {:registrar_punto_atencion, id_sector, nombre, tipo, ubicacion, descripcion})
+  end
+
   def estadisticas_zona(id_zona) do
     GenServer.call(__MODULE__, {:estadisticas_zona, id_zona})
   end
@@ -76,6 +96,44 @@ defmodule Emergencia.TerritorioServidor do
   @impl true
   def handle_call({:estadisticas_zona, id_zona}, _from, estado) do
     respuesta = ServicioTerritorio.estadisticas_zona(estado, id_zona)
+    {:reply, respuesta, estado}
+  end
+
+  @impl true
+  def handle_call({:registrar_centro_acopio, nombre, direccion, capacidad, id_zona}, _from, estado) do
+    case ServicioTerritorio.registrar_centro_acopio(estado, nombre, direccion, capacidad, id_zona) do
+      {:ok, resultado, nuevo_estado} ->
+        case persistir(nuevo_estado) do
+          :ok -> {:reply, {:ok, resultado}, nuevo_estado}
+          {:error, motivo} -> {:reply, {:error, {:error_persistencia, motivo}}, estado}
+        end
+      {:error, motivo} ->
+        {:reply, {:error, motivo}, estado}
+    end
+  end
+
+  @impl true
+  def handle_call({:registrar_punto_atencion, id_sector, nombre, tipo, ubicacion, descripcion}, _from, estado) do
+    case ServicioTerritorio.registrar_punto_atencion(estado, id_sector, nombre, tipo, ubicacion, descripcion) do
+      {:ok, resultado, nuevo_estado} ->
+        case persistir(nuevo_estado) do
+          :ok -> {:reply, {:ok, resultado}, nuevo_estado}
+          {:error, motivo} -> {:reply, {:error, {:error_persistencia, motivo}}, estado}
+        end
+      {:error, motivo} ->
+        {:reply, {:error, motivo}, estado}
+    end
+  end
+
+  @impl true
+  def handle_call(:listar_zonas, _from, estado) do
+    respuesta = ServicioTerritorio.listar_zonas(estado)
+    {:reply, respuesta, estado}
+  end
+
+  @impl true
+  def handle_call({:listar_sectores, id_zona}, _from, estado) do
+    respuesta = ServicioTerritorio.listar_sectores_por_zona(estado, id_zona)
     {:reply, respuesta, estado}
   end
 

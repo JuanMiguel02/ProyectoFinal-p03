@@ -1,0 +1,29 @@
+[
+  {
+    "cantidad": 20,
+    "fecha": "2026-11-09T03:27:59.154000Z",
+    "id": "5275030c-c9bd-4918-84d8-7cd5bd670c35",
+    "id_asignacion": null,
+    "id_inventario_destino": "d6c790bb-b175-4b1b-86e6-928f6b06649a",
+    "id_inventario_origen": "79b2321f-890d-448f-b39c-770e514ed265",
+    "tipo_movimiento": "transferencia"
+  },
+  {
+    "cantidad": 100,
+    "fecha": "2026-11-09T01:23:08.516000Z",
+    "id": "b4429713-34e8-4558-aca8-f956269885b1",
+    "id_asignacion": null,
+    "id_inventario_destino": "79b2321f-890d-448f-b39c-770e514ed265",
+    "id_inventario_origen": null,
+    "tipo_movimiento": "ingreso"
+  },
+  {
+    "cantidad": 30,
+    "fecha": "2026-11-09T02:15:54.707000Z",
+    "id": "c3a36321-ec70-47e1-b62f-2991738d96ba",
+    "id_asignacion": "b4da4c0e-9aec-4849-8e32-81146ebe7af4",
+    "id_inventario_destino": null,
+    "id_inventario_origen": "79b2321f-890d-448f-b39c-770e514ed265",
+    "tipo_movimiento": "asignacion"
+  }
+]

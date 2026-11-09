@@ -52,9 +52,25 @@ defmodule Emergencia.MascotasServidor do
 
   @impl true
   def handle_call({:registrar_reporte, tipo, especie, color, tamano, id_zona, id_contacto, opciones}, _from, estado) do
+    # 1. Ejecutamos la lógica pura (usamos 'nuevo' internamente en el struct)
     case ServicioMascotas.registrar_reporte(estado, tipo, especie, color, tamano, id_zona, id_contacto, opciones) do
-      {:ok, resultado, nuevo_estado} -> procesar_persistencia(resultado, nuevo_estado, estado)
-      {:error, motivo} -> {:reply, {:error, motivo}, estado}
+      {:ok, reporte, nuevo_estado} ->
+
+        # 2. PROCESAMIENTO ASÍNCRONO CON TASK
+        # Lanzamos un proceso hijo independiente que no bloquea este GenServer
+        Task.start(fn ->
+          # Llamar a la función pesada de cruce algorítmico.
+          # Si encuentra una coincidencia, este Task puede enviar un mensaje (cast)
+          # de vuelta al GenServer para registrar la 'CoincidenciaMascota'.
+          IO.puts("Iniciando búsqueda de coincidencias en background para el reporte: #{reporte.id}...")
+          ServicioMascotas.evaluar_coincidencias_background(reporte, nuevo_estado)
+        end)
+
+        # 3. Guardamos en disco y respondemos al usuario de inmediato
+        procesar_persistencia(reporte, nuevo_estado, estado)
+
+      {:error, motivo} ->
+        {:reply, {:error, motivo}, estado}
     end
   end
 
