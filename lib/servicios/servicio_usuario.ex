@@ -88,59 +88,85 @@ defmodule Emergencia.Servicios.ServicioUsuario do
   @doc """
   Comprueba si un usuario puede realizar una operación.
   """
-  def autorizar(%Usuario{tipo_usuario: tipo}, operacion) do
-    autorizar(tipo, operacion)
+def autorizar(%Usuario{tipo_usuario: tipo}, operacion) do
+  autorizar(tipo, operacion)
+end
+
+def autorizar(tipo, operacion) when tipo in @tipos_permitidos do
+  if permitido?(tipo, operacion) do
+    :ok
+  else
+    {:error,
+     "Acceso denegado: el rol :#{tipo} no tiene permiso para '#{operacion}'"}
   end
+end
 
-  def autorizar(tipo, operacion) when tipo in @tipos_permitidos do
-    if permitido?(tipo, operacion) do
-      :ok
-    else
-      {:error, "Acceso denegado: el rol :#{tipo} no tiene permiso para '#{operacion}'"}
-    end
-  end
+def autorizar(_tipo, _operacion) do
+  {:error, "Tipo de usuario no válido"}
+end
 
-  def autorizar(_tipo, _operacion) do
-    {:error, "Tipo de usuario no válido"}
-  end
+# Administrador
+defp permitido?(:administrador, _operacion), do: true
 
-  defp permitido?(:administrador, _operacion), do: true
+# Coordinador
+defp permitido?(:coordinador, operacion)
+     when operacion in [
+            :crear_zona,
+            :crear_sector,
+            :asignar_recursos,
+            :despachar_mensaje,
 
-  defp permitido?(:coordinador, operacion)
-       when operacion in [
-              :crear_zona,
-              :crear_sector,
-              :asignar_recursos,
-              :despachar_mensaje,
-              :registrar_persona,
-              :ingreso_albergue,
-              :salida_albergue,
-              :crear_reporte_mascota,
-              :crear_necesidad,
-              :consultar_reportes
-            ],
-       do: true
+            :registrar_persona,
+            :cambiar_estado_persona,
+            :consultar_personas,
 
-  defp permitido?(:voluntario, operacion)
-       when operacion in [
-              :registrar_persona,
-              :ingreso_albergue,
-              :salida_albergue,
-              :crear_reporte_mascota,
-              :crear_necesidad,
-              :consultar_reportes
-            ],
-       do: true
+            :registrar_familia,
+            :consultar_familias,
+            :asignar_familia,
 
-  defp permitido?(:ciudadano, operacion)
-       when operacion in [
-              :crear_reporte_mascota,
-              :crear_necesidad,
-              :consultar_reportes
-            ],
-       do: true
+            :gestionar_albergues,
+            :registrar_albergue,
+            :ingreso_albergue,
+            :salida_albergue,
+            :consultar_albergues,
 
-  defp permitido?(_, _), do: false
+            :crear_reporte_mascota,
+            :crear_necesidad,
+            :consultar_reportes
+          ],
+     do: true
+
+# Voluntario
+defp permitido?(:voluntario, operacion)
+     when operacion in [
+            :registrar_persona,
+            :cambiar_estado_persona,
+            :consultar_personas,
+
+            :registrar_familia,
+            :consultar_familias,
+            :asignar_familia,
+
+            :ingreso_albergue,
+            :salida_albergue,
+            :consultar_albergues,
+
+            :crear_reporte_mascota,
+            :crear_necesidad,
+            :consultar_reportes
+          ],
+     do: true
+
+# Ciudadano
+defp permitido?(:ciudadano, operacion)
+     when operacion in [
+            :crear_reporte_mascota,
+            :crear_necesidad,
+            :consultar_reportes
+          ],
+     do: true
+
+defp permitido?(_, _), do: false
 
   # ============================================================
   # 5. VALIDACIÓN DE USUARIOS CARGADOS DESDE JSON

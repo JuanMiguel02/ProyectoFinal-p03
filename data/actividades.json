@@ -1,5 +1,110 @@
 [
   {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T21:28:08.388000Z",
+    "id": "e089000d-13d2-4361-9110-7aae668a0449",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T21:29:58.727000Z",
+    "id": "22f3890d-29ce-4d21-afb2-b7d66ea651b0",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 cerró sesión",
+    "fecha": "2026-11-08T21:26:31.656000Z",
+    "id": "c857edcc-6c4c-4122-9f11-bb41c5cc4401",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "cierre_sesion"
+  },
+  {
+    "descripcion": "El usuario Paco67 inició sesión",
+    "fecha": "2026-11-08T21:12:54.312000Z",
+    "id": "a585c34d-fd5e-4256-8444-061896b785d0",
+    "id_usuario": "088f5080-c2a3-4ca4-a5c9-0384b62fb0c8",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 cambió el estado de PER-0005 a localizada",
+    "fecha": "2026-11-08T22:25:36.342000Z",
+    "id": "9da88602-a0f8-4780-b3f2-a44b7f53aa8c",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "cambio_estado_persona"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T21:30:06.367000Z",
+    "id": "c12f09a3-3c3f-425b-885a-71168aa9196e",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 cerró sesión",
+    "fecha": "2026-11-08T22:32:49.160000Z",
+    "id": "4b61cb7b-b1b3-4ed1-82a1-5426b841dd89",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "cierre_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T21:27:57.326000Z",
+    "id": "8a8bc827-5e00-41f5-a436-546f3d43908b",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 registró el albergue ALB-0002",
+    "fecha": "2026-11-08T23:49:37.085000Z",
+    "id": "cc0a04f2-7c81-4d7b-a108-96b388c8b22b",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "registro_albergue"
+  },
+  {
+    "descripcion": "El usuario Paco67 inició sesión",
+    "fecha": "2026-11-08T21:18:12.395000Z",
+    "id": "37b37dc2-2b27-49e0-ac0d-ead52be6aab2",
+    "id_usuario": "088f5080-c2a3-4ca4-a5c9-0384b62fb0c8",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T21:25:00.449000Z",
+    "id": "2642de60-f358-4e17-a2d9-555973e639ef",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T22:39:55.863000Z",
+    "id": "afc31f79-68ce-476e-a325-ecdc5035017f",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T22:24:05.790000Z",
+    "id": "143a94f1-6d31-4d10-afb0-cfc787dd1715",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 cerró sesión",
+    "fecha": "2026-11-08T22:34:15.707000Z",
+    "id": "397ae8cc-5a99-4011-bea4-2746e27105d4",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "cierre_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 cerró sesión",
+    "fecha": "2026-11-08T22:44:18.058000Z",
+    "id": "2bf646df-4a9c-4e80-ae7b-ee8a80853f9f",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "cierre_sesion"
+  },
+  {
     "descripcion": "El usuario USR-0002 creó su propia cuenta como voluntario",
     "fecha": "2026-11-08T04:17:35.622000Z",
     "id": "19cc64cd-ae1d-496c-939d-60dc64ba20bb",
@@ -8,8 +113,29 @@
   },
   {
     "descripcion": "El usuario julian24 inició sesión",
-    "fecha": "2026-11-08T04:21:02.774000Z",
-    "id": "25222985-6e7b-43de-a020-18030ad0ffe9",
+    "fecha": "2026-11-08T23:47:36.592000Z",
+    "id": "d14c8e79-bf05-4f5c-89d8-798a87d41abe",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 cerró sesión",
+    "fecha": "2026-11-08T21:30:00.884000Z",
+    "id": "3ff4ce2b-58f8-467e-af1e-a38c06b0f25a",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "cierre_sesion"
+  },
+  {
+    "descripcion": "El usuario Paco67 inició sesión",
+    "fecha": "2026-11-08T21:22:12.273000Z",
+    "id": "0aa4a366-3616-4940-b3c8-d5a67cb878f6",
+    "id_usuario": "088f5080-c2a3-4ca4-a5c9-0384b62fb0c8",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T22:18:03.146000Z",
+    "id": "4aa654d4-09e0-497b-9924-72c6f90f16af",
     "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
     "operacion": "inicio_sesion"
   },
@@ -22,9 +148,156 @@
   },
   {
     "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T04:21:02.774000Z",
+    "id": "25222985-6e7b-43de-a020-18030ad0ffe9",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T22:33:18.420000Z",
+    "id": "6499bbeb-c659-4959-9f25-2a67fa82e318",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T22:37:09.288000Z",
+    "id": "93f92795-e50a-4c69-a6d2-0c404fb74211",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T22:44:04.759000Z",
+    "id": "5e534d94-11ab-4ce8-af42-c78d8c5b55c2",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T23:49:05.744000Z",
+    "id": "96613c0b-cd3a-4c76-9fa7-fbbdc57ebce4",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T21:32:05.302000Z",
+    "id": "e54d1962-3a84-4c29-a180-31bc230325cd",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 registró el ingreso de una persona a un albergue",
+    "fecha": "2026-11-08T23:50:25.014000Z",
+    "id": "26ff4fbe-e1d2-4ac7-a978-810a79f93ed3",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "ingreso_albergue"
+  },
+  {
+    "descripcion": "El usuario Paco67 inició sesión",
+    "fecha": "2026-11-08T21:14:34.556000Z",
+    "id": "ef9f3251-59a5-44ca-ba4b-1bffab4b9c3d",
+    "id_usuario": "088f5080-c2a3-4ca4-a5c9-0384b62fb0c8",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 registró a la familia FAM-0006",
+    "fecha": "2026-11-08T21:32:12.306000Z",
+    "id": "d568040e-da96-45c9-a656-61258f108c97",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "registro_familia"
+  },
+  {
+    "descripcion": "El usuario julian24 cerró sesión",
+    "fecha": "2026-11-08T22:32:58.373000Z",
+    "id": "fffb56ca-a103-40b0-a6d2-a40a912d0166",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "cierre_sesion"
+  },
+  {
+    "descripcion": "El usuario Paco67 inició sesión",
+    "fecha": "2026-11-08T21:08:57.113000Z",
+    "id": "f349fe7b-801c-43ab-bd17-b99aa1c5fc2d",
+    "id_usuario": "088f5080-c2a3-4ca4-a5c9-0384b62fb0c8",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 cerró sesión",
+    "fecha": "2026-11-08T21:28:02.020000Z",
+    "id": "fb0be275-6333-4d10-9c69-3339a7ad690d",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "cierre_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T22:38:15.064000Z",
+    "id": "b95f33e5-3205-44d2-9bce-f87a1e530669",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 cerró sesión",
+    "fecha": "2026-11-08T23:53:32.999000Z",
+    "id": "59f25774-3ee6-4540-bd63-f3d150597bb1",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "cierre_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T21:31:05.123000Z",
+    "id": "df918385-de1d-43a1-bd98-f3fade20ba84",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
     "fecha": "2026-11-08T04:17:59.223000Z",
     "id": "c75b0e13-b103-4bda-8a3c-09c31b57c2bc",
     "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
     "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario Paco67 inició sesión",
+    "fecha": "2026-11-08T21:17:19.380000Z",
+    "id": "05a244bb-fc0e-4a7a-b177-927b00a8cf94",
+    "id_usuario": "088f5080-c2a3-4ca4-a5c9-0384b62fb0c8",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 cerró sesión",
+    "fecha": "2026-11-08T22:20:28.548000Z",
+    "id": "6701ca0f-9a2f-46cb-b980-b7b9b7467771",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "cierre_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T22:32:56.858000Z",
+    "id": "c2286875-bc51-42e8-9826-2656bc80405a",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 registró a la persona PER-0005",
+    "fecha": "2026-11-08T22:24:25.902000Z",
+    "id": "960fde4d-0336-44dd-b1a9-fa6e6f7d8406",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "registro_persona"
+  },
+  {
+    "descripcion": "El usuario Paco67 inició sesión",
+    "fecha": "2026-11-08T21:06:57.638000Z",
+    "id": "7be9e3fa-3f7f-4e33-9c33-52265ce4fd67",
+    "id_usuario": "088f5080-c2a3-4ca4-a5c9-0384b62fb0c8",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 registró la salida de una persona de un albergue",
+    "fecha": "2026-11-08T23:52:09.086000Z",
+    "id": "2df64cb0-af8a-462f-bd2c-c62f176bc588",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "salida_albergue"
   }
 ]

@@ -74,6 +74,10 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   # Búsquedas Multicriterio (Familiares y Coordinación)
   # ============================================================================
 
+  def consultar_persona(personas, id_persona) do
+    obtener_persona(personas, id_persona)
+  end
+
   def buscar_personas(%EstadoPoblacion{} = estado, criterios) do
     personas =
       estado.personas
@@ -211,6 +215,10 @@ defmodule Emergencia.Servicios.ServicioPersonas do
 
       {:documento, documento} when is_binary(documento) ->
         String.contains?(persona.documento, documento)
+
+      {:codigo_persona, codigo} when is_binary(codigo) ->
+        String.downcase(persona.codigo_persona) ==
+          String.downcase(codigo)
 
       {:id_zona, id_zona} ->
         persona.id_zona == id_zona
