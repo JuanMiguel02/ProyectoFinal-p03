@@ -168,6 +168,21 @@ defmodule Emergencia.Servicios.ServicioAlbergue do
   end
 
   # ===========================================================================
+  # Calcular capacidad total de todos los albergues
+  # ===========================================================================
+
+  def calcular_capacidad_total(estado) do
+    albergues_lista = Map.values(estado.albergues)
+    total = sumar_capacidad_recursivo(albergues_lista, 0)
+    {:ok, total}
+  end
+
+  defp sumar_capacidad_recursivo([], total_acumulado), do: total_acumulado
+  defp sumar_capacidad_recursivo([albergue | resto], total_acumulado) do
+    sumar_capacidad_recursivo(resto, total_acumulado + albergue.capacidad_maxima)
+  end
+
+  # ===========================================================================
   # Funciones privadas de validación y búsqueda
   # ===========================================================================
 
@@ -228,4 +243,6 @@ defmodule Emergencia.Servicios.ServicioAlbergue do
       :ok
     end
   end
+
+
 end

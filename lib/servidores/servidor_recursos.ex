@@ -32,6 +32,11 @@ defmodule Emergencia.RecursosServidor do
     GenServer.call(__MODULE__, {:asignar_recurso, id_necesidad, id_inventario, cantidad, id_usuario})
   end
 
+  def transferir_recurso(id_recurso, id_origen, id_destino, tipo_destino, cantidad) do
+    GenServer.call(__MODULE__, {:transferir_recurso, id_recurso, id_origen, id_destino, tipo_destino, cantidad})
+  end
+
+
   # ============================================================================
   # Callbacks de GenServer
   # ============================================================================
@@ -84,6 +89,17 @@ defmodule Emergencia.RecursosServidor do
       {:error, motivo} -> {:reply, {:error, motivo}, estado}
     end
   end
+
+  @impl true
+  def handle_call({:transferir_recurso, id_recurso, id_origen, id_destino, tipo_destino, cantidad}, _from, estado) do
+    case ServicioRecursos.transferir_recurso(estado, id_recurso, id_origen, id_destino, tipo_destino, cantidad) do
+      {:ok, resultado, nuevo_estado} ->
+        procesar_persistencia(resultado, nuevo_estado, estado)
+      {:error, motivo} ->
+        {:reply, {:error, motivo}, estado}
+    end
+  end
+
 
   # ============================================================================
   # Persistencia

@@ -1,79 +1,19 @@
 [
   {
-    "codigo_persona": "PER-0005",
+    "codigo_persona": "PER-0001",
     "dato_referencia": null,
-    "documento": "121241",
-    "edad": 23,
-    "estado": "localizada",
+    "documento": "10987654",
+    "edad": null,
+    "estado": "reportada",
     "historial_estados": [
       [
-        "localizada",
-        "2026-11-08T23:52:09.038000Z"
-      ],
-      [
-        "en_albergue",
-        "2026-11-08T23:50:24.955000Z"
-      ],
-      [
-        "localizada",
-        "2026-11-08T22:25:36.292000Z"
-      ],
-      [
-        "sin_informacion",
-        "2026-11-08T22:24:25.869000Z"
+        "reportada",
+        "2026-11-09T02:26:43.299000Z"
       ]
     ],
-    "id": "8eac15d9-e25e-4eb5-9328-1587611e5235",
+    "id": "e5d98872-b454-4321-a4b3-3d725f0bd24b",
     "id_familia": null,
-    "id_zona": "z1000000-0000-4000-8000-000000000001",
-    "nombre": "Juan Perez"
-  },
-  {
-    "codigo_persona": "PER-0001",
-    "dato_referencia": "Contacto de emergencia: 3001112233",
-    "documento": "1000000001",
-    "edad": 42,
-    "estado": "localizada",
-    "historial_estados": [],
-    "id": "a1000000-0000-4000-8000-000000000001",
-    "id_familia": "f1000000-0000-4000-8000-000000000001",
-    "id_zona": "z1000000-0000-4000-8000-000000000001",
-    "nombre": "Carlos Rodríguez"
-  },
-  {
-    "codigo_persona": "PER-0002",
-    "dato_referencia": "Contacto de emergencia: 3001112233",
-    "documento": "1000000002",
-    "edad": 38,
-    "estado": "localizada",
-    "historial_estados": [],
-    "id": "a1000000-0000-4000-8000-000000000002",
-    "id_familia": "f1000000-0000-4000-8000-000000000001",
-    "id_zona": "z1000000-0000-4000-8000-000000000001",
-    "nombre": "Laura Rodríguez"
-  },
-  {
-    "codigo_persona": "PER-0003",
-    "dato_referencia": "Contacto de emergencia: 3002223344",
-    "documento": "1000000003",
-    "edad": 25,
-    "estado": "localizada",
-    "historial_estados": [],
-    "id": "a1000000-0000-4000-8000-000000000003",
-    "id_familia": "f1000000-0000-4000-8000-000000000002",
-    "id_zona": "z1000000-0000-4000-8000-000000000001",
-    "nombre": "Andrés Gómez"
-  },
-  {
-    "codigo_persona": "PER-0004",
-    "dato_referencia": "Contacto de emergencia: 3003334455",
-    "documento": "1000000004",
-    "edad": 31,
-    "estado": "localizada",
-    "historial_estados": [],
-    "id": "a1000000-0000-4000-8000-000000000004",
-    "id_familia": "f1000000-0000-4000-8000-000000000003",
-    "id_zona": "z1000000-0000-4000-8000-000000000001",
-    "nombre": "María Martínez"
+    "id_zona": "3aea55a1-f07d-4d64-b80e-b48d07e3c9cb",
+    "nombre": "Andres Gomez"
   }
 ]

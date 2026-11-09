@@ -37,6 +37,16 @@
     "nombre_completo": "Carlos Mendoza Silva",
     "nombre_usuario": "carlosM",
     "tipo_usuario": "voluntario",
-    "zona_principal_id": "z1000000-0000-4000-8000-000000000001"
+    "zona_principal_id": null
+  },
+  {
+    "codigo_usuario": "USR-0003",
+    "conectado": false,
+    "contrasena": "1234",
+    "id": "4c37d122-1263-47d3-b313-e8ad58ca4c0d",
+    "nombre_completo": "laura",
+    "nombre_usuario": "laura",
+    "tipo_usuario": "coordinador",
+    "zona_principal_id": "centro"
   }
 ]

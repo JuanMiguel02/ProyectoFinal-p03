@@ -6,12 +6,12 @@ defmodule Emergencia.Recurso do
 
   alias Emergencia.GeneradorID
 
-  @categorias_permitidas [:alimento, :medicina, :herramienta, :vestimenta, :equipo, :otro]
+  @categorias_permitidas [:alimento, :agua,:medicina, :herramienta, :vestimenta, :equipo, :otro]
 
   @enforce_keys [:id, :codigo_recurso, :nombre, :categoria, :unidad_medida]
   defstruct [:id, :codigo_recurso, :nombre, :categoria, :unidad_medida, historial: []]
 
-  @type categoria_recurso :: :alimento | :medicina | :herramienta | :vestimenta | :equipo | :otro
+  @type categoria_recurso :: :alimento | :agua | :medicina | :herramienta | :vestimenta | :equipo | :otro
   @type t :: %__MODULE__{
           id: String.t(),
           codigo_recurso: String.t(),

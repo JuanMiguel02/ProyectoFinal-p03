@@ -1,16 +1,1 @@
-[
-  {
-    "fecha": "2026-11-08T23:52:09.038000Z",
-    "id": "7d2d6a9a-124d-4873-a032-858add0bedc2",
-    "id_albergue": "8ca4cf62-32c0-41ff-81bf-9fe5ca3fc8ff",
-    "id_persona": "8eac15d9-e25e-4eb5-9328-1587611e5235",
-    "tipo_movimiento": "salida"
-  },
-  {
-    "fecha": "2026-11-08T23:50:24.965000Z",
-    "id": "fa06bdfc-b90a-4416-9194-07d0298c9322",
-    "id_albergue": "8ca4cf62-32c0-41ff-81bf-9fe5ca3fc8ff",
-    "id_persona": "8eac15d9-e25e-4eb5-9328-1587611e5235",
-    "tipo_movimiento": "ingreso"
-  }
-]
+[]
