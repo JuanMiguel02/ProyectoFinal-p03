@@ -7,54 +7,9 @@ defmodule Emergencia.Aplicacion.Autenticacion do
   alias Emergencia.Cliente.Sesion
   alias Emergencia.UsuariosServidor
   alias Emergencia.ActividadesServidor
-  alias Emergencia.Servicios.ServicioUsuario
 
   # ============================================================
-  # 1. REGISTRO PÚBLICO
-  # ============================================================
-
-  def registrar_usuario(nombre_usuario, contrasena, nombre_completo, tipo) when tipo in [:ciudadano, :voluntario] do
-    case UsuariosServidor.registrar(nombre_usuario, contrasena, nombre_completo, tipo) do
-      {:ok, usuario} -> registrar_con_advertencia(usuario, usuario.id, :registro_usuario, "El usuario #{usuario.codigo_usuario} creó su propia cuenta como #{tipo}")
-      {:error, motivo} -> {:error, motivo}
-
-    end
-  end
-
-  def registrar_usuario(_nombre, _contrasena, _nombre_completo, _tipo) do
-    {:error, :rol_no_permitido_para_autorregistro}
-  end
-
-  # ============================================================
-  # 2. REGISTRO ADMINISTRATIVO
-  # ============================================================
-  def registrar_usuario(
-    %Sesion{tipo_usuario: :administrador} = sesion,
-    nombre_usuario,
-    contrasena,
-    nombre_completo,
-    tipo
-  ) when tipo in [:ciudadano, :voluntario, :coordinador] do
-
-    case UsuariosServidor.registrar(nombre_usuario, contrasena, nombre_completo, tipo) do
-      {:ok, usuario} -> registrar_con_advertencia(usuario, sesion.id_usuario, :registro_usuario, "El administrador #{sesion.nombre_usuario} creó la cuenta " <>
-            "#{usuario.codigo_usuario} con rol #{tipo}")
-
-      {:error, motivo} -> {:error, motivo}
-    end
-
-  end
-
-  def registrar_usuario(%Sesion{}, _nombre, _contrasena, _nombre_completo, _tipo) do
-    {:error, :rol_no_permitido}
-  end
-
-  def registrar_usuario(_, _nombre, _contrasena, _completo, _tipo) do
-    {:error, :sesion_invalida}
-  end
-
-  # ============================================================
-  # 3. INICIO DE SESIÓN
+  #  INICIO DE SESIÓN
   # ============================================================
     def iniciar_sesion(nombre_usuario, contrasena) do
     with {:ok, usuario} <- UsuariosServidor.autenticar(nombre_usuario, contrasena) do
@@ -77,8 +32,8 @@ defmodule Emergencia.Aplicacion.Autenticacion do
     end
   end
 
-   # ============================================================
-  # 4. CIERRE DE SESIÓN
+  # ============================================================
+  #  CIERRE DE SESIÓN
   # ============================================================
 
   def cerrar_sesion(%Sesion{} = sesion) do
@@ -106,11 +61,11 @@ defmodule Emergencia.Aplicacion.Autenticacion do
   end
 
   # ============================================================
-  # 5. AUTORIZACIÓN
+  # AUTORIZACIÓN
   # ============================================================
 
-  def autorizar(%Sesion{tipo_usuario: tipo_usuario}, operacion) do
-    ServicioUsuario.autorizar(tipo_usuario, operacion)
+  def autorizar(%Sesion{}, operacion) do
+    UsuariosServidor.autorizar(operacion)
   end
 
   def autorizar(_, _) do
@@ -118,7 +73,7 @@ defmodule Emergencia.Aplicacion.Autenticacion do
   end
 
   # ============================================================
-  # 6. FUNCIONES PRIVADAS DE AUDITORÍA
+  #  FUNCIONES PRIVADAS DE AUDITORÍA
   # ============================================================
 
   defp registrar_con_advertencia(resultado, id_responsable, accion, descripcion) do

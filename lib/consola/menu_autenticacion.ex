@@ -3,7 +3,10 @@ defmodule Emergencia.Consola.MenuAutenticacion do
   Gestiona la interfaz de consola para el registro de usuarios
   y la autenticación en el sistema.
   """
+
   alias Emergencia.Aplicacion.Autenticacion
+  alias Emergencia.Aplicacion.GestionUsuarios
+  alias Emergencia.Consola.MenuPrincipal
   alias Util
 
   # ============================================================
@@ -19,22 +22,33 @@ defmodule Emergencia.Consola.MenuAutenticacion do
     opcion = Util.ingresar("\nSeleccione una opción: ", :texto)
 
     case opcion do
-      "1" -> iniciar()
+      "1" ->
+        case iniciar() do
+          {:ok, sesion} ->
+            MenuPrincipal.iniciar(sesion)
+
+          {:error, _motivo} ->
+            mostrar()
+        end
+
       "2" ->
         registrar()
         mostrar()
+
       "3" ->
-          Util.mostrar("\nHasta pronto.", :mensaje)
-          mostrar()
-       _ ->
-          Util.mostrar("\nOpción no válida.", :error)
-          mostrar()
+        Util.mostrar("\nHasta pronto.", :mensaje)
+        :ok
+
+      _ ->
+        Util.mostrar("\nOpción no válida.", :error)
+        mostrar()
     end
   end
 
   # ============================================================
   # 2. INICIO DE SESIÓN
   # ============================================================
+
   def iniciar do
     Util.mostrar("\n========== INICIO DE SESIÓN ==========", :mensaje)
 
@@ -43,16 +57,28 @@ defmodule Emergencia.Consola.MenuAutenticacion do
 
     case Autenticacion.iniciar_sesion(nombre_usuario, contrasena) do
       {:ok, sesion} ->
-        Util.mostrar("\nBienvenido, #{sesion.nombre_completo}", :mensaje)
+        Util.mostrar(
+          "\nBienvenido, #{sesion.nombre_completo}",
+          :mensaje
+        )
+
         {:ok, sesion}
 
       {:ok, sesion, advertencia} ->
-        Util.mostrar("\nBienvenido, #{sesion.nombre_completo}", :mensaje)
+        Util.mostrar(
+          "\nBienvenido, #{sesion.nombre_completo}",
+          :mensaje
+        )
+
         mostrar_advertencia(advertencia)
         {:ok, sesion}
 
       {:error, motivo} ->
-        Util.mostrar("\nNo se pudo iniciar sesión: #{inspect(motivo)}", :error)
+        Util.mostrar(
+          "\nNo se pudo iniciar sesión: #{inspect(motivo)}",
+          :error
+        )
+
         {:error, motivo}
     end
   end
@@ -76,26 +102,39 @@ defmodule Emergencia.Consola.MenuAutenticacion do
         {:error, :tipo_invalido}
 
       tipo ->
-        case Autenticacion.registrar_usuario(
+        case GestionUsuarios.registrar_usuario(
                nombre_usuario,
                contrasena,
                nombre_completo,
                tipo
              ) do
-
           {:ok, usuario} ->
             Util.mostrar("\nUsuario registrado correctamente.", :mensaje)
-            Util.mostrar("Código de usuario: #{usuario.codigo_usuario}", :mensaje)
+
+            Util.mostrar(
+              "Código de usuario: #{usuario.codigo_usuario}",
+              :mensaje
+            )
+
             {:ok, usuario}
 
           {:ok, usuario, advertencia} ->
             Util.mostrar("\nUsuario registrado correctamente.", :mensaje)
-            Util.mostrar("Código de usuario: #{usuario.codigo_usuario}", :mensaje)
+
+            Util.mostrar(
+              "Código de usuario: #{usuario.codigo_usuario}",
+              :mensaje
+            )
+
             mostrar_advertencia(advertencia)
             {:ok, usuario}
 
           {:error, motivo} ->
-            Util.mostrar("\nNo se pudo registrar el usuario: #{inspect(motivo)}", :error)
+            Util.mostrar(
+              "\nNo se pudo registrar el usuario: #{inspect(motivo)}",
+              :error
+            )
+
             {:error, motivo}
         end
     end
@@ -120,6 +159,7 @@ defmodule Emergencia.Consola.MenuAutenticacion do
   # ============================================================
   # 5. CIERRE DE SESIÓN
   # ============================================================
+
   def cerrar(sesion) do
     case Autenticacion.cerrar_sesion(sesion) do
       :ok ->
@@ -132,7 +172,11 @@ defmodule Emergencia.Consola.MenuAutenticacion do
         :ok
 
       {:error, motivo} ->
-        Util.mostrar("\nNo se pudo cerrar la sesión: #{inspect(motivo)}", :error)
+        Util.mostrar(
+          "\nNo se pudo cerrar la sesión: #{inspect(motivo)}",
+          :error
+        )
+
         {:error, motivo}
     end
   end
@@ -148,5 +192,4 @@ defmodule Emergencia.Consola.MenuAutenticacion do
   defp mostrar_advertencia(motivo) do
     Util.mostrar("\nAdvertencia: #{inspect(motivo)}", :error)
   end
-
 end

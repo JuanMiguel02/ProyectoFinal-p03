@@ -18,6 +18,21 @@ defmodule Emergencia.Servicios.ServicioTerritorio do
     end
   end
 
+  def buscar_zona(estado, identificador) do
+  zonas = Map.values(estado.zonas)
+
+  case Enum.find(zonas, fn zona ->
+         zona.id == identificador or
+           zona.codigo_zona == String.upcase(identificador)
+       end) do
+    nil ->
+      {:error, "No se encontró una zona con el identificador '#{identificador}'"}
+
+    zona ->
+      {:ok, zona}
+  end
+end
+
   @doc """
   Registra un sector y lo asocia a una zona existente.
   """

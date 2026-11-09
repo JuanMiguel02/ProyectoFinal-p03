@@ -20,6 +20,10 @@ defmodule Emergencia.TerritorioServidor do
     GenServer.call(__MODULE__, {:registrar_zona, nombre, nivel, personas_estimadas, id_usuario})
   end
 
+  def buscar_zona(identificador) do
+    GenServer.call(__MODULE__, {:buscar_zona, identificador})
+  end
+
   def registrar_sector(id_zona, nombre, nivel, personas_afectadas, id_usuario \\ "SISTEMA") do
     GenServer.call(__MODULE__, {:registrar_sector, id_zona, nombre, nivel, personas_afectadas, id_usuario})
   end
@@ -78,6 +82,12 @@ defmodule Emergencia.TerritorioServidor do
       {:error, motivo} ->
         {:reply, {:error, motivo}, estado}
     end
+  end
+
+  @impl true
+  def handle_call({:buscar_zona, identificador}, _from, estado) do
+    respuesta = ServicioTerritorio.buscar_zona(estado, identificador)
+    {:reply, respuesta, estado}
   end
 
   @impl true
