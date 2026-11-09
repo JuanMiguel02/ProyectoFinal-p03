@@ -8,19 +8,21 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
   alias Emergencia.Aplicacion.Autenticacion
   alias Emergencia.PoblacionServidor
   alias Emergencia.ActividadesServidor
+  alias Emergencia.TerritorioServidor
 
   @doc """
   Registra un nuevo albergue.
   """
-  def registrar_albergue(%Sesion{} = sesion, nombre, id_zona, capacidad_maxima) do
+  def registrar_albergue(%Sesion{} = sesion, nombre, codigo_zona, capacidad_maxima) do
     with :ok <- Autenticacion.autorizar(sesion, :registrar_albergue),
-         {:ok, albergue} <- PoblacionServidor.registrar_albergue(nombre, id_zona,capacidad_maxima) do
+         {:ok, zona} <- TerritorioServidor.buscar_zona(codigo_zona),
+         {:ok, albergue} <- PoblacionServidor.registrar_albergue(nombre, zona.id , capacidad_maxima) do
 
        registrar_con_advertencia(
         albergue,
         sesion.id_usuario,
         :registro_albergue,
-        "El usuario #{sesion.nombre_usuario} registró el albergue #{albergue.codigo_albergue}"
+        "El usuario #{sesion.nombre_usuario} registró el albergue #{albergue.codigo}"
       )
     end
   end
@@ -97,6 +99,15 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
   end
 
   def reporte_ocupacion(_), do: {:error, :sesion_invalida}
+
+  def listar_albergues(%Sesion{} = sesion) do
+    with :ok <- Autenticacion.autorizar(sesion, :consultar_albergues),
+        {:ok, albergues} <- PoblacionServidor.listar_albergues() do
+      {:ok, albergues}
+    end
+  end
+
+  def listar_albergues(_), do: {:error, :sesion_invalida}
 
   # ------------------------------------------------------------------
   # Auditoría

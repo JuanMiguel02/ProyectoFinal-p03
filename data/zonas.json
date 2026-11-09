@@ -6,5 +6,13 @@
     "nivel_afectacion": "alto",
     "personas_estimadas": 1500,
     "sectores": []
+  },
+  {
+    "id": "z2000000-0000-4000-8000-000000000002",
+    "codigo_zona": "ZON-0002",
+    "nombre": "Zona Norte",
+    "nivel_afectacion": "medio",
+    "personas_estimadas": 850,
+    "sectores": []
   }
 ]

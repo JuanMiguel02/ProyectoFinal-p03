@@ -50,6 +50,14 @@ defmodule Emergencia.PoblacionServidor do
     GenServer.call(__MODULE__, :reporte_ocupacion)
   end
 
+  def listar_albergues do
+    GenServer.call(__MODULE__, :listar_albergues)
+  end
+
+  def buscar_albergue(identificador) do
+    GenServer.call(__MODULE__, {:buscar_albergue, identificador})
+  end
+
   # ============================================================================
   # Personas
   # ============================================================================
@@ -153,6 +161,20 @@ defmodule Emergencia.PoblacionServidor do
   @impl true
   def handle_call(:reporte_ocupacion, _from, estado) do
     respuesta = ServicioAlbergue.reporte_ocupacion(estado)
+    {:reply, respuesta, estado}
+  end
+
+  @impl true
+  def handle_call(:listar_albergues, _from, estado) do
+    respuesta = ServicioAlbergue.listar_albergues(estado)
+
+    {:reply, respuesta, estado}
+  end
+
+  @impl true
+  def handle_call({:buscar_albergue, identificador}, _from, estado) do
+    respuesta = ServicioAlbergue.buscar_albergue(estado, identificador)
+
     {:reply, respuesta, estado}
   end
 

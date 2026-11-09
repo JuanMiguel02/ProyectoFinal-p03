@@ -56,6 +56,13 @@
     "operacion": "inicio_sesion"
   },
   {
+    "descripcion": "El usuario julian24 registró el albergue ALB-0002",
+    "fecha": "2026-11-08T23:49:37.085000Z",
+    "id": "cc0a04f2-7c81-4d7b-a108-96b388c8b22b",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "registro_albergue"
+  },
+  {
     "descripcion": "El usuario Paco67 inició sesión",
     "fecha": "2026-11-08T21:18:12.395000Z",
     "id": "37b37dc2-2b27-49e0-ac0d-ead52be6aab2",
@@ -103,6 +110,13 @@
     "id": "19cc64cd-ae1d-496c-939d-60dc64ba20bb",
     "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
     "operacion": "registro_usuario"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T23:47:36.592000Z",
+    "id": "d14c8e79-bf05-4f5c-89d8-798a87d41abe",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
   },
   {
     "descripcion": "El usuario julian24 cerró sesión",
@@ -162,10 +176,24 @@
   },
   {
     "descripcion": "El usuario julian24 inició sesión",
+    "fecha": "2026-11-08T23:49:05.744000Z",
+    "id": "96613c0b-cd3a-4c76-9fa7-fbbdc57ebce4",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 inició sesión",
     "fecha": "2026-11-08T21:32:05.302000Z",
     "id": "e54d1962-3a84-4c29-a180-31bc230325cd",
     "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
     "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 registró el ingreso de una persona a un albergue",
+    "fecha": "2026-11-08T23:50:25.014000Z",
+    "id": "26ff4fbe-e1d2-4ac7-a978-810a79f93ed3",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "ingreso_albergue"
   },
   {
     "descripcion": "El usuario Paco67 inició sesión",
@@ -208,6 +236,13 @@
     "id": "b95f33e5-3205-44d2-9bce-f87a1e530669",
     "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
     "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 cerró sesión",
+    "fecha": "2026-11-08T23:53:32.999000Z",
+    "id": "59f25774-3ee6-4540-bd63-f3d150597bb1",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "cierre_sesion"
   },
   {
     "descripcion": "El usuario julian24 inició sesión",
@@ -257,5 +292,12 @@
     "id": "7be9e3fa-3f7f-4e33-9c33-52265ce4fd67",
     "id_usuario": "088f5080-c2a3-4ca4-a5c9-0384b62fb0c8",
     "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario julian24 registró la salida de una persona de un albergue",
+    "fecha": "2026-11-08T23:52:09.086000Z",
+    "id": "2df64cb0-af8a-462f-bd2c-c62f176bc588",
+    "id_usuario": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
+    "operacion": "salida_albergue"
   }
 ]

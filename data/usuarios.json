@@ -6,8 +6,8 @@
     "id": "088f5080-c2a3-4ca4-a5c9-0384b62fb0c8",
     "nombre_completo": "Paco Jones Martinez",
     "nombre_usuario": "Paco67",
-    "tipo_usuario": "ciudadano",
-    "zona_principal_id": null
+    "tipo_usuario": "coordinador",
+    "zona_principal_id": "z2000000-0000-4000-8000-000000000002"
   },
   {
     "codigo_usuario": "USR-0002",
@@ -16,7 +16,27 @@
     "id": "3beb0dca-3ee5-47cd-899b-48a54119d5e3",
     "nombre_completo": "Julian Casablancas",
     "nombre_usuario": "julian24",
+    "tipo_usuario": "administrador",
+    "zona_principal_id": "z1000000-0000-4000-8000-000000000001"
+  },
+  {
+    "codigo_usuario": "USR-0003",
+    "conectado": false,
+    "contrasena": "98765",
+    "id": "7a1b9c2d-4e5f-6a7b-8c9d-0e1f2a3b4c5d",
+    "nombre_completo": "Laura Gomez Ramos",
+    "nombre_usuario": "laura_g92",
+    "tipo_usuario": "ciudadano",
+    "zona_principal_id": "z2000000-0000-4000-8000-000000000002"
+  },
+  {
+    "codigo_usuario": "USR-0004",
+    "conectado": false,
+    "contrasena": "7070",
+    "id": "f8e7d6c5-b4a3-2109-8765-43210fedcba9",
+    "nombre_completo": "Carlos Mendoza Silva",
+    "nombre_usuario": "carlosM",
     "tipo_usuario": "voluntario",
-    "zona_principal_id": null
+    "zona_principal_id": "z1000000-0000-4000-8000-000000000001"
   }
 ]

@@ -108,8 +108,36 @@ defmodule Emergencia.Servicios.ServicioAlbergue do
     end
   end
 
+
   # ===========================================================================
-  # 5. Reporte de ocupación
+  # Consulta de albergues
+  # ===========================================================================
+
+  def buscar_albergue(estado, identificador) do
+  albergue =
+    Enum.find(Map.values(estado.albergues), fn albergue ->
+      albergue.id == identificador or
+        String.downcase(albergue.codigo) ==
+          String.downcase(identificador)
+    end)
+
+    case albergue do
+      nil -> {:error, "El albergue '#{identificador}' no existe"}
+      albergue -> {:ok, albergue}
+    end
+  end
+
+  def listar_albergues(estado) do
+    albergues =
+      estado.albergues
+      |> Map.values()
+      |> Enum.sort_by(& &1.codigo)
+
+    {:ok, albergues}
+  end
+
+  # ===========================================================================
+  #  Reporte de ocupación
   # ===========================================================================
 
   def reporte_ocupacion(estado) do

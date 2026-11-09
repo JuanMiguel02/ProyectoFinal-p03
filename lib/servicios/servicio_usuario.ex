@@ -124,6 +124,7 @@ defp permitido?(:coordinador, operacion)
             :consultar_familias,
             :asignar_familia,
 
+            :gestionar_albergues,
             :registrar_albergue,
             :ingreso_albergue,
             :salida_albergue,

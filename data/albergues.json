@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "capacidad_maxima": 100,
+    "codigo": "ALB-0001",
+    "id": "8ca4cf62-32c0-41ff-81bf-9fe5ca3fc8ff",
+    "id_zona": "z1000000-0000-4000-8000-000000000001",
+    "nombre": "Albergue Norte",
+    "ocupacion_actual": 0
+  }
+]
