@@ -1,16 +1,26 @@
 defmodule Emergencia.Consola.MenuPrincipal do
   @moduledoc """
   Gestiona el menú principal del sistema de emergencias.
-
-  Permite acceder a los diferentes módulos según el rol
-  del usuario autenticado.
+  Solo permite ejecutar las opciones que corresponden al rol del usuario.
   """
 
+  alias Emergencia.Aplicacion.Autenticacion
   alias Emergencia.Consola.MenuFamilias
   alias Emergencia.Consola.MenuPersonas
   alias Emergencia.Consola.MenuAlbergues
+  alias Emergencia.Consola.MenuRecursos
+  alias Emergencia.Consola.MenuMensajes
+  alias Emergencia.Consola.MenuMascotas
   alias Emergencia.Consola.MenuAutenticacion
   alias Util
+
+  # Opciones que cada rol puede ejecutar (debe coincidir con lo que se muestra)
+  @opciones_por_rol %{
+    ciudadano: ["1", "2", "5", "6", "8"],
+    voluntario: ["1", "2", "3", "5", "6", "8"],
+    coordinador: ["1", "2", "3", "4", "5", "6", "7", "8"],
+    administrador: ["1", "2", "3", "4", "5", "6", "7", "8"]
+  }
 
   def iniciar(sesion) do
     Util.mostrar("\n========================================", :mensaje)
@@ -24,65 +34,80 @@ defmodule Emergencia.Consola.MenuPrincipal do
 
     opcion = Util.ingresar("\nSeleccione una opción: ", :texto)
 
-   case opcion do
-      "1" ->
-        MenuPersonas.iniciar(sesion)
-        iniciar(sesion)
-
-      "2" ->
-        MenuFamilias.iniciar(sesion)
-        iniciar(sesion)
-
-      "3" ->
-        MenuAlbergues.iniciar(sesion)
-        iniciar(sesion)
-
-     "4" ->
-        Emergencia.Consola.MenuRecursos.iniciar(sesion)
-        iniciar(sesion)
-
-      "5" ->
-        Emergencia.Consola.MenuMensajes.iniciar(sesion)
-        iniciar(sesion)
-
-      "6" ->
-        Emergencia.Consola.MenuMascotas.iniciar(sesion)
-        iniciar(sesion)
-
-      "7" ->
-        # Llama directamente al servidor de actividades
-        case Emergencia.ActividadesServidor.listar() do
-          {:ok, actividades} ->
-            Util.mostrar("\n--- ACTIVIDADES RECIENTES ---", :mensaje)
-            Enum.take(actividades, 10) |> Enum.each(fn a ->
-              Util.mostrar("[#{a.fecha}] #{a.descripcion}", :mensaje)
-            end)
-          _ -> Util.mostrar("No hay actividades.", :error)
-        end
-        iniciar(sesion)
-
-      "8" ->
-        cerrar_sesion(sesion)
-
-      _ ->
-        Util.mostrar("\nOpción no válida.", :error)
-        iniciar(sesion)
-   end
+    if opcion in Map.get(@opciones_por_rol, sesion.tipo_usuario, []) do
+      ejecutar(opcion, sesion)
+    else
+      Util.mostrar("\nOpción no válida o sin permisos.", :error)
+      iniciar(sesion)
+    end
   end
 
-  defp mostrar_opciones(:administrador) do
-    mostrar_opciones_generales()
+  # ============================================================
+  # EJECUCIÓN DE OPCIONES
+  # ============================================================
+
+  defp ejecutar("1", sesion) do
+    MenuPersonas.iniciar(sesion)
+    iniciar(sesion)
   end
 
-  defp mostrar_opciones(:coordinador) do
-    mostrar_opciones_generales()
+  defp ejecutar("2", sesion) do
+    MenuFamilias.iniciar(sesion)
+    iniciar(sesion)
   end
+
+  defp ejecutar("3", sesion) do
+    MenuAlbergues.iniciar(sesion)
+    iniciar(sesion)
+  end
+
+  defp ejecutar("4", sesion) do
+    MenuRecursos.iniciar(sesion)
+    iniciar(sesion)
+  end
+
+  defp ejecutar("5", sesion) do
+    MenuMensajes.iniciar(sesion)
+    iniciar(sesion)
+  end
+
+  defp ejecutar("6", sesion) do
+    MenuMascotas.iniciar(sesion)
+    iniciar(sesion)
+  end
+
+  defp ejecutar("7", sesion) do
+    with :ok <- Autenticacion.autorizar(sesion, :consultar_actividades),
+         {:ok, actividades} <- Emergencia.ActividadesServidor.listar() do
+      Util.mostrar("\n--- ACTIVIDADES RECIENTES ---", :mensaje)
+
+      actividades
+      |> Enum.take(10)
+      |> Enum.each(fn a ->
+        Util.mostrar("[#{a.fecha}] #{a.descripcion}", :mensaje)
+      end)
+    else
+      {:error, motivo} -> Util.mostrar("\n#{inspect(motivo)}", :error)
+    end
+
+    iniciar(sesion)
+  end
+
+  defp ejecutar("8", sesion), do: cerrar_sesion(sesion)
+
+  # ============================================================
+  # OPCIONES VISIBLES SEGÚN ROL
+  # ============================================================
+
+  defp mostrar_opciones(:administrador), do: mostrar_opciones_generales()
+  defp mostrar_opciones(:coordinador), do: mostrar_opciones_generales()
 
   defp mostrar_opciones(:voluntario) do
     Util.mostrar("\n========== MÓDULOS DISPONIBLES ==========", :mensaje)
     Util.mostrar("1. Gestión de personas", :mensaje)
     Util.mostrar("2. Gestión de familias", :mensaje)
     Util.mostrar("3. Gestión de albergues", :mensaje)
+    Util.mostrar("5. Gestión de mensajes", :mensaje)
     Util.mostrar("6. Gestión de mascotas", :mensaje)
     Util.mostrar("8. Cerrar sesión", :mensaje)
   end
@@ -91,6 +116,7 @@ defmodule Emergencia.Consola.MenuPrincipal do
     Util.mostrar("\n========== MÓDULOS DISPONIBLES ==========", :mensaje)
     Util.mostrar("1. Consultar y reportar personas", :mensaje)
     Util.mostrar("2. Consultar familias", :mensaje)
+    Util.mostrar("5. Enviar mensajes", :mensaje)
     Util.mostrar("6. Reportar mascotas", :mensaje)
     Util.mostrar("8. Cerrar sesión", :mensaje)
   end
@@ -108,17 +134,13 @@ defmodule Emergencia.Consola.MenuPrincipal do
   end
 
   defp cerrar_sesion(sesion) do
-  case MenuAutenticacion.cerrar(sesion) do
-    :ok ->
-      MenuAutenticacion.mostrar()
+    case MenuAutenticacion.cerrar(sesion) do
+      :ok ->
+        MenuAutenticacion.mostrar()
 
-    {:error, motivo} ->
-      Util.mostrar(
-        "\nNo se pudo cerrar la sesión: #{inspect(motivo)}",
-        :error
-      )
-
-      iniciar(sesion)
+      {:error, motivo} ->
+        Util.mostrar("\nNo se pudo cerrar la sesión: #{inspect(motivo)}", :error)
+        iniciar(sesion)
     end
   end
 end
