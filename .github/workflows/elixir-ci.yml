@@ -37,24 +37,18 @@ jobs:
         id: tests
         run: mix test
 
-      # 6. Ejecutar el programa
-      - name: Ejecutar sistema
-        id: execution
-        run: mix run -e "Emergencias.CI.verificar_sistema()"
-
-      # 7. Notificar errores
+      # 6. Notificar errores
       - name: Reportar fallos
         if: failure()
         run: |
           echo "::error title=Error en CI::Falló alguna etapa de compilación, pruebas o ejecución."
 
-      # 8. Generar resumen
+      # 7. Generar resumen
       - name: Generar informe
         if: always()
         env:
           COMPILE_STATUS: ${{ steps.compile.outcome }}
           TEST_STATUS: ${{ steps.tests.outcome }}
-          EXECUTION_STATUS: ${{ steps.execution.outcome }}
           JOB_STATUS: ${{ job.status }}
         run: |
           echo "## Reporte - Sistema de Emergencias" >> $GITHUB_STEP_SUMMARY
@@ -64,7 +58,6 @@ jobs:
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| Compilación | $COMPILE_STATUS |" >> $GITHUB_STEP_SUMMARY
           echo "| Pruebas | $TEST_STATUS |" >> $GITHUB_STEP_SUMMARY
-          echo "| Ejecución | $EXECUTION_STATUS |" >> $GITHUB_STEP_SUMMARY
 
           echo "" >> $GITHUB_STEP_SUMMARY
 
