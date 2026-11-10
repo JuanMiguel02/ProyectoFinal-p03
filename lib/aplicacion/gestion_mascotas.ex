@@ -42,15 +42,14 @@ defmodule Emergencia.Aplicacion.GestionMascotas do
   def listar_coincidencias(_), do: {:error, :sesion_invalida}
 
   def confirmar_coincidencia(%Sesion{} = sesion, id_coincidencia) do
-    with :ok <- Autenticacion.autorizar(sesion, :crear_reporte_mascota),
-         {:ok, coincidencia, rep_act} <- MascotasServidor.confirmar_coincidencia(id_coincidencia, sesion.id_usuario) do
+    with :ok <- Autenticacion.autorizar(sesion, :confirmar_coincidencia),
+         {:ok, coincidencia} <- MascotasServidor.confirmar_coincidencia(id_coincidencia, sesion.id_usuario) do
       registrar_con_advertencia(
         coincidencia,
         sesion.id_usuario,
         :confirmar_coincidencia_mascota,
         "El usuario #{sesion.nombre_usuario} confirmó una coincidencia de mascota"
       )
-      {:ok, coincidencia, rep_act}
     end
   end
 

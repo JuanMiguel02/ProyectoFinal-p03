@@ -1,0 +1,10 @@
+[
+  {
+    "capacidad": 100,
+    "codigo_centro_acopio": "CAC-0001",
+    "direccion": "Calle 1",
+    "id": "9c439a8d-57f0-4f5d-9afe-818fabe969cd",
+    "id_zona": "d467bde6-fe02-499a-9015-2b93377cebc1",
+    "nombre": "Acopio1"
+  }
+]

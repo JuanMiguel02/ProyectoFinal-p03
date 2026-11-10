@@ -4,7 +4,6 @@ defmodule Emergencia.Consola.MenuPrincipal do
   Solo permite ejecutar las opciones que corresponden al rol del usuario.
   """
 
-  alias Emergencia.Aplicacion.Autenticacion
   alias Emergencia.Consola.MenuFamilias
   alias Emergencia.Consola.MenuPersonas
   alias Emergencia.Consola.MenuAlbergues
@@ -77,8 +76,7 @@ defmodule Emergencia.Consola.MenuPrincipal do
   end
 
   defp ejecutar("7", sesion) do
-    with :ok <- Autenticacion.autorizar(sesion, :consultar_actividades),
-         {:ok, actividades} <- Emergencia.ActividadesServidor.listar() do
+    with {:ok, actividades} <- Emergencia.Aplicacion.GestionActividades.listar(sesion) do
       Util.mostrar("\n--- ACTIVIDADES RECIENTES ---", :mensaje)
 
       actividades

@@ -1,6 +1,5 @@
 defmodule Emergencia.Consola.MenuRecursos do
-  alias Emergencia.Aplicacion.Autenticacion
-  alias Emergencia.RecursosServidor
+  alias Emergencia.Aplicacion.GestionRecursos
 
   def iniciar(sesion) do
     Util.mostrar("\n--- GESTIÓN DE RECURSOS ---", :mensaje)
@@ -10,8 +9,7 @@ defmodule Emergencia.Consola.MenuRecursos do
 
     case Util.ingresar("Seleccione una opción: ", :texto) do
       "1" ->
-        with :ok <- Autenticacion.autorizar(sesion, :consultar_recursos),
-             {:ok, inventarios} <- RecursosServidor.listar_inventarios() do
+        with {:ok, inventarios} <- GestionRecursos.listar_inventarios(sesion) do
           Enum.each(inventarios, fn i ->
             Util.mostrar(
               " - [ID: #{i.id}] Ubicación: #{i.id_ubicacion} | Recurso: #{i.id_recurso} | Disp: #{i.cantidad_disponible}",
@@ -25,8 +23,7 @@ defmodule Emergencia.Consola.MenuRecursos do
         iniciar(sesion)
 
       "2" ->
-        with :ok <- Autenticacion.autorizar(sesion, :consultar_necesidades),
-             {:ok, necesidades} <- RecursosServidor.listar_necesidades() do
+        with {:ok, necesidades} <- GestionRecursos.listar_necesidades(sesion) do
           Enum.each(necesidades, fn n ->
             Util.mostrar(
               " - [#{n.codigo_necesidad}] Tipo: #{n.tipo} | Req: #{n.cantidad_requerida} | Pendiente: #{n.cantidad_pendiente} | Estado: #{n.estado}",
@@ -48,3 +45,4 @@ defmodule Emergencia.Consola.MenuRecursos do
     end
   end
 end
+

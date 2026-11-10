@@ -1,6 +1,5 @@
 defmodule Emergencia.Consola.MenuMascotas do
-  alias Emergencia.Aplicacion.Autenticacion
-  alias Emergencia.MascotasServidor
+  alias Emergencia.Aplicacion.GestionMascotas
 
   def iniciar(sesion) do
     Util.mostrar("\n--- GESTIÓN DE MASCOTAS ---", :mensaje)
@@ -11,8 +10,7 @@ defmodule Emergencia.Consola.MenuMascotas do
 
     case Util.ingresar("Seleccione una opción: ", :texto) do
       "1" ->
-        with :ok <- Autenticacion.autorizar(sesion, :consultar_reportes),
-             {:ok, reportes} <- MascotasServidor.listar_reportes() do
+        with {:ok, reportes} <- GestionMascotas.listar_reportes(sesion) do
           Enum.each(reportes, fn r ->
             Util.mostrar(
               " - [#{r.id}] #{r.tipo} | #{r.especie}, Color: #{r.color} | Estado: #{r.estado}",
@@ -26,8 +24,7 @@ defmodule Emergencia.Consola.MenuMascotas do
         iniciar(sesion)
 
       "2" ->
-        with :ok <- Autenticacion.autorizar(sesion, :consultar_reportes),
-             {:ok, coincidencias} <- MascotasServidor.listar_coincidencias() do
+        with {:ok, coincidencias} <- GestionMascotas.listar_coincidencias(sesion) do
           Enum.each(coincidencias, fn c ->
             Util.mostrar(
               " - [#{c.id}] Pérdida: #{c.id_reporte_perdida} <-> Encontrada: #{c.id_reporte_encontrada} | Estado: #{c.estado}",
@@ -43,12 +40,9 @@ defmodule Emergencia.Consola.MenuMascotas do
       "3" ->
         id_coincidencia = Util.ingresar("ID de la coincidencia a confirmar: ", :texto)
 
-        with :ok <- Autenticacion.autorizar(sesion, :confirmar_coincidencia),
-             {:ok, _} <-
-               MascotasServidor.confirmar_coincidencia(id_coincidencia, sesion.id_usuario) do
-          Util.mostrar("Coincidencia confirmada. Los reportes fueron cerrados.", :mensaje)
-        else
+        case GestionMascotas.confirmar_coincidencia(sesion, id_coincidencia) do
           {:error, motivo} -> Util.mostrar("Error: #{inspect(motivo)}", :error)
+          _ok -> Util.mostrar("Coincidencia confirmada. Los reportes fueron cerrados.", :mensaje)
         end
 
         iniciar(sesion)
