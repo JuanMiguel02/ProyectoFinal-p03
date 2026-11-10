@@ -121,7 +121,7 @@ if sesion do
         IO.puts("Error: Tipo de usuario no válido.")
         nil
       else
-        zona_id = resolver_id_zona(zona_o_codigo)
+        _zona_id = resolver_id_zona(zona_o_codigo)
 
         # 2. Obligamos a pasar por la capa de Aplicación (que valida roles) para el registro
         # Simulamos que lo intenta hacer como ciudadano/voluntario si es público
@@ -492,7 +492,7 @@ if sesion do
     case Emergencia.RecursosServidor.listar_necesidades_ordenadas() do
       {:ok, necs} when necs != [] ->
         IO.puts("\n--- Necesidades Ordenadas por Prioridad ---")
-        Enum.each(neceseps, fn n ->
+        Enum.each(necs, fn n ->
           IO.puts("[#{n.prioridad}] Código: #{n.codigo_necesidad} | Tipo: #{n.tipo} | Pendiente: #{n.cantidad_pendiente}")
         end)
       _ -> IO.puts("Sin necesidades.")
