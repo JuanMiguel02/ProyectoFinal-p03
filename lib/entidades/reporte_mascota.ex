@@ -175,4 +175,23 @@ defmodule Emergencia.ReporteMascota do
     error in [ArgumentError, KeyError] ->
       {:error, "Faltan campos de reporte: #{Exception.message(error)}"}
   end
+
+  @doc "Valida y aplica transiciones estrictas de estado para el reporte"
+  def cambiar_estado(%__MODULE__{} = reporte, nuevo_estado) do
+    transiciones_validas = %{
+      activa: [:posible_coincidencia, :resuelta],
+      posible_coincidencia: [:activa, :resuelta],
+      resuelta: [] # Es un estado final, no se puede reabrir
+    }
+
+    if nuevo_estado in @estados_permitidos do
+      if nuevo_estado in Map.get(transiciones_validas, reporte.estado, []) do
+        {:ok, %{reporte | estado: nuevo_estado}}
+      else
+        {:error, "Transición no permitida: No se puede pasar de '#{reporte.estado}' a '#{nuevo_estado}'"}
+      end
+    else
+      {:error, "Estado de reporte inválido"}
+    end
+  end
 end

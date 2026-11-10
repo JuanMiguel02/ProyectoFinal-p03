@@ -32,6 +32,16 @@ defmodule Emergencia.MascotasServidor do
     GenServer.call(__MODULE__, {:resolver_reporte, id_reporte, id_usuario})
   end
 
+  def confirmar_coincidencia(id_coincidencia, id_usuario \\ "SISTEMA") do
+    GenServer.call(__MODULE__, {:confirmar_coincidencia, id_coincidencia, id_usuario})
+  end
+
+  def listar_reportes, do: GenServer.call(__MODULE__, :listar_reportes)
+
+  def listar_coincidencias, do: GenServer.call(__MODULE__, :listar_coincidencias)
+
+  def buscar_reportes(criterios), do: GenServer.call(__MODULE__, {:buscar_reportes, criterios})
+
   # ============================================================================
   # Callbacks de GenServer
   # ============================================================================
@@ -56,12 +66,9 @@ defmodule Emergencia.MascotasServidor do
     case ServicioMascotas.registrar_reporte(estado, tipo, especie, color, tamano, id_zona, id_contacto, opciones) do
       {:ok, reporte, nuevo_estado} ->
 
-        # 2. PROCESAMIENTO ASÍNCRONO CON TASK
-        # Lanzamos un proceso hijo independiente que no bloquea este GenServer
-        Task.start(fn ->
-          # Llamar a la función pesada de cruce algorítmico.
-          # Si encuentra una coincidencia, este Task puede enviar un mensaje (cast)
-          # de vuelta al GenServer para registrar la 'CoincidenciaMascota'.
+        # 2. PROCESAMIENTO ASÍNCRONO SUPERVISADO
+        # Lanza un proceso hijo independiente y supervisado
+        Task.Supervisor.start_child(Emergencia.TaskSupervisor, fn ->
           IO.puts("Iniciando búsqueda de coincidencias en background para el reporte: #{reporte.id}...")
           ServicioMascotas.evaluar_coincidencias_background(reporte, nuevo_estado)
         end)
@@ -94,6 +101,31 @@ defmodule Emergencia.MascotasServidor do
       {:ok, resultado, nuevo_estado} -> procesar_persistencia(resultado, nuevo_estado, estado)
       {:error, motivo} -> {:reply, {:error, motivo}, estado}
     end
+  end
+
+  @impl true
+  def handle_call({:confirmar_coincidencia, id_coincidencia, id_usuario}, _from, estado) do
+    case ServicioMascotas.confirmar_coincidencia(estado, id_coincidencia, id_usuario) do
+      {:ok, resultado, nuevo_estado} ->
+        procesar_persistencia(resultado, nuevo_estado, estado)
+      {:error, motivo} ->
+        {:reply, {:error, motivo}, estado}
+    end
+  end
+
+  @impl true
+  def handle_call(:listar_reportes, _from, estado) do
+    {:reply, {:ok, Map.values(estado.reportes_mascotas)}, estado}
+  end
+
+  @impl true
+  def handle_call(:listar_coincidencias, _from, estado) do
+    {:reply, {:ok, Map.values(estado.coincidencias_mascotas)}, estado}
+  end
+
+  @impl true
+  def handle_call({:buscar_reportes, criterios}, _from, estado) do
+    {:reply, ServicioMascotas.buscar_reportes(estado, criterios), estado}
   end
 
   # ============================================================================

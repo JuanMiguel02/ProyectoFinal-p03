@@ -1,16 +1,1 @@
-[
-  {
-    "cantidad_requerida": 0,
-    "codigo_necesidad": "NEC-0001",
-    "descripcion": "Punto de atencion sector 3",
-    "entidad_asociada": null,
-    "estado": "cubierta",
-    "id": "696f1721-10bc-4603-a7a3-ed5b98f4610a",
-    "id_destinatario": null,
-    "id_responsable": null,
-    "id_zona": "centro",
-    "prioridad": "critica",
-    "tipo": "agua",
-    "tipo_destinatario": null
-  }
-]
+[]

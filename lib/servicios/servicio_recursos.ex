@@ -23,15 +23,34 @@ defmodule Emergencia.Servicios.ServicioRecursos do
   end
 
   def agregar_inventario(estado, id_ubicacion, tipo_ubicacion, id_recurso, cantidad) do
-    with {:ok, inventario} <- InventarioUbicacion.nuevo(id_ubicacion, tipo_ubicacion, id_recurso, cantidad),
-         {:ok, movimiento} <- MovimientoRecurso.nuevo(cantidad, :ingreso, id_inventario_destino: inventario.id) do
+   # Buscar si ya existe el inventario en esa ubicación exacta
+    inventario_existente = Enum.find(Map.values(estado.inventarios), fn inv ->
+      inv.id_ubicacion == id_ubicacion and inv.id_recurso == id_recurso
+    end)
+
+    if inventario_existente do
+      # Sumar al inventario existente
+      nuevo_inv = %{inventario_existente | cantidad_disponible: inventario_existente.cantidad_disponible + cantidad}
+      {:ok, movimiento} = MovimientoRecurso.nuevo(cantidad, :ingreso, id_inventario_destino: nuevo_inv.id)
 
       nuevo_estado = %{
         estado |
-        inventarios: Map.put(estado.inventarios, inventario.id, inventario),
+        inventarios: Map.put(estado.inventarios, nuevo_inv.id, nuevo_inv),
         movimientos_recursos: Map.put(estado.movimientos_recursos, movimiento.id, movimiento)
       }
-      {:ok, inventario, nuevo_estado}
+      {:ok, nuevo_inv, nuevo_estado}
+    else
+      # Crear uno nuevo solo si no existía (comportamiento original)
+      with {:ok, inventario} <- InventarioUbicacion.nuevo(id_ubicacion, tipo_ubicacion, id_recurso, cantidad),
+           {:ok, movimiento} <- MovimientoRecurso.nuevo(cantidad, :ingreso, id_inventario_destino: inventario.id) do
+
+        nuevo_estado = %{
+          estado |
+          inventarios: Map.put(estado.inventarios, inventario.id, inventario),
+          movimientos_recursos: Map.put(estado.movimientos_recursos, movimiento.id, movimiento)
+        }
+        {:ok, inventario, nuevo_estado}
+      end
     end
   end
 
@@ -44,9 +63,13 @@ defmodule Emergencia.Servicios.ServicioRecursos do
          {:ok, movimiento} <- MovimientoRecurso.nuevo(cantidad, :asignacion, id_inventario_origen: id_inventario, id_asignacion: asignacion.id) do
 
       nuevo_inventario = %{inventario | cantidad_disponible: inventario.cantidad_disponible - cantidad}
-      cantidad_restante = necesidad.cantidad_requerida - cantidad
-      nuevo_estado_nec = if cantidad_restante <= 0, do: :cubierta, else: :en_proceso
-      nueva_necesidad = %{necesidad | cantidad_requerida: max(0, cantidad_restante), estado: nuevo_estado_nec}
+      cantidad_restante = necesidad.cantidad_pendiente - cantidad
+      nuevo_estado_nec = if cantidad_restante <= 0, do: :atendida, else: :en_atencion
+
+      nueva_necesidad = %{necesidad |
+        cantidad_pendiente: max(0, cantidad_restante),
+        estado: nuevo_estado_nec
+      }
 
       estado_actualizado = %{
         estado |
@@ -95,6 +118,20 @@ defmodule Emergencia.Servicios.ServicioRecursos do
         {:ok, movimiento, nuevo_estado}
       end
     end
+  end
+
+  @doc """
+  Devuelve las necesidades ordenadas por prioridad (Crítica > Alta > Media > Baja).
+  """
+  def listar_necesidades_ordenadas(estado) do
+    jerarquia = %{critica: 4, alta: 3, media: 2, baja: 1}
+
+    necesidades =
+      estado.necesidades
+      |> Map.values()
+      |> Enum.sort_by(& Map.get(jerarquia, &1.prioridad, 0), :desc)
+
+    {:ok, necesidades}
   end
 
   defp sumar_stock_recursivo([], _id_recurso, total_acumulado), do: total_acumulado

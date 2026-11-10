@@ -53,6 +53,11 @@ defmodule Emergencia.MensajesServidor do
     GenServer.call(__MODULE__, {:consultar_estado_envio, id_mensaje})
   end
 
+  @doc "Lista todos los mensajes registrados"
+  def listar do
+    GenServer.call(__MODULE__, :listar)
+  end
+
   # ============================================================================
   # 3. Callbacks de GenServer
   # ============================================================================
@@ -72,6 +77,11 @@ defmodule Emergencia.MensajesServidor do
       {:error, motivo} ->
         {:stop, {:error_cargando_mensajes, motivo}}
     end
+  end
+
+  @impl true
+  def handle_call(:listar, _from, estado) do
+    {:reply, {:ok, Map.values(estado.mensajes)}, estado}
   end
 
   # ============================================================================

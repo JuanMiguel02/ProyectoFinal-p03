@@ -1,6 +1,6 @@
 defmodule Emergencia.EstadoTerritorio do
   @moduledoc false
-  defstruct zonas: %{}, sectores: %{}, centros_acopio: %{}
+  defstruct zonas: %{}, centros_acopio: %{}
 end
 
 defmodule Emergencia.TerritorioServidor do
@@ -36,6 +36,7 @@ defmodule Emergencia.TerritorioServidor do
     GenServer.call(__MODULE__, {:listar_sectores, id_zona})
   end
 
+  def listar_centros_acopio, do: GenServer.call(__MODULE__, :listar_centros_acopio)
   ### ============================================================================
   ### API pública (Agregar a Emergencia.TerritorioServidor)
   ### ============================================================================
@@ -61,7 +62,6 @@ defmodule Emergencia.TerritorioServidor do
       {:ok, datos} ->
         estado = %EstadoTerritorio{
           zonas: Map.get(datos, :zonas, %{}),
-          sectores: Map.get(datos, :sectores, %{}),
           centros_acopio: Map.get(datos, :centros_acopio, %{})
         }
         {:ok, estado}
@@ -147,6 +147,8 @@ defmodule Emergencia.TerritorioServidor do
     {:reply, respuesta, estado}
   end
 
+  def handle_call(:listar_centros_acopio, _from, estado), do: {:reply, {:ok, Map.values(estado.centros_acopio)}, estado}
+
   # ============================================================================
   # Persistencia
   # ============================================================================
@@ -154,7 +156,6 @@ defmodule Emergencia.TerritorioServidor do
     GestorDatos.guardar_dominio(
       %{
         zonas: estado.zonas,
-        sectores: estado.sectores,
         centros_acopio: estado.centros_acopio
       },
       :territorio

@@ -13,21 +13,60 @@ defmodule Emergencia.Servicios.ServicioMascotas do
   end
 
   def buscar_coincidencias(estado, id_reporte) do
-    with {:ok, reporte_origen} <- obtener_reporte(estado.reportes_mascotas, id_reporte) do
+   with {:ok, reporte_origen} <- obtener_reporte(estado.reportes_mascotas, id_reporte) do
       tipo_buscado = if reporte_origen.tipo == :perdida, do: :encontrada, else: :perdida
 
       coincidencias =
         estado.reportes_mascotas
         |> Map.values()
-        |> Enum.filter(fn r ->
-          r.tipo == tipo_buscado and
-          r.estado == :activa and
-          r.especie == reporte_origen.especie and
-          r.id_zona == reporte_origen.id_zona and
-          (r.tamano == reporte_origen.tamano or r.color == reporte_origen.color)
-        end)
+        |> Enum.filter(&(&1.tipo == tipo_buscado and &1.estado == :activa))
+        |> Enum.map(fn r -> {r, calcular_similitud(reporte_origen, r)} end)
+        |> Enum.filter(fn {_r, puntaje} -> puntaje >= 40 end) # Umbral mínimo de similitud
+        |> Enum.sort_by(fn {_r, puntaje} -> puntaje end, :desc) # Las más parecidas primero
+        |> Enum.map(fn {r, _puntaje} -> r end)
 
       {:ok, coincidencias}
+    end
+  end
+
+  defp calcular_similitud(r1, r2) do
+    puntaje = 0
+    puntaje = if r1.especie == r2.especie, do: puntaje + 50, else: puntaje
+    puntaje = if r1.color == r2.color, do: puntaje + 25, else: puntaje
+    puntaje = if r1.tamano == r2.tamano, do: puntaje + 15, else: puntaje
+    puntaje = if r1.id_zona == r2.id_zona, do: puntaje + 10, else: puntaje
+    puntaje
+  end
+
+  def confirmar_coincidencia(estado, id_coincidencia, _id_usuario \\ "SISTEMA") do
+   with {:ok, coincidencia} <- Map.fetch(estado.coincidencias_mascotas, id_coincidencia),
+         {:ok, rep_perdida} <- obtener_reporte(estado.reportes_mascotas, coincidencia.id_reporte_perdida),
+         {:ok, rep_encontrada} <- obtener_reporte(estado.reportes_mascotas, coincidencia.id_reporte_encontrada),
+
+         # Delegamos el cambio a la entidad para que valide si es legal pasar a :resuelta
+         {:ok, rep_perdida_act} <- Emergencia.ReporteMascota.cambiar_estado(rep_perdida, :resuelta),
+         {:ok, rep_encontrada_act} <- Emergencia.ReporteMascota.cambiar_estado(rep_encontrada, :resuelta) do
+
+       coincidencia_act = %{coincidencia | estado: :confirmada}
+
+       nuevos_reportes =
+         estado.reportes_mascotas
+         |> Map.put(rep_perdida.id, rep_perdida_act)
+         |> Map.put(rep_encontrada.id, rep_encontrada_act)
+
+       nuevas_coincidencias = Map.put(estado.coincidencias_mascotas, id_coincidencia, coincidencia_act)
+
+       estado_actualizado = %{estado |
+         reportes_mascotas: nuevos_reportes,
+         coincidencias_mascotas: nuevas_coincidencias
+       }
+
+       {:ok, coincidencia_act, estado_actualizado}
+    else
+      :error -> {:error, "Coincidencia no encontrada"}
+      # Si la máquina de estados devuelve un error (ej. la mascota ya estaba resuelta),
+      # el bloque 'with' lo atrapará automáticamente aquí y lo devolverá intacto.
+      error -> error
     end
   end
 
@@ -68,6 +107,25 @@ defmodule Emergencia.Servicios.ServicioMascotas do
     end
   end
 
+  @doc """
+  Filtra reportes de mascotas usando múltiples criterios opcionales.
+  Ej: buscar_reportes(estado, estado: :activa, especie: "perro")
+  """
+  def buscar_reportes(estado, criterios) do
+    reportes =
+      estado.reportes_mascotas
+      |> Map.values()
+      |> Enum.filter(fn r ->
+        Enum.all?(criterios, fn
+          {:especie, val} -> r.especie == String.downcase(val)
+          {:id_zona, val} -> r.id_zona == val
+          {:estado, val} -> r.estado == val
+          _ -> true
+        end)
+      end)
+    {:ok, reportes}
+  end
+
   defp obtener_reporte(reportes, id) do
     case Map.fetch(reportes, id) do
       {:ok, reporte} -> {:ok, reporte}
@@ -78,7 +136,7 @@ defmodule Emergencia.Servicios.ServicioMascotas do
   defp validar_no_resuelto(%ReporteMascota{estado: :resuelta}) do
     {:error, "El reporte de mascota ya ha sido resuelto y no puede procesarse nuevamente"}
   end
-  
+
   defp validar_no_resuelto(_), do: :ok
 
   @doc """

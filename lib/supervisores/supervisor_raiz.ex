@@ -12,6 +12,7 @@ defmodule Emergencia.Supervisor do
   @impl true
   def init(_opciones) do
     hijos = [
+      {Task.Supervisor, name: Emergencia.TaskSupervisor},
       Emergencia.UsuariosServidor,
       Emergencia.MensajesServidor,
       Emergencia.ActividadesServidor,
