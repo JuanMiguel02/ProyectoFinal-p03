@@ -1,189 +1,347 @@
 defmodule Emergencia.Servicios.ServicioRecursos do
   @moduledoc """
-  Servicio puro para la gestión de recursos, inventarios, necesidades y asignaciones.
+  Servicio puro para la gestión de recursos, existencias, necesidades y asignaciones.
   """
-  alias Emergencia.{Necesidad, Recurso, InventarioUbicacion, AsignacionRecurso, MovimientoRecurso, GeneradorID}
+
+  alias Emergencia.{
+    AsignacionRecurso,
+    EstadoRecursos,
+    GeneradorID,
+    MovimientoRecurso,
+    Necesidad,
+    Recurso
+  }
 
   def registrar_necesidad(estado, tipo, cantidad, id_zona, prioridad, opciones \\ []) do
     codigo_necesidad = GeneradorID.generar("NEC", estado.necesidades, & &1.codigo_necesidad)
-    with {:ok, necesidad} <- Necesidad.nueva(codigo_necesidad, tipo, cantidad, id_zona, prioridad, opciones) do
-      nuevas_necesidades = Map.put(estado.necesidades, necesidad.id, necesidad)
-      nuevo_estado = %{estado | necesidades: nuevas_necesidades}
-      {:ok, necesidad, nuevo_estado}
+
+    with {:ok, necesidad} <-
+           Necesidad.nueva(codigo_necesidad, tipo, cantidad, id_zona, prioridad, opciones) do
+      {:ok, necesidad,
+       %{estado | necesidades: Map.put(estado.necesidades, necesidad.id, necesidad)}}
     end
   end
 
-  def registrar_recurso(estado, nombre, categoria, unidad_medida) do
-    codigo_recurso = GeneradorID.generar("REC", estado.recursos, & &1.codigo_recurso)
-    with {:ok, recurso} <- Recurso.nuevo(codigo_recurso, nombre, categoria, unidad_medida) do
-      nuevos_recursos = Map.put(estado.recursos, recurso.id, recurso)
-      nuevo_estado = %{estado | recursos: nuevos_recursos}
+  def registrar_recurso(%EstadoRecursos{} = estado, nombre, cantidad, unidad, ubicacion) do
+    codigo = GeneradorID.generar("REC", estado.recursos, & &1.codigo)
+
+    with :ok <- validar_texto(nombre, "El nombre del recurso"),
+         :ok <- validar_texto(unidad, "La unidad de medida"),
+         :ok <- validar_texto(ubicacion, "La ubicación"),
+         :ok <- validar_cantidad(cantidad),
+         {:ok, recurso} <- Recurso.nuevo(codigo, nombre, :otro, unidad),
+         {:ok, movimiento} <-
+           MovimientoRecurso.nuevo(cantidad, :ingreso,
+             id_recurso: recurso.id,
+             ubicacion_destino: ubicacion
+           ) do
+      clave = {recurso.codigo, ubicacion}
+
+      nuevo_estado = %{
+        estado
+        | recursos: Map.put(estado.recursos, recurso.id, recurso),
+          existencias: Map.update(estado.existencias, clave, cantidad, &(&1 + cantidad)),
+          movimientos: Map.put(estado.movimientos, movimiento.id, movimiento)
+      }
+
       {:ok, recurso, nuevo_estado}
     end
   end
 
-  def agregar_inventario(estado, id_ubicacion, tipo_ubicacion, id_recurso, cantidad) do
-   # Buscar si ya existe el inventario en esa ubicación exacta
-    inventario_existente = Enum.find(Map.values(estado.inventarios), fn inv ->
-      inv.id_ubicacion == id_ubicacion and inv.id_recurso == id_recurso
-    end)
+  def listar_recursos(%EstadoRecursos{} = estado, filtros \\ %{}) do
+    ubicacion = Map.get(filtros, :ubicacion)
+    categoria = Map.get(filtros, :categoria)
+    recursos_por_codigo = Map.new(Map.values(estado.recursos), &{&1.codigo, &1})
 
-    if inventario_existente do
-      # Sumar al inventario existente
-      nuevo_inv = %{inventario_existente | cantidad_disponible: inventario_existente.cantidad_disponible + cantidad}
-      {:ok, movimiento} = MovimientoRecurso.nuevo(cantidad, :ingreso, id_inventario_destino: nuevo_inv.id)
+    existencias =
+      estado.existencias
+      |> Enum.filter(fn {{_codigo, lugar}, _cantidad} ->
+        is_nil(ubicacion) or lugar == ubicacion
+      end)
+      |> Enum.map(fn {{codigo, lugar}, cantidad} ->
+        recurso = Map.fetch!(recursos_por_codigo, codigo)
+
+        %{
+          id: recurso.id,
+          codigo: recurso.codigo,
+          nombre: recurso.nombre,
+          categoria: recurso.categoria,
+          unidad_medida: recurso.unidad_medida,
+          ubicacion: lugar,
+          cantidad: cantidad
+        }
+      end)
+      |> Enum.filter(&(is_nil(categoria) or &1.categoria == categoria))
+      |> Enum.sort_by(&{&1.codigo, &1.ubicacion})
+
+    {:ok, existencias}
+  end
+
+  def listar_todos_recursos(%EstadoRecursos{} = estado) do
+    recursos =
+      estado.recursos
+      |> Map.values()
+      |> Enum.sort_by(& &1.codigo)
+      |> Enum.flat_map(fn recurso ->
+        existencias =
+          estado.existencias
+          |> Enum.filter(fn {{codigo, _ubicacion}, _cantidad} -> codigo == recurso.codigo end)
+          |> Enum.map(fn {{_codigo, ubicacion}, cantidad} ->
+            Map.merge(Map.from_struct(recurso), %{ubicacion: ubicacion, cantidad: cantidad})
+          end)
+          |> Enum.sort_by(& &1.ubicacion)
+
+        case existencias do
+          [] -> [Map.merge(Map.from_struct(recurso), %{ubicacion: nil, cantidad: 0})]
+          _ -> existencias
+        end
+      end)
+
+    {:ok, recursos}
+  end
+
+  def asignar_recurso(%EstadoRecursos{} = estado, codigo_recurso, cantidad) do
+    with :ok <- validar_cantidad(cantidad),
+         {:ok, recurso} <- obtener_recurso(estado.recursos, codigo_recurso),
+         {:ok, origenes} <- seleccionar_origenes(estado.existencias, recurso.codigo, cantidad),
+         {:ok, movimientos} <- crear_movimientos_asignacion(origenes, recurso.id) do
+      existencias =
+        Enum.reduce(origenes, estado.existencias, fn {ubicacion, asignada}, acc ->
+          Map.update!(acc, {recurso.codigo, ubicacion}, &(&1 - asignada))
+        end)
 
       nuevo_estado = %{
-        estado |
-        inventarios: Map.put(estado.inventarios, nuevo_inv.id, nuevo_inv),
-        movimientos_recursos: Map.put(estado.movimientos_recursos, movimiento.id, movimiento)
+        estado
+        | existencias: existencias,
+          movimientos: Enum.reduce(movimientos, estado.movimientos, &Map.put(&2, &1.id, &1))
       }
-      {:ok, nuevo_inv, nuevo_estado}
-    else
-      # Crear uno nuevo solo si no existía (comportamiento original)
-      with {:ok, inventario} <- InventarioUbicacion.nuevo(id_ubicacion, tipo_ubicacion, id_recurso, cantidad),
-           {:ok, movimiento} <- MovimientoRecurso.nuevo(cantidad, :ingreso, id_inventario_destino: inventario.id) do
 
-        nuevo_estado = %{
-          estado |
-          inventarios: Map.put(estado.inventarios, inventario.id, inventario),
-          movimientos_recursos: Map.put(estado.movimientos_recursos, movimiento.id, movimiento)
-        }
-        {:ok, inventario, nuevo_estado}
-      end
+      {:ok, movimientos, nuevo_estado}
     end
   end
 
-  def asignar_recurso(estado, id_necesidad, id_inventario, cantidad, _id_usuario \\ "SISTEMA") do
-    with {:ok, necesidad} <- obtener_entidad(estado.necesidades, id_necesidad, "Necesidad"),
-         {:ok, inventario} <- obtener_entidad(estado.inventarios, id_inventario, "Inventario"),
+  def asignar_a_necesidad(
+        %EstadoRecursos{} = estado,
+        id_necesidad,
+        codigo_recurso,
+        cantidad
+      ) do
+    with {:ok, _necesidad} <- validar_necesidad_directa(estado, id_necesidad, cantidad),
+         {:ok, movimientos, estado_con_stock} <-
+           asignar_recurso(estado, codigo_recurso, cantidad),
+         origenes <-
+           Enum.map(movimientos, &{&1.id_recurso, &1.ubicacion_origen, &1.cantidad}),
+         {:ok, asignaciones, estado_actualizado} <-
+           asignar_recurso_directo(estado_con_stock, id_necesidad, origenes, cantidad) do
+      {:ok, asignaciones, estado_actualizado}
+    end
+  end
+
+  def validar_necesidad_directa(estado, id_necesidad, cantidad) do
+    with {:ok, necesidad} <- obtener_necesidad(estado.necesidades, id_necesidad),
          :ok <- validar_necesidad_activa(necesidad),
-         :ok <- validar_disponibilidad(inventario, cantidad),
-         {:ok, asignacion} <- AsignacionRecurso.nueva(id_necesidad, id_inventario, cantidad),
-         {:ok, movimiento} <- MovimientoRecurso.nuevo(cantidad, :asignacion, id_inventario_origen: id_inventario, id_asignacion: asignacion.id) do
+         :ok <- validar_cantidad_pendiente(necesidad, cantidad) do
+      {:ok, necesidad}
+    end
+  end
 
-      nuevo_inventario = %{inventario | cantidad_disponible: inventario.cantidad_disponible - cantidad}
+  def asignar_recurso_directo(estado, id_necesidad, origenes, cantidad) do
+    with {:ok, necesidad} <- validar_necesidad_directa(estado, id_necesidad, cantidad),
+         {:ok, asignaciones} <- crear_asignaciones(id_necesidad, origenes),
+         :ok <- validar_total_asignado(asignaciones, cantidad) do
       cantidad_restante = necesidad.cantidad_pendiente - cantidad
-      nuevo_estado_nec = if cantidad_restante <= 0, do: :atendida, else: :en_atencion
 
-      nueva_necesidad = %{necesidad |
-        cantidad_pendiente: max(0, cantidad_restante),
-        estado: nuevo_estado_nec
+      necesidad_actualizada = %{
+        necesidad
+        | cantidad_pendiente: cantidad_restante,
+          estado: if(cantidad_restante == 0, do: :atendida, else: :en_atencion)
       }
 
-      estado_actualizado = %{
-        estado |
-        necesidades: Map.put(estado.necesidades, nueva_necesidad.id, nueva_necesidad),
-        inventarios: Map.put(estado.inventarios, nuevo_inventario.id, nuevo_inventario),
-        asignaciones_recursos: Map.put(estado.asignaciones_recursos, asignacion.id, asignacion),
-        movimientos_recursos: Map.put(estado.movimientos_recursos, movimiento.id, movimiento)
+      asignaciones_actualizadas =
+        Enum.reduce(asignaciones, estado.asignaciones, &Map.put(&2, &1.id, &1))
+
+      nuevo_estado = %{
+        estado
+        | necesidades: Map.put(estado.necesidades, necesidad.id, necesidad_actualizada),
+          asignaciones: asignaciones_actualizadas
       }
 
-      {:ok, asignacion, estado_actualizado}
+      {:ok, asignaciones, nuevo_estado}
     end
   end
 
-  @doc """
-  Suma recursivamente la cantidad disponible de un recurso en todas las ubicaciones.
-  """
-  def calcular_stock_global(estado, id_recurso) do
-    inventarios_lista = Map.values(estado.inventarios)
-    total = sumar_stock_recursivo(inventarios_lista, id_recurso, 0)
-    {:ok, total}
-  end
+  def transferir_recurso(
+        %EstadoRecursos{} = estado,
+        codigo_recurso,
+        ubicacion_origen,
+        ubicacion_destino,
+        cantidad
+      ) do
+    with :ok <- validar_cantidad(cantidad),
+         {:ok, recurso} <- obtener_recurso(estado.recursos, codigo_recurso),
+         :ok <- validar_texto(ubicacion_origen, "La ubicación de origen"),
+         :ok <- validar_texto(ubicacion_destino, "La ubicación de destino"),
+         :ok <- validar_ubicaciones_distintas(ubicacion_origen, ubicacion_destino),
+         clave_origen <- {recurso.codigo, ubicacion_origen},
+         clave_destino <- {recurso.codigo, ubicacion_destino},
+         disponible <- Map.get(estado.existencias, clave_origen, 0),
+         :ok <- validar_disponibilidad(disponible, cantidad),
+         {:ok, movimiento} <-
+           MovimientoRecurso.nuevo(cantidad, :transferencia,
+             id_recurso: recurso.id,
+             ubicacion_origen: ubicacion_origen,
+             ubicacion_destino: ubicacion_destino
+           ) do
+      existencias =
+        estado.existencias
+        |> Map.put(clave_origen, disponible - cantidad)
+        |> Map.update(clave_destino, cantidad, &(&1 + cantidad))
 
-  def transferir_recurso(estado, id_recurso, id_ubicacion_origen, id_ubicacion_destino, tipo_ubic_destino, cantidad) do
-    # Buscamos el inventario exacto en la ubicación de origen
-    inv_origen = Enum.find(Map.values(estado.inventarios), fn i ->
-      i.id_recurso == id_recurso and i.id_ubicacion == id_ubicacion_origen
-    end)
+      nuevo_estado = %{
+        estado
+        | existencias: existencias,
+          movimientos: Map.put(estado.movimientos, movimiento.id, movimiento)
+      }
 
-    if is_nil(inv_origen) do
-      {:error, "No hay inventario registrado del recurso en el origen especificado"}
-    else
-      with :ok <- validar_disponibilidad(inv_origen, cantidad),
-           {:ok, inv_destino} <- InventarioUbicacion.nuevo(id_ubicacion_destino, tipo_ubic_destino, id_recurso, cantidad),
-           {:ok, movimiento} <- MovimientoRecurso.nuevo(cantidad, :transferencia, id_inventario_origen: inv_origen.id, id_inventario_destino: inv_destino.id) do
-
-        nuevo_inv_origen = %{inv_origen | cantidad_disponible: inv_origen.cantidad_disponible - cantidad}
-
-        nuevo_estado = %{
-          estado |
-          inventarios: estado.inventarios
-                       |> Map.put(nuevo_inv_origen.id, nuevo_inv_origen)
-                       |> Map.put(inv_destino.id, inv_destino),
-          movimientos_recursos: Map.put(estado.movimientos_recursos, movimiento.id, movimiento)
-        }
-
-        {:ok, movimiento, nuevo_estado}
-      end
+      {:ok, movimiento, nuevo_estado}
     end
   end
 
-  @doc """
-  Devuelve las necesidades ordenadas por prioridad (Crítica > Alta > Media > Baja).
-  """
+  def calcular_stock_global(%EstadoRecursos{} = estado, codigo_recurso) do
+    with {:ok, recurso} <- obtener_recurso(estado.recursos, codigo_recurso) do
+      total =
+        Enum.reduce(estado.existencias, 0, fn
+          {{codigo, _ubicacion}, cantidad}, acc when codigo == recurso.codigo -> acc + cantidad
+          _, acc -> acc
+        end)
+
+      {:ok, total}
+    end
+  end
+
   def listar_necesidades_ordenadas(estado) do
     jerarquia = %{critica: 4, alta: 3, media: 2, baja: 1}
 
     necesidades =
       estado.necesidades
       |> Map.values()
-      |> Enum.sort_by(& Map.get(jerarquia, &1.prioridad, 0), :desc)
+      |> Enum.sort_by(&Map.get(jerarquia, &1.prioridad, 0), :desc)
 
     {:ok, necesidades}
   end
 
-  defp sumar_stock_recursivo([], _id_recurso, total_acumulado), do: total_acumulado
-  defp sumar_stock_recursivo([inventario | resto], id_recurso, total_acumulado) do
-    if inventario.id_recurso == id_recurso do
-      sumar_stock_recursivo(resto, id_recurso, total_acumulado + inventario.cantidad_disponible)
-    else
-      sumar_stock_recursivo(resto, id_recurso, total_acumulado)
+  defp obtener_recurso(recursos, codigo) do
+    case Enum.find(Map.values(recursos), &(&1.codigo == codigo or &1.id == codigo)) do
+      nil -> {:error, "No se encontró el recurso '#{codigo}'"}
+      recurso -> {:ok, recurso}
     end
   end
 
-  defp obtener_entidad(mapa, id, nombre) do
-    case Map.fetch(mapa, id) do
-      {:ok, entidad} -> {:ok, entidad}
-      :error -> {:error, "#{nombre} con ID '#{id}' no encontrada"}
+  defp seleccionar_origenes(existencias, codigo, cantidad) do
+    resultado =
+      existencias
+      |> Enum.filter(fn {{codigo_existente, _ubicacion}, _stock} ->
+        codigo_existente == codigo
+      end)
+      |> Enum.sort_by(fn {{_codigo, ubicacion}, _stock} -> ubicacion end)
+      |> Enum.reduce_while({:ok, [], cantidad}, fn {{_codigo, ubicacion}, stock},
+                                                   {:ok, origenes, restante} ->
+        asignada = min(stock, restante)
+        origenes = if asignada > 0, do: [{ubicacion, asignada} | origenes], else: origenes
+        restante = restante - asignada
+
+        if restante == 0,
+          do: {:halt, {:ok, Enum.reverse(origenes), 0}},
+          else: {:cont, {:ok, origenes, restante}}
+      end)
+
+    case resultado do
+      {:ok, origenes, 0} ->
+        {:ok, origenes}
+
+      {:ok, _origenes, restante} ->
+        disponible = cantidad - restante
+
+        {:error, "Existencias insuficientes. Solicitado: #{cantidad}, disponible: #{disponible}"}
     end
   end
 
-  defp validar_necesidad_activa(%Necesidad{estado: estado}) when estado in [:cubierta, :cancelada] do
-    {:error, "La necesidad ya está #{estado} y no puede consumir recursos"}
+  defp crear_movimientos_asignacion(origenes, id_recurso) do
+    Enum.reduce_while(origenes, {:ok, []}, fn {ubicacion, cantidad}, {:ok, acc} ->
+      case MovimientoRecurso.nuevo(cantidad, :asignacion,
+             id_recurso: id_recurso,
+             ubicacion_origen: ubicacion
+           ) do
+        {:ok, movimiento} -> {:cont, {:ok, [movimiento | acc]}}
+        {:error, motivo} -> {:halt, {:error, motivo}}
+      end
+    end)
+    |> case do
+      {:ok, movimientos} -> {:ok, Enum.reverse(movimientos)}
+      error -> error
+    end
   end
+
+  defp obtener_necesidad(necesidades, id) do
+    case Map.fetch(necesidades, id) do
+      {:ok, necesidad} -> {:ok, necesidad}
+      :error -> {:error, "Necesidad con ID '#{id}' no encontrada"}
+    end
+  end
+
+  defp validar_necesidad_activa(%Necesidad{estado: estado})
+       when estado in [:atendida, :cancelada],
+       do: {:error, "La necesidad ya está #{estado} y no puede recibir recursos"}
+
   defp validar_necesidad_activa(_), do: :ok
 
-  defp validar_disponibilidad(%InventarioUbicacion{cantidad_disponible: disponible}, requerida) do
-    if disponible >= requerida do
-      :ok
-    else
-      {:error, "Inventario insuficiente. Solicitado: #{requerida}, Disponible: #{disponible}"}
-    end
+  defp validar_cantidad_pendiente(%Necesidad{cantidad_pendiente: pendiente}, cantidad)
+       when is_integer(cantidad) and cantidad > 0 and pendiente >= cantidad,
+       do: :ok
+
+  defp validar_cantidad_pendiente(%Necesidad{cantidad_pendiente: pendiente}, cantidad) do
+    {:error,
+     "La cantidad solicitada (#{inspect(cantidad)}) supera o no es válida para lo pendiente (#{pendiente})"}
   end
 
-  def registrar_egreso(estado, id_recurso, id_ubicacion_origen, cantidad) do
-    inv_origen = Enum.find(Map.values(estado.inventarios), fn i ->
-      i.id_recurso == id_recurso and i.id_ubicacion == id_ubicacion_origen
-    end)
-
-    if is_nil(inv_origen) do
-      {:error, "No hay inventario registrado del recurso en el origen especificado"}
-    else
-      with :ok <- validar_disponibilidad(inv_origen, cantidad),
-           {:ok, movimiento} <- MovimientoRecurso.nuevo(cantidad, :egreso, id_inventario_origen: inv_origen.id) do
-
-        nuevo_inv_origen = %{inv_origen | cantidad_disponible: inv_origen.cantidad_disponible - cantidad}
-
-        nuevo_estado = %{
-          estado |
-          inventarios: Map.put(estado.inventarios, nuevo_inv_origen.id, nuevo_inv_origen),
-          movimientos_recursos: Map.put(estado.movimientos_recursos, movimiento.id, movimiento)
-        }
-
-        {:ok, movimiento, nuevo_estado}
+  defp crear_asignaciones(id_necesidad, origenes) do
+    Enum.reduce_while(origenes, {:ok, []}, fn {id_recurso, ubicacion, cantidad}, {:ok, acc} ->
+      case AsignacionRecurso.nueva_directa(id_necesidad, id_recurso, ubicacion, cantidad) do
+        {:ok, asignacion} -> {:cont, {:ok, [asignacion | acc]}}
+        {:error, motivo} -> {:halt, {:error, motivo}}
       end
+    end)
+    |> case do
+      {:ok, asignaciones} -> {:ok, Enum.reverse(asignaciones)}
+      error -> error
     end
   end
+
+  defp validar_total_asignado(asignaciones, cantidad) do
+    total = Enum.reduce(asignaciones, 0, &(&1.cantidad_asignada + &2))
+
+    if total == cantidad,
+      do: :ok,
+      else: {:error, "La distribución asignada no coincide con la cantidad solicitada"}
+  end
+
+  defp validar_texto(valor, campo) when is_binary(valor) do
+    if String.trim(valor) == "", do: {:error, "#{campo} es obligatoria"}, else: :ok
+  end
+
+  defp validar_texto(_, campo), do: {:error, "#{campo} es obligatoria"}
+
+  defp validar_cantidad(cantidad) when is_integer(cantidad) and cantidad > 0, do: :ok
+  defp validar_cantidad(_), do: {:error, "La cantidad debe ser un entero mayor a cero"}
+
+  defp validar_disponibilidad(disponible, cantidad) when disponible >= cantidad, do: :ok
+
+  defp validar_disponibilidad(disponible, cantidad) do
+    {:error, "Existencias insuficientes. Solicitado: #{cantidad}, disponible: #{disponible}"}
+  end
+
+  defp validar_ubicaciones_distintas(origen, destino) when origen != destino, do: :ok
+
+  defp validar_ubicaciones_distintas(_origen, _destino),
+    do: {:error, "El origen y destino deben ser distintos"}
 end

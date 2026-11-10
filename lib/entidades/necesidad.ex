@@ -1,7 +1,17 @@
 defmodule Emergencia.Necesidad do
   alias Emergencia.GeneradorID
 
-  @tipos_permitidos [:alimento, :medicina, :agua, :refugio, :personal, :transporte, :otro, :primeros_auxilios, :rescate]
+  @tipos_permitidos [
+    :alimento,
+    :medicina,
+    :agua,
+    :refugio,
+    :personal,
+    :transporte,
+    :otro,
+    :primeros_auxilios,
+    :rescate
+  ]
   @prioridades_permitidas [:baja, :media, :alta, :critica]
   @estados_permitidos [:pendiente, :asignada, :en_atencion, :atendida, :cancelada]
 
@@ -200,11 +210,13 @@ defmodule Emergencia.Necesidad do
   def cancelar(%__MODULE__{estado: estado} = necesidad) when estado in [:pendiente, :asignada] do
     {:ok, %{necesidad | estado: :cancelada}}
   end
+
   def cancelar(_), do: {:error, "Solo se pueden cancelar necesidades pendientes o asignadas"}
 
   @doc "Cierra una necesidad marcándola como atendida"
   def cerrar(%__MODULE__{estado: estado} = necesidad) when estado in [:asignada, :en_atencion] do
     {:ok, %{necesidad | estado: :atendida}}
   end
+
   def cerrar(_), do: {:error, "Solo se pueden cerrar necesidades en proceso de atención"}
 end

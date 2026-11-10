@@ -1,162 +1,245 @@
 defmodule Emergencia.EstadoRecursos do
   @moduledoc false
-  defstruct recursos: %{}, inventarios: %{}, necesidades: %{}, movimientos_recursos: %{}, asignaciones_recursos: %{}
+
+  defstruct recursos: %{},
+            existencias: %{},
+            movimientos: %{},
+            necesidades: %{},
+            asignaciones: %{}
 end
 
 defmodule Emergencia.RecursosServidor do
   use GenServer
-  alias Emergencia.EstadoRecursos
-  alias Emergencia.GestorDatos
+
+  alias Emergencia.{
+    AsignacionRecurso,
+    EstadoRecursos,
+    GestorDatos,
+    MovimientoRecurso,
+    Necesidad,
+    Recurso
+  }
+
+  alias Emergencia.Almacenamiento.JSON
   alias Emergencia.Servicios.ServicioRecursos
 
-  # ============================================================================
-  # API pública
-  # ============================================================================
-
-
-  def listar_recursos, do: GenServer.call(__MODULE__, :listar_recursos)
-  def listar_necesidades, do: GenServer.call(__MODULE__, :listar_necesidades)
-  def listar_inventarios, do: GenServer.call(__MODULE__, :listar_inventarios)
-  def listar_centros_acopio, do: GenServer.call(__MODULE__, :listar_centros_acopio)
+  @archivo "logistica.json"
 
   def start_link(opciones \\ []) do
     GenServer.start_link(__MODULE__, opciones, name: __MODULE__)
   end
 
   def registrar_necesidad(tipo, cantidad, id_zona, prioridad, opciones \\ []) do
-    GenServer.call(__MODULE__, {:registrar_necesidad, tipo, cantidad, id_zona, prioridad, opciones})
+    GenServer.call(
+      __MODULE__,
+      {:registrar_necesidad, tipo, cantidad, id_zona, prioridad, opciones}
+    )
   end
 
-  def registrar_recurso(nombre, categoria, unidad_medida) do
-    GenServer.call(__MODULE__, {:registrar_recurso, nombre, categoria, unidad_medida})
+  def listar_necesidades, do: GenServer.call(__MODULE__, :listar_necesidades)
+
+  def listar_necesidades_ordenadas,
+    do: GenServer.call(__MODULE__, :listar_necesidades_ordenadas)
+
+  def registrar_recurso(nombre, cantidad, unidad, ubicacion) do
+    GenServer.call(__MODULE__, {:registrar_recurso, nombre, cantidad, unidad, ubicacion})
   end
 
-  def agregar_inventario(id_ubicacion, tipo_ubicacion, id_recurso, cantidad) do
-    GenServer.call(__MODULE__, {:agregar_inventario, id_ubicacion, tipo_ubicacion, id_recurso, cantidad})
+  def listar_recursos(filtros \\ %{}),
+    do: GenServer.call(__MODULE__, {:listar_recursos, filtros})
+
+  def listar_todos_recursos, do: GenServer.call(__MODULE__, :listar_todos_recursos)
+
+  def asignar_recurso_directo(id_necesidad, codigo_recurso, cantidad, _id_usuario \\ "SISTEMA") do
+    GenServer.call(__MODULE__, {:asignar_recurso, id_necesidad, codigo_recurso, cantidad})
   end
 
-  def asignar_recurso(id_necesidad, id_inventario, cantidad, id_usuario \\ "SISTEMA") do
-    GenServer.call(__MODULE__, {:asignar_recurso, id_necesidad, id_inventario, cantidad, id_usuario})
+  def transferir_recurso(codigo, origen, destino, cantidad) do
+    GenServer.call(__MODULE__, {:transferir_recurso, codigo, origen, destino, cantidad})
   end
 
-  def transferir_recurso(id_recurso, id_origen, id_destino, tipo_destino, cantidad) do
-    GenServer.call(__MODULE__, {:transferir_recurso, id_recurso, id_origen, id_destino, tipo_destino, cantidad})
+  def calcular_stock_global(codigo_recurso) do
+    GenServer.call(__MODULE__, {:calcular_stock_global, codigo_recurso})
   end
 
-  def listar_necesidades_ordenadas, do: GenServer.call(__MODULE__, :listar_necesidades_ordenadas)
+  def listar_centros_acopio, do: Emergencia.TerritorioServidor.listar_centros_acopio()
 
-  def calcular_stock_global(id_recurso), do: GenServer.call(__MODULE__, {:calcular_stock_global, id_recurso})
-
-  def registrar_egreso(id_recurso, id_origen, cantidad) do
-    GenServer.call(__MODULE__, {:registrar_egreso, id_recurso, id_origen, cantidad})
-  end
-
-  # ============================================================================
-  # Callbacks de GenServer
-  # ============================================================================
   @impl true
   def init(_opciones) do
-    case GestorDatos.cargar_dominio(:recursos) do
-      {:ok, datos} ->
-        estado = %EstadoRecursos{
-          recursos: Map.get(datos, :recursos, %{}),
-          inventarios: Map.get(datos, :inventarios, %{}),
-          necesidades: Map.get(datos, :necesidades, %{}),
-          movimientos_recursos: Map.get(datos, :movimientos_recursos, %{}),
-          asignaciones_recursos: Map.get(datos, :asignaciones_recursos, %{})
-        }
-        {:ok, estado}
-
-      {:error, motivo} ->
-        {:stop, {:error_cargando_recursos, motivo}}
+    case cargar_estado() do
+      {:ok, estado} -> {:ok, estado}
+      {:error, motivo} -> {:stop, {:error_cargando_recursos, motivo}}
     end
   end
 
   @impl true
-  def handle_call({:registrar_necesidad, tipo, cantidad, id_zona, prioridad, opciones}, _from, estado) do
-    case ServicioRecursos.registrar_necesidad(estado, tipo, cantidad, id_zona, prioridad, opciones) do
-      {:ok, resultado, nuevo_estado} -> procesar_persistencia(resultado, nuevo_estado, estado)
-      {:error, motivo} -> {:reply, {:error, motivo}, estado}
-    end
+  def handle_call(
+        {:registrar_necesidad, tipo, cantidad, id_zona, prioridad, opciones},
+        _from,
+        estado
+      ) do
+    ejecutar_y_persistir(estado, fn ->
+      ServicioRecursos.registrar_necesidad(estado, tipo, cantidad, id_zona, prioridad, opciones)
+    end)
   end
 
-  @impl true
-  def handle_call({:registrar_recurso, nombre, categoria, unidad_medida}, _from, estado) do
-    case ServicioRecursos.registrar_recurso(estado, nombre, categoria, unidad_medida) do
-      {:ok, resultado, nuevo_estado} -> procesar_persistencia(resultado, nuevo_estado, estado)
-      {:error, motivo} -> {:reply, {:error, motivo}, estado}
-    end
+  def handle_call(:listar_necesidades, _from, estado) do
+    {:reply, {:ok, Map.values(estado.necesidades)}, estado}
   end
 
-  @impl true
-  def handle_call({:agregar_inventario, id_ubicacion, tipo_ubicacion, id_recurso, cantidad}, _from, estado) do
-    case ServicioRecursos.agregar_inventario(estado, id_ubicacion, tipo_ubicacion, id_recurso, cantidad) do
-      {:ok, resultado, nuevo_estado} -> procesar_persistencia(resultado, nuevo_estado, estado)
-      {:error, motivo} -> {:reply, {:error, motivo}, estado}
-    end
+  def handle_call(:listar_necesidades_ordenadas, _from, estado) do
+    {:reply, ServicioRecursos.listar_necesidades_ordenadas(estado), estado}
   end
 
-  @impl true
-  def handle_call({:asignar_recurso, id_necesidad, id_inventario, cantidad, id_usuario}, _from, estado) do
-    case ServicioRecursos.asignar_recurso(estado, id_necesidad, id_inventario, cantidad, id_usuario) do
-      {:ok, resultado, nuevo_estado} -> procesar_persistencia(resultado, nuevo_estado, estado)
-      {:error, motivo} -> {:reply, {:error, motivo}, estado}
-    end
+  def handle_call(
+        {:registrar_recurso, nombre, cantidad, unidad, ubicacion},
+        _from,
+        estado
+      ) do
+    ejecutar_y_persistir(estado, fn ->
+      ServicioRecursos.registrar_recurso(estado, nombre, cantidad, unidad, ubicacion)
+    end)
   end
 
-  @impl true
-  def handle_call({:transferir_recurso, id_recurso, id_origen, id_destino, tipo_destino, cantidad}, _from, estado) do
-    case ServicioRecursos.transferir_recurso(estado, id_recurso, id_origen, id_destino, tipo_destino, cantidad) do
+  def handle_call({:listar_recursos, filtros}, _from, estado) do
+    {:reply, ServicioRecursos.listar_recursos(estado, filtros), estado}
+  end
+
+  def handle_call(:listar_todos_recursos, _from, estado) do
+    {:reply, ServicioRecursos.listar_todos_recursos(estado), estado}
+  end
+
+  def handle_call({:asignar_recurso, id_necesidad, codigo_recurso, cantidad}, _from, estado) do
+    ejecutar_y_persistir(estado, fn ->
+      ServicioRecursos.asignar_a_necesidad(estado, id_necesidad, codigo_recurso, cantidad)
+    end)
+  end
+
+  def handle_call({:transferir_recurso, codigo, origen, destino, cantidad}, _from, estado) do
+    ejecutar_y_persistir(estado, fn ->
+      ServicioRecursos.transferir_recurso(estado, codigo, origen, destino, cantidad)
+    end)
+  end
+
+  def handle_call({:calcular_stock_global, codigo_recurso}, _from, estado) do
+    {:reply, ServicioRecursos.calcular_stock_global(estado, codigo_recurso), estado}
+  end
+
+  defp ejecutar_y_persistir(estado, operacion) do
+    case operacion.() do
       {:ok, resultado, nuevo_estado} ->
-        procesar_persistencia(resultado, nuevo_estado, estado)
+        case persistir(nuevo_estado) do
+          :ok -> {:reply, {:ok, resultado}, nuevo_estado}
+          {:error, motivo} -> {:reply, {:error, {:error_persistencia, motivo}}, estado}
+        end
+
       {:error, motivo} ->
         {:reply, {:error, motivo}, estado}
     end
   end
 
-  def handle_call(:listar_recursos, _from, estado), do: {:reply, {:ok, Map.values(estado.recursos)}, estado}
-  def handle_call(:listar_necesidades, _from, estado), do: {:reply, {:ok, Map.values(estado.necesidades)}, estado}
-  def handle_call(:listar_inventarios, _from, estado), do: {:reply, {:ok, Map.values(estado.inventarios)}, estado}
-  def handle_call(:listar_centros_acopio, _from, estado), do: {:reply, {:ok, Map.values(estado.centros_acopio)}, estado}
+  defp cargar_estado do
+    case JSON.cargar(@archivo) do
+      {:ok, mapa} when is_map(mapa) ->
+        reconstruir_estado(mapa)
 
-  @impl true
-  def handle_call(:listar_necesidades_ordenadas, _from, estado) do
-    {:reply, ServicioRecursos.listar_necesidades_ordenadas(estado), estado}
-  end
+      {:ok, []} ->
+        migrar_datos_anteriores()
 
-  @impl true
-  def handle_call({:calcular_stock_global, id_recurso}, _from, estado) do
-    {:reply, ServicioRecursos.calcular_stock_global(estado, id_recurso), estado}
-  end
+      {:ok, otro} ->
+        {:error,
+         "El archivo #{@archivo} debe contener un objeto JSON, se recibió #{inspect(otro)}"}
 
-  @impl true
-  def handle_call({:registrar_egreso, id_recurso, id_origen, cantidad}, _from, estado) do
-    case ServicioRecursos.registrar_egreso(estado, id_recurso, id_origen, cantidad) do
-      {:ok, resultado, nuevo_estado} -> procesar_persistencia(resultado, nuevo_estado, estado)
-      {:error, motivo} -> {:reply, {:error, motivo}, estado}
+      error ->
+        error
     end
   end
 
-  # ============================================================================
-  # Persistencia
-  # ============================================================================
-  defp procesar_persistencia(resultado, nuevo_estado, estado_anterior) do
-    case persistir(nuevo_estado) do
-      :ok -> {:reply, {:ok, resultado}, nuevo_estado}
-      {:error, motivo} -> {:reply, {:error, {:error_persistencia, motivo}}, estado_anterior}
+  defp reconstruir_estado(mapa) do
+    with {:ok, recursos} <- reconstruir_coleccion(Map.get(mapa, "recursos", []), Recurso),
+         {:ok, movimientos} <-
+           reconstruir_coleccion(Map.get(mapa, "movimientos", []), MovimientoRecurso),
+         {:ok, existencias} <- reconstruir_existencias(Map.get(mapa, "existencias", [])),
+         {:ok, necesidades} <- cargar_o_migrar_necesidades(mapa),
+         {:ok, asignaciones} <-
+           reconstruir_coleccion(Map.get(mapa, "asignaciones", []), AsignacionRecurso) do
+      {:ok,
+       %EstadoRecursos{
+         recursos: Map.new(recursos, &{&1.id, &1}),
+         existencias: existencias,
+         movimientos: Map.new(movimientos, &{&1.id, &1}),
+         necesidades: Map.new(necesidades, &{&1.id, &1}),
+         asignaciones: Map.new(asignaciones, &{&1.id, &1})
+       }}
     end
   end
+
+  defp cargar_o_migrar_necesidades(mapa) do
+    case Map.fetch(mapa, "necesidades") do
+      {:ok, lista} -> reconstruir_coleccion(lista, Necesidad)
+      :error -> GestorDatos.cargar_coleccion("necesidades.json", Necesidad, :id)
+    end
+  end
+
+  defp migrar_datos_anteriores do
+    with {:ok, recursos} <- GestorDatos.cargar_coleccion("recursos.json", Recurso, :id),
+         {:ok, necesidades} <- GestorDatos.cargar_coleccion("necesidades.json", Necesidad, :id) do
+      {:ok,
+       %EstadoRecursos{
+         recursos: recursos,
+         existencias: %{},
+         movimientos: %{},
+         necesidades: necesidades,
+         asignaciones: %{}
+       }}
+    end
+  end
+
+  defp reconstruir_coleccion(lista, modulo) when is_list(lista) do
+    Enum.reduce_while(lista, {:ok, []}, fn mapa, {:ok, acc} ->
+      case apply(modulo, :desde_map, [mapa]) do
+        {:ok, entidad} -> {:cont, {:ok, [entidad | acc]}}
+        {:error, motivo} -> {:halt, {:error, motivo}}
+      end
+    end)
+    |> case do
+      {:ok, entidades} -> {:ok, Enum.reverse(entidades)}
+      error -> error
+    end
+  end
+
+  defp reconstruir_coleccion(_, _), do: {:error, "La colección debe ser una lista"}
+
+  defp reconstruir_existencias(lista) when is_list(lista) do
+    Enum.reduce_while(lista, {:ok, %{}}, fn
+      %{"codigo_recurso" => codigo, "ubicacion" => ubicacion, "cantidad" => cantidad}, {:ok, acc}
+      when is_binary(codigo) and is_binary(ubicacion) and is_integer(cantidad) and cantidad >= 0 ->
+        {:cont, {:ok, Map.put(acc, {codigo, ubicacion}, cantidad)}}
+
+      _, _ ->
+        {:halt, {:error, "Registro de existencias inválido"}}
+    end)
+  end
+
+  defp reconstruir_existencias(_), do: {:error, "Las existencias deben ser una lista"}
 
   defp persistir(%EstadoRecursos{} = estado) do
-    GestorDatos.guardar_dominio(
-      %{
-        recursos: estado.recursos,
-        inventarios: estado.inventarios,
-        necesidades: estado.necesidades,
-        movimientos_recursos: estado.movimientos_recursos,
-        asignaciones_recursos: estado.asignaciones_recursos
-      },
-      :recursos
-    )
+    JSON.guardar(@archivo, %{
+      "recursos" => Enum.map(estado.recursos, fn {_id, recurso} -> Recurso.a_map(recurso) end),
+      "existencias" =>
+        Enum.map(estado.existencias, fn {{codigo, ubicacion}, cantidad} ->
+          %{"codigo_recurso" => codigo, "ubicacion" => ubicacion, "cantidad" => cantidad}
+        end),
+      "movimientos" =>
+        Enum.map(estado.movimientos, fn {_id, movimiento} ->
+          MovimientoRecurso.a_map(movimiento)
+        end),
+      "necesidades" =>
+        Enum.map(estado.necesidades, fn {_id, necesidad} -> Necesidad.a_map(necesidad) end),
+      "asignaciones" =>
+        Enum.map(estado.asignaciones, fn {_id, asignacion} ->
+          AsignacionRecurso.a_map(asignacion)
+        end)
+    })
   end
 end

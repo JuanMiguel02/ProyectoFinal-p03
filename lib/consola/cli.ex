@@ -110,20 +110,20 @@ defmodule Emergencia.Consola.CLI do
           register_zone <nombre> <nivel> <personas>
           register_sector <zona> <nombre> <nivel> <personas>
           register_center <nombre> <direccion> <capacidad> <zona>
+          register_point <sector> <nombre> <tipo> <ubicacion> [descripcion]
           list_zones
           zone_stats <zona>
 
         Recursos y Necesidades:
           register_need <tipo> <cantidad> <prioridad> <zona> <descripcion>
-          register_resource <nombre> <categoria> <unidad>
-          add_inventory <ubicacion> <tipo_ubic> <recurso> <cantidad>
-          assign_resource <necesidad> <inventario> <cantidad>
+          register_resource <nombre> <cantidad> <unidad> <ubicacion>
+          assign_resource <necesidad> <recurso> <cantidad>
           transfer_resource <recurso> <origen> <destino> <cantidad>
-          egreso <recurso> <origen> <cantidad>
           list_needs [zona=..] [tipo=..] [prioridad=..] [estado=..]
           pending_needs
           list_ordered_needs
-          list_resources
+          list_resources [ubicacion]
+          list_all_resources
           check_stock <recurso>
           critical_resources
 
@@ -165,7 +165,10 @@ defmodule Emergencia.Consola.CLI do
         sesion
 
       is_nil(Map.get(@tipos_usuario, String.downcase(tipo_texto))) ->
-        IO.puts("Error: Tipo de usuario no válido (ciudadano, voluntario, coordinador, administrador).")
+        IO.puts(
+          "Error: Tipo de usuario no válido (ciudadano, voluntario, coordinador, administrador)."
+        )
+
         nil
 
       true ->
@@ -230,6 +233,20 @@ defmodule Emergencia.Consola.CLI do
         "Centro de acopio registrado [Código: #{c.codigo_centro_acopio}, ID: #{c.id}]"
       end
     )
+  end
+
+  defp evaluar_comando(
+         ["register_point", sector, nombre, tipo_texto, ubicacion],
+         sesion
+       ) do
+    registrar_punto_atencion(sector, nombre, tipo_texto, ubicacion, nil, sesion)
+  end
+
+  defp evaluar_comando(
+         ["register_point", sector, nombre, tipo_texto, ubicacion, descripcion],
+         sesion
+       ) do
+    registrar_punto_atencion(sector, nombre, tipo_texto, ubicacion, descripcion, sesion)
   end
 
   defp evaluar_comando(["list_zones"], sesion) do
@@ -304,40 +321,38 @@ defmodule Emergencia.Consola.CLI do
     )
   end
 
-  defp evaluar_comando(["register_resource", nombre, categoria, unidad], sesion) do
-    ejecutar(
-      sesion,
-      fn ->
-        with {:ok, categoria} <- a_atomo(categoria) do
-          GestionRecursos.registrar_recurso(sesion, nombre, categoria, unidad)
-        end
-      end,
-      fn r -> "Recurso registrado [Código: #{r.codigo_recurso}, ID: #{r.id}]" end
-    )
-  end
-
-  defp evaluar_comando(["add_inventory", ubicacion, tipo_ubicacion, recurso, cantidad], sesion) do
-    ejecutar(
-      sesion,
-      fn ->
-        with {:ok, tipo} <- a_atomo(tipo_ubicacion),
-             {:ok, cantidad} <- a_entero(cantidad) do
-          GestionRecursos.agregar_inventario(sesion, ubicacion, tipo, recurso, cantidad)
-        end
-      end,
-      fn inv -> "Inventario agregado [ID: #{inv.id}]" end
-    )
-  end
-
-  defp evaluar_comando(["assign_resource", necesidad, inventario, cantidad], sesion) do
+  defp evaluar_comando(["register_resource", nombre, cantidad, unidad, ubicacion], sesion) do
     ejecutar(
       sesion,
       fn ->
         with {:ok, cantidad} <- a_entero(cantidad) do
-          GestionRecursos.asignar_recurso(sesion, necesidad, inventario, cantidad)
+          GestionRecursos.registrar_recurso(
+            sesion,
+            nombre,
+            cantidad,
+            unidad,
+            ubicacion
+          )
         end
       end,
-      fn asig -> "Recurso asignado [ID: #{asig.id}]" end
+      fn r ->
+        "Recurso registrado: #{r.nombre} | Código: #{r.codigo} | Stock inicial: #{cantidad} #{r.unidad_medida} en #{ubicacion}"
+      end
+    )
+  end
+
+  defp evaluar_comando(["assign_resource", necesidad, recurso, cantidad], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, cantidad} <- a_entero(cantidad) do
+          GestionRecursos.asignar_recurso(sesion, necesidad, recurso, cantidad)
+        end
+      end,
+      fn asignaciones ->
+        ids = Enum.map_join(asignaciones, ", ", & &1.id)
+        "Recurso asignado [IDs: #{ids}]"
+      end
     )
   end
 
@@ -355,30 +370,25 @@ defmodule Emergencia.Consola.CLI do
     )
   end
 
-  defp evaluar_comando(["egreso", recurso, origen, cantidad], sesion) do
-    ejecutar(
-      sesion,
-      fn ->
-        with {:ok, cantidad} <- a_entero(cantidad) do
-          GestionRecursos.registrar_egreso(sesion, recurso, origen, cantidad)
-        end
-      end,
-      fn mov -> "Egreso registrado exitosamente [Movimiento ID: #{mov.id}]" end
-    )
-  end
+  defp evaluar_comando(["list_resources"], sesion), do: listar_recursos(nil, sesion)
 
-  defp evaluar_comando(["list_resources"], sesion) do
+  defp evaluar_comando(["list_resources", ubicacion], sesion),
+    do: listar_recursos(ubicacion, sesion)
+
+  defp evaluar_comando(["list_all_resources"], sesion) do
     ejecutar(
       sesion,
-      fn -> GestionRecursos.listar_recursos(sesion) end,
+      fn -> GestionRecursos.listar_todos_recursos(sesion) end,
       fn
         [] ->
-          "Sin recursos."
+          "Sin recursos registrados."
 
         recursos ->
-          "\n--- Recursos ---\n" <>
-            Enum.map_join(recursos, "\n", fn r ->
-              "ID: #{r.id} | Código: #{r.codigo_recurso} | Nombre: #{r.nombre} | Cat: #{r.categoria}"
+          "\n--- Catálogo de Recursos ---\n" <>
+            Enum.map_join(recursos, "\n", fn recurso ->
+              ubicacion = recurso.ubicacion || "Sin ubicación"
+
+              "Código: #{recurso.codigo} | Nombre: #{recurso.nombre} | Categoría: #{recurso.categoria} | Ubicación: #{ubicacion} | Disponible: #{recurso.cantidad} #{recurso.unidad_medida}"
             end)
       end
     )
@@ -420,12 +430,12 @@ defmodule Emergencia.Consola.CLI do
       fn -> GestionResumen.recursos_criticos(sesion) end,
       fn
         [] ->
-          "\n--- Stock Crítico ---\nNo hay inventarios en nivel crítico."
+          "\n--- Stock Crítico ---\nNo hay existencias en nivel crítico."
 
-        inventarios ->
+        existencias ->
           "\n--- Stock Crítico ---\n" <>
-            Enum.map_join(inventarios, "\n", fn i ->
-              "Inventario ID: #{i.id} | Disp: #{i.cantidad_disponible}"
+            Enum.map_join(existencias, "\n", fn recurso ->
+              "Código: #{recurso.codigo} | Ubicación: #{recurso.ubicacion} | Disp: #{recurso.cantidad} #{recurso.unidad_medida}"
             end)
       end
     )
@@ -641,9 +651,47 @@ defmodule Emergencia.Consola.CLI do
     sesion
   end
 
+  defp listar_recursos(ubicacion, sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionRecursos.listar_recursos(sesion, ubicacion) end,
+      fn
+        [] ->
+          "Sin recursos."
+
+        recursos ->
+          "\n--- Recursos ---\n" <>
+            Enum.map_join(recursos, "\n", fn recurso ->
+              "Código: #{recurso.codigo} | Nombre: #{recurso.nombre} | Cat: #{recurso.categoria} | Ubicación: #{recurso.ubicacion} | Disponible: #{recurso.cantidad} #{recurso.unidad_medida}"
+            end)
+      end
+    )
+  end
+
   # ============================================================================
   # AUXILIARES DE FLUJO
   # ============================================================================
+
+  defp registrar_punto_atencion(sector, nombre, tipo_texto, ubicacion, descripcion, sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, tipo} <- a_atomo(tipo_texto) do
+          GestionTerritorio.registrar_punto_atencion(
+            sesion,
+            sector,
+            nombre,
+            tipo,
+            ubicacion,
+            descripcion
+          )
+        end
+      end,
+      fn punto ->
+        "Punto de atención registrado [Código: #{punto.codigo_punto_atencion}, ID: #{punto.id}]"
+      end
+    )
+  end
 
   # Registra (si hace falta) e inicia sesión usando solo la capa de Aplicación.
   defp conectar(usuario, contrasena, tipo) do
@@ -776,7 +824,9 @@ defmodule Emergencia.Consola.CLI do
            {:ok, clave_atomo} <- Map.fetch(@filtros_necesidades, clave) do
         {:cont, {:ok, [{clave_atomo, valor} | acumulado]}}
       else
-        _ -> {:halt, {:error, "Filtro no válido: '#{filtro}' (usa zona=, tipo=, prioridad= o estado=)"}}
+        _ ->
+          {:halt,
+           {:error, "Filtro no válido: '#{filtro}' (usa zona=, tipo=, prioridad= o estado=)"}}
       end
     end)
   end

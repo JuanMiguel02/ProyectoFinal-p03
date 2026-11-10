@@ -21,6 +21,13 @@
     "operacion": "REGISTRAR_CENTRO"
   },
   {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T19:21:33.391000Z",
+    "id": "27a085da-4d4c-492f-a2d5-61e5ccb9b219",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
     "descripcion": "Se registró el sector Sector1",
     "fecha": "2026-11-10T02:49:04.158000Z",
     "id": "2b42dffc-7aa1-45c6-b42b-3f308ea98de8",
@@ -63,10 +70,31 @@
     "operacion": "inicio_sesion"
   },
   {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T19:08:41.995000Z",
+    "id": "6732f377-f860-4be0-a394-a4440014666f",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin transfirió 4 unidades del recurso REC-0002",
+    "fecha": "2026-11-10T19:14:25.407000Z",
+    "id": "93814c4a-9d84-4dac-a095-19a5b1c8a0d2",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "transferir_recurso"
+  },
+  {
     "descripcion": "El usuario pepe inició sesión",
     "fecha": "2026-11-10T02:47:31.496000Z",
     "id": "947cb43b-33db-4e46-b98e-9c2506967def",
     "id_usuario": "88d0a24c-2705-4452-a946-124077dd68e8",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T19:05:12.577000Z",
+    "id": "992bf48f-54b9-46cc-8f2f-2838d5d6e66f",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
   },
   {
@@ -77,11 +105,25 @@
     "operacion": "REGISTRAR_RECURSO"
   },
   {
+    "descripcion": "El usuario admin registró 10 unidades de REC-0002 en PAT-0001",
+    "fecha": "2026-11-10T19:12:13.268000Z",
+    "id": "af68b876-9fc0-4fa9-be2c-66d488b8dca8",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_recurso"
+  },
+  {
     "descripcion": "El usuario coord inició sesión",
     "fecha": "2026-11-10T02:48:50.549000Z",
     "id": "b1132a2e-3297-4d2b-b9f3-d12e4dc526d8",
     "id_usuario": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
     "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin registró el punto de atención PuntoAyuda",
+    "fecha": "2026-11-10T19:10:11.998000Z",
+    "id": "d8cce6af-f072-452b-a244-7691cc131dbc",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_punto_atencion"
   },
   {
     "descripcion": "Se registró la zona Norte",

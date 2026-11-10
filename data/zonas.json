@@ -12,7 +12,16 @@
         "nivel_afectacion": "alto",
         "nombre": "Sector1",
         "personas_afectadas": 50,
-        "puntos_atencion": []
+        "puntos_atencion": [
+          {
+            "codigo_punto_atencion": "PAT-0001",
+            "descripcion": "Almacen",
+            "id": "c9aa40dc-8abd-493f-84b7-daf34e9fef33",
+            "nombre": "PuntoAyuda",
+            "tipo": "logistico",
+            "ubicacion": "CRA14"
+          }
+        ]
       }
     ]
   }

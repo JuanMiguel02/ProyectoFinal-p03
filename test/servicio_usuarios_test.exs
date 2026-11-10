@@ -2,7 +2,8 @@ defmodule Emergencia.ServicioUsuarioTest do
   use ExUnit.Case
 
   alias Emergencia.EstadoUsuarios
-  alias Emergencia.Servicios.ServicioUsuario  # <--- Asegúrate que sea ServicioUsuario (con 'c')
+  # <--- Asegúrate que sea ServicioUsuario (con 'c')
+  alias Emergencia.Servicios.ServicioUsuario
 
   test "permite registrar y autenticar un usuario exitosamente" do
     estado_inicial = %EstadoUsuarios{usuarios: %{}, sesiones: %{}}

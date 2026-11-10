@@ -41,4 +41,3 @@ defmodule Emergencia.Consola.MenuMensajes do
     end
   end
 end
-

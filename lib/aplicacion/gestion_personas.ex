@@ -16,19 +16,31 @@ defmodule Emergencia.Aplicacion.GestionPersonas do
 
   def registrar_persona(sesion, nombre, documento, codigo_zona, estado_persona, opciones \\ [])
 
-  def registrar_persona(%Sesion{} = sesion, nombre, documento, codigo_zona, estado_persona, opciones) do
+  def registrar_persona(
+        %Sesion{} = sesion,
+        nombre,
+        documento,
+        codigo_zona,
+        estado_persona,
+        opciones
+      ) do
     with :ok <- Autenticacion.autorizar(sesion, :registrar_persona),
-        {:ok, zona} <- TerritorioServidor.buscar_zona(codigo_zona),
-        {:ok, persona} <- PoblacionServidor.registrar_persona(nombre, documento, zona.id, estado_persona, opciones) do
-
-         registrar_con_advertencia(
+         {:ok, zona} <- TerritorioServidor.buscar_zona(codigo_zona),
+         {:ok, persona} <-
+           PoblacionServidor.registrar_persona(
+             nombre,
+             documento,
+             zona.id,
+             estado_persona,
+             opciones
+           ) do
+      registrar_con_advertencia(
         persona,
         sesion.id_usuario,
         :registro_persona,
         "El usuario #{sesion.nombre_usuario} registró a la persona #{persona.codigo_persona}"
-        )
-
-         end
+      )
+    end
   end
 
   def registrar_persona(_, _, _, _, _, _), do: {:error, :sesion_invalida}
@@ -38,9 +50,8 @@ defmodule Emergencia.Aplicacion.GestionPersonas do
   # ============================================================
   def cambiar_estado(%Sesion{} = sesion, id_persona, nuevo_estado) do
     with :ok <- Autenticacion.autorizar(sesion, :cambiar_estado_persona),
-    {:ok, persona} <- PoblacionServidor.cambiar_estado_persona(id_persona, nuevo_estado) do
-
-       registrar_con_advertencia(
+         {:ok, persona} <- PoblacionServidor.cambiar_estado_persona(id_persona, nuevo_estado) do
+      registrar_con_advertencia(
         persona,
         sesion.id_usuario,
         :cambio_estado_persona,
@@ -59,8 +70,8 @@ defmodule Emergencia.Aplicacion.GestionPersonas do
 
   def buscar_personas(%Sesion{} = sesion, criterios) do
     with :ok <- Autenticacion.autorizar(sesion, :consultar_personas),
-        {:ok, criterios_resueltos} <- resolver_criterios(criterios),
-        {:ok, personas} <- PoblacionServidor.buscar_personas(criterios_resueltos) do
+         {:ok, criterios_resueltos} <- resolver_criterios(criterios),
+         {:ok, personas} <- PoblacionServidor.buscar_personas(criterios_resueltos) do
       {:ok, personas}
     end
   end
@@ -68,18 +79,17 @@ defmodule Emergencia.Aplicacion.GestionPersonas do
   def buscar_personas(_, _), do: {:error, :sesion_invalida}
 
   # ============================================================
-#  LISTAR PERSONAS
-# ============================================================
+  #  LISTAR PERSONAS
+  # ============================================================
 
   def listar_personas(%Sesion{} = sesion) do
     with :ok <- Autenticacion.autorizar(sesion, :consultar_personas),
-        {:ok, personas} <- PoblacionServidor.buscar_personas([]) do
+         {:ok, personas} <- PoblacionServidor.buscar_personas([]) do
       {:ok, personas}
     end
   end
 
   def listar_personas(_), do: {:error, :sesion_invalida}
-
 
   # ============================================================
   # CONSULTAR HISTORIAL
@@ -87,13 +97,11 @@ defmodule Emergencia.Aplicacion.GestionPersonas do
 
   def consultar_historial(%Sesion{} = sesion, identificador) do
     with :ok <- Autenticacion.autorizar(sesion, :consultar_historial),
-        {:ok, personas} <-
-          PoblacionServidor.buscar_personas(
-            criterios_identificador(identificador)
-          ),
-        {:ok, persona} <- obtener_persona_unica(personas),
-        {:ok, historial} <-
-          PoblacionServidor.consultar_historial_persona(persona.id) do
+         {:ok, personas} <-
+           PoblacionServidor.buscar_personas(criterios_identificador(identificador)),
+         {:ok, persona} <- obtener_persona_unica(personas),
+         {:ok, historial} <-
+           PoblacionServidor.consultar_historial_persona(persona.id) do
       {:ok, historial}
     end
   end
@@ -138,20 +146,16 @@ defmodule Emergencia.Aplicacion.GestionPersonas do
          accion,
          descripcion
        ) do
-
     case ActividadesServidor.registrar(
            id_responsable,
            accion,
            descripcion
          ) do
-
       {:ok, _actividad} ->
         {:ok, resultado}
 
       {:error, motivo} ->
-        {:ok, resultado,
-         {:advertencia, {:error_auditoria, motivo}}}
+        {:ok, resultado, {:advertencia, {:error_auditoria, motivo}}}
     end
   end
-
 end

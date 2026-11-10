@@ -19,12 +19,24 @@ defmodule Emergencia.Consola.MenuFamilias do
     opcion = Util.ingresar("Seleccione una opción: ", :texto)
 
     case opcion do
-      "1" -> registrar_familia(sesion)
-      "2" -> buscar_familia(sesion)
-      "3" -> listar_familias(sesion)
-      "4" -> consultar_integrantes(sesion)
-      "5" -> asignar_persona(sesion)
-      "6" -> :ok
+      "1" ->
+        registrar_familia(sesion)
+
+      "2" ->
+        buscar_familia(sesion)
+
+      "3" ->
+        listar_familias(sesion)
+
+      "4" ->
+        consultar_integrantes(sesion)
+
+      "5" ->
+        asignar_persona(sesion)
+
+      "6" ->
+        :ok
+
       _ ->
         Util.mostrar("\nOpción no válida.", :error)
         iniciar(sesion)

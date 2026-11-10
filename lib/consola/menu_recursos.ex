@@ -3,16 +3,16 @@ defmodule Emergencia.Consola.MenuRecursos do
 
   def iniciar(sesion) do
     Util.mostrar("\n--- GESTIÓN DE RECURSOS ---", :mensaje)
-    Util.mostrar("1. Listar Inventarios Disponibles", :mensaje)
+    Util.mostrar("1. Listar Recursos Disponibles", :mensaje)
     Util.mostrar("2. Listar Necesidades Registradas", :mensaje)
     Util.mostrar("3. Volver al menú principal", :mensaje)
 
     case Util.ingresar("Seleccione una opción: ", :texto) do
       "1" ->
-        with {:ok, inventarios} <- GestionRecursos.listar_inventarios(sesion) do
-          Enum.each(inventarios, fn i ->
+        with {:ok, existencias} <- GestionRecursos.listar_recursos(sesion) do
+          Enum.each(existencias, fn recurso ->
             Util.mostrar(
-              " - [ID: #{i.id}] Ubicación: #{i.id_ubicacion} | Recurso: #{i.id_recurso} | Disp: #{i.cantidad_disponible}",
+              " - Código: #{recurso.codigo} | Ubicación: #{recurso.ubicacion} | Recurso: #{recurso.nombre} | Disp: #{recurso.cantidad} #{recurso.unidad_medida}",
               :mensaje
             )
           end)
@@ -45,4 +45,3 @@ defmodule Emergencia.Consola.MenuRecursos do
     end
   end
 end
-

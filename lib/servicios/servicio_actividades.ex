@@ -57,5 +57,4 @@ defmodule Emergencia.Servicios.ServicioActividad do
       :error -> {:error, "Actividad no encontrada"}
     end
   end
-
 end

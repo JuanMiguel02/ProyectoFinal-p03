@@ -70,6 +70,29 @@ defmodule Emergencia.Aplicacion.GestionTerritorio do
 
   def registrar_centro_acopio(_, _, _, _, _), do: {:error, :sesion_invalida}
 
+  def registrar_punto_atencion(sesion, sector, nombre, tipo, ubicacion, descripcion \\ nil)
+
+  def registrar_punto_atencion(%Sesion{} = sesion, sector, nombre, tipo, ubicacion, descripcion) do
+    with :ok <- Autenticacion.autorizar(sesion, :crear_sector),
+         {:ok, punto} <-
+           TerritorioServidor.registrar_punto_atencion(
+             sector,
+             nombre,
+             tipo,
+             ubicacion,
+             descripcion
+           ) do
+      registrar_con_advertencia(
+        punto,
+        sesion.id_usuario,
+        :registrar_punto_atencion,
+        "El usuario #{sesion.nombre_usuario} registró el punto de atención #{nombre}"
+      )
+    end
+  end
+
+  def registrar_punto_atencion(_, _, _, _, _, _), do: {:error, :sesion_invalida}
+
   # ------------------------------------------------------------------
   # Consultas
   # ------------------------------------------------------------------

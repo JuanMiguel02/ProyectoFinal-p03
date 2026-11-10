@@ -6,35 +6,34 @@ defmodule Emergencia.Recurso do
 
   alias Emergencia.GeneradorID
 
-  @categorias_permitidas [:alimento, :agua,:medicina, :herramienta, :vestimenta, :equipo, :otro]
+  @categorias_permitidas [:alimento, :agua, :medicina, :herramienta, :vestimenta, :equipo, :otro]
 
-  @enforce_keys [:id, :codigo_recurso, :nombre, :categoria, :unidad_medida]
-  defstruct [:id, :codigo_recurso, :nombre, :categoria, :unidad_medida, historial: []]
+  @enforce_keys [:id, :codigo, :nombre, :categoria, :unidad_medida]
+  defstruct [:id, :codigo, :nombre, :categoria, :unidad_medida]
 
-  @type categoria_recurso :: :alimento | :agua | :medicina | :herramienta | :vestimenta | :equipo | :otro
+  @type categoria_recurso ::
+          :alimento | :agua | :medicina | :herramienta | :vestimenta | :equipo | :otro
   @type t :: %__MODULE__{
           id: String.t(),
-          codigo_recurso: String.t(),
+          codigo: String.t(),
           nombre: String.t(),
           categoria: categoria_recurso(),
-          unidad_medida: String.t(),
-          historial: list()
+          unidad_medida: String.t()
         }
 
   @doc """
   Crea una nueva definición de Recurso validando sus atributos requeridos.
   """
-  def nuevo(codigo, nombre, categoria, unidad_medida, opciones \\ []) do
+  def nuevo(codigo, nombre, categoria, unidad_medida, _opciones \\ []) do
     with :ok <- validar_obligatorios(codigo, nombre, unidad_medida),
          :ok <- validar_enum(:categoria, categoria, @categorias_permitidas) do
       {:ok,
        %__MODULE__{
          id: GeneradorID.generar_uuid(),
-         codigo_recurso: codigo,
+         codigo: codigo,
          nombre: nombre,
          categoria: categoria,
-         unidad_medida: unidad_medida,
-         historial: Keyword.get(opciones, :historial, [])
+         unidad_medida: unidad_medida
        }}
     end
   end
@@ -68,6 +67,12 @@ defmodule Emergencia.Recurso do
   end
 
   def desde_map(mapa) when is_map(mapa) do
+    mapa =
+      mapa
+      |> Map.put_new("codigo", Map.get(mapa, "codigo_recurso"))
+      |> Map.delete("codigo_recurso")
+      |> Map.delete("historial")
+
     campos = Map.keys(__MODULE__.__struct__()) -- [:__struct__]
 
     with {:ok, attrs} <- normalizar(mapa, campos),
@@ -94,7 +99,7 @@ defmodule Emergencia.Recurso do
   end
 
   defp validar_ids(attrs) do
-    if Enum.all?([attrs[:id], attrs[:codigo_recurso]], &(is_binary(&1) and &1 != "")),
+    if Enum.all?([attrs[:id], attrs[:codigo]], &(is_binary(&1) and &1 != "")),
       do: :ok,
       else: {:error, "ID y código de recurso son obligatorios"}
   end
