@@ -23,10 +23,16 @@ defmodule Emergencia.Aplicacion.Resolutor do
     end
   end
 
-  def recurso(entrada) do
+  def codigo_recurso(entrada) do
     case RecursosServidor.listar_recursos() do
-      {:ok, recursos} -> buscar(recursos, entrada, & &1.codigo_recurso)
-      _ -> entrada
+      {:ok, recursos} ->
+        case Enum.find(recursos, &(&1.codigo == entrada or &1.id == entrada)) do
+          nil -> entrada
+          recurso -> recurso.codigo
+        end
+
+      _ ->
+        entrada
     end
   end
 
@@ -44,6 +50,28 @@ defmodule Emergencia.Aplicacion.Resolutor do
     end
   end
 
+  def ubicacion_recurso(identificador) when is_binary(identificador) do
+    with {:ok, centros} <- TerritorioServidor.listar_centros_acopio(),
+         {:ok, zonas} <- TerritorioServidor.listar_zonas(),
+         {:ok, albergues} <- PoblacionServidor.listar_albergues() do
+      puntos =
+        zonas
+        |> Enum.flat_map(& &1.sectores)
+        |> Enum.flat_map(& &1.puntos_atencion)
+
+      case Enum.find(centros ++ puntos ++ albergues, &coincide_ubicacion?(&1, identificador)) do
+        nil ->
+          {:error, "No existe una ubicación registrada con el código o ID '#{identificador}'"}
+
+        ubicacion ->
+          {:ok, codigo_ubicacion(ubicacion)}
+      end
+    end
+  end
+
+  def ubicacion_recurso(_),
+    do: {:error, "La ubicación debe ser el código o ID de un centro, punto o albergue"}
+
   def persona(entrada) do
     case PoblacionServidor.buscar_personas([]) do
       {:ok, personas} ->
@@ -59,47 +87,76 @@ defmodule Emergencia.Aplicacion.Resolutor do
     end
   end
 
-  @doc "Resuelve el id de una ubicación de inventario según su tipo."
-  def ubicacion(entrada, :centro_acopio) do
-    case TerritorioServidor.listar_centros_acopio() do
-      {:ok, centros} -> buscar(centros, entrada, & &1.codigo_centro_acopio)
-      _ -> entrada
+  def destinatario_necesidad(identificador) when is_binary(identificador) do
+    with {:ok, personas} <- PoblacionServidor.buscar_personas([]),
+         {:ok, familias} <- PoblacionServidor.listar_familias(),
+         {:ok, albergues} <- PoblacionServidor.listar_albergues(),
+         {:ok, centros} <- TerritorioServidor.listar_centros_acopio(),
+         {:ok, zonas} <- TerritorioServidor.listar_zonas() do
+      puntos =
+        zonas
+        |> Enum.flat_map(& &1.sectores)
+        |> Enum.flat_map(& &1.puntos_atencion)
+
+      destinatario =
+        buscar_destinatario(personas, identificador, :persona, fn persona ->
+          [persona.documento, persona.codigo_persona, persona.id]
+        end) ||
+          buscar_destinatario(familias, identificador, :familia, &[&1.codigo_familia, &1.id]) ||
+          buscar_destinatario(albergues, identificador, :albergue, &[&1.codigo, &1.id]) ||
+          buscar_destinatario(
+            puntos,
+            identificador,
+            :punto_atencion,
+            &[
+              &1.codigo_punto_atencion,
+              &1.id
+            ]
+          ) ||
+          buscar_destinatario(
+            centros,
+            identificador,
+            :centro_acopio,
+            &[
+              &1.codigo_centro_acopio,
+              &1.id
+            ]
+          ) ||
+          buscar_destinatario(zonas, identificador, :zona, &[&1.codigo_zona, &1.id])
+
+      case destinatario do
+        nil ->
+          {:error,
+           "No existe un destinatario registrado con el código o documento '#{identificador}'"}
+
+        {id, tipo} ->
+          {:ok, %{id: id, entidad_asociada: Atom.to_string(tipo)}}
+      end
     end
   end
 
-  def ubicacion(entrada, :albergue), do: albergue(entrada)
-  def ubicacion(entrada, _otro), do: zona(entrada)
+  def destinatario_necesidad(_),
+    do: {:error, "El destinatario debe ser un código o documento registrado"}
 
-  @doc """
-  Resuelve un origen/destino de transferencia: devuelve `{id, tipo}` donde
-  `tipo` es `:centro_acopio` o `:albergue`.
-  """
-  def ubicacion_transferencia(entrada) do
-    centros = listar_o_vacio(TerritorioServidor.listar_centros_acopio())
-    albergues = listar_o_vacio(PoblacionServidor.listar_albergues())
-
-    centro = Enum.find(centros, &(&1.id == entrada or &1.codigo_centro_acopio == entrada))
-    albergue = Enum.find(albergues, &(&1.id == entrada or &1.codigo == entrada))
-
-    cond do
-      centro ->
-        {centro.id, :centro_acopio}
-
-      albergue ->
-        {albergue.id, :albergue}
-
-      true ->
-        id_zona = zona(entrada)
-        if id_zona != entrada, do: {id_zona, :centro_acopio}, else: {entrada, :albergue}
-    end
+  defp coincide_ubicacion?(ubicacion, identificador) do
+    ubicacion.id == identificador or
+      Enum.any?(
+        codigos_ubicacion(ubicacion),
+        &(String.upcase(&1) == String.upcase(identificador))
+      )
   end
+
+  defp codigos_ubicacion(%{codigo_centro_acopio: codigo}), do: [codigo]
+  defp codigos_ubicacion(%{codigo_punto_atencion: codigo}), do: [codigo]
+  defp codigos_ubicacion(%{codigo: codigo}), do: [codigo]
+
+  defp codigo_ubicacion(%{codigo_centro_acopio: codigo}), do: codigo
+  defp codigo_ubicacion(%{codigo_punto_atencion: codigo}), do: codigo
+  defp codigo_ubicacion(%{codigo: codigo}), do: codigo
 
   # ------------------------------------------------------------------
   # Auxiliares
   # ------------------------------------------------------------------
-
-  defp listar_o_vacio({:ok, lista}), do: lista
-  defp listar_o_vacio(_), do: []
 
   defp buscar(lista, entrada, fun_codigo) when is_list(lista) do
     case Enum.find(lista, fn e -> e.id == entrada or fun_codigo.(e) == entrada end) do
@@ -107,4 +164,20 @@ defmodule Emergencia.Aplicacion.Resolutor do
       encontrado -> encontrado.id
     end
   end
+
+  defp buscar_destinatario(lista, identificador, tipo, fun_identificadores) do
+    case Enum.find(lista, fn entidad ->
+           Enum.any?(fun_identificadores.(entidad), &coincide_identificador?(&1, identificador))
+         end) do
+      nil -> nil
+      encontrado -> {encontrado.id, tipo}
+    end
+  end
+
+  defp coincide_identificador?(valor, identificador)
+       when is_binary(valor) and is_binary(identificador) do
+    valor == identificador or String.upcase(valor) == String.upcase(identificador)
+  end
+
+  defp coincide_identificador?(_, _), do: false
 end

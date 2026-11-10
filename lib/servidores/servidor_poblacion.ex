@@ -63,7 +63,10 @@ defmodule Emergencia.PoblacionServidor do
   # ============================================================================
 
   def registrar_persona(nombre, documento, id_zona, estado_persona, opciones \\ []) do
-    GenServer.call(__MODULE__, {:registrar_persona, nombre, documento, id_zona, estado_persona, opciones})
+    GenServer.call(
+      __MODULE__,
+      {:registrar_persona, nombre, documento, id_zona, estado_persona, opciones}
+    )
   end
 
   def cambiar_estado_persona(id_persona, nuevo_estado) do
@@ -179,8 +182,14 @@ defmodule Emergencia.PoblacionServidor do
   end
 
   @impl true
-  def handle_call({:registrar_persona, nombre, documento, id_zona, estado_persona, opciones},_from, estado) do
-    resultado = ServicioPersonas.registrar(estado, nombre, documento, id_zona, estado_persona, opciones)
+  def handle_call(
+        {:registrar_persona, nombre, documento, id_zona, estado_persona, opciones},
+        _from,
+        estado
+      ) do
+    resultado =
+      ServicioPersonas.registrar(estado, nombre, documento, id_zona, estado_persona, opciones)
+
     guardar_resultado(resultado, estado)
   end
 
@@ -204,7 +213,7 @@ defmodule Emergencia.PoblacionServidor do
 
   @impl true
   def handle_call({:consultar_persona, id_persona}, _from, estado) do
-    respuesta = ServicioPersonas.consultar_persona(estado.personas,id_persona)
+    respuesta = ServicioPersonas.consultar_persona(estado.personas, id_persona)
     {:reply, respuesta, estado}
   end
 

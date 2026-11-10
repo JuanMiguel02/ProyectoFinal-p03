@@ -4,8 +4,18 @@ defmodule Emergencia.Servicios.ServicioMascotas do
   """
   alias Emergencia.{ReporteMascota, CoincidenciaMascota}
 
-  def registrar_reporte(estado, tipo, especie, color, tamano, id_zona, id_contacto, opciones \\ []) do
-    with {:ok, reporte} <- ReporteMascota.nueva(tipo, especie, color, tamano, id_zona, id_contacto, opciones) do
+  def registrar_reporte(
+        estado,
+        tipo,
+        especie,
+        color,
+        tamano,
+        id_zona,
+        id_contacto,
+        opciones \\ []
+      ) do
+    with {:ok, reporte} <-
+           ReporteMascota.nueva(tipo, especie, color, tamano, id_zona, id_contacto, opciones) do
       nuevos_reportes = Map.put(estado.reportes_mascotas, reporte.id, reporte)
       estado_actualizado = %{estado | reportes_mascotas: nuevos_reportes}
       {:ok, reporte, estado_actualizado}
@@ -13,7 +23,7 @@ defmodule Emergencia.Servicios.ServicioMascotas do
   end
 
   def buscar_coincidencias(estado, id_reporte) do
-   with {:ok, reporte_origen} <- obtener_reporte(estado.reportes_mascotas, id_reporte) do
+    with {:ok, reporte_origen} <- obtener_reporte(estado.reportes_mascotas, id_reporte) do
       tipo_buscado = if reporte_origen.tipo == :perdida, do: :encontrada, else: :perdida
 
       coincidencias =
@@ -21,8 +31,10 @@ defmodule Emergencia.Servicios.ServicioMascotas do
         |> Map.values()
         |> Enum.filter(&(&1.tipo == tipo_buscado and &1.estado == :activa))
         |> Enum.map(fn r -> {r, calcular_similitud(reporte_origen, r)} end)
-        |> Enum.filter(fn {_r, puntaje} -> puntaje >= 40 end) # Umbral mínimo de similitud
-        |> Enum.sort_by(fn {_r, puntaje} -> puntaje end, :desc) # Las más parecidas primero
+        # Umbral mínimo de similitud
+        |> Enum.filter(fn {_r, puntaje} -> puntaje >= 40 end)
+        # Las más parecidas primero
+        |> Enum.sort_by(fn {_r, puntaje} -> puntaje end, :desc)
         |> Enum.map(fn {r, _puntaje} -> r end)
 
       {:ok, coincidencias}
@@ -39,29 +51,34 @@ defmodule Emergencia.Servicios.ServicioMascotas do
   end
 
   def confirmar_coincidencia(estado, id_coincidencia, _id_usuario \\ "SISTEMA") do
-   with {:ok, coincidencia} <- Map.fetch(estado.coincidencias_mascotas, id_coincidencia),
-         {:ok, rep_perdida} <- obtener_reporte(estado.reportes_mascotas, coincidencia.id_reporte_perdida),
-         {:ok, rep_encontrada} <- obtener_reporte(estado.reportes_mascotas, coincidencia.id_reporte_encontrada),
+    with {:ok, coincidencia} <- Map.fetch(estado.coincidencias_mascotas, id_coincidencia),
+         {:ok, rep_perdida} <-
+           obtener_reporte(estado.reportes_mascotas, coincidencia.id_reporte_perdida),
+         {:ok, rep_encontrada} <-
+           obtener_reporte(estado.reportes_mascotas, coincidencia.id_reporte_encontrada),
 
          # Delegamos el cambio a la entidad para que valide si es legal pasar a :resuelta
-         {:ok, rep_perdida_act} <- Emergencia.ReporteMascota.cambiar_estado(rep_perdida, :resuelta),
-         {:ok, rep_encontrada_act} <- Emergencia.ReporteMascota.cambiar_estado(rep_encontrada, :resuelta) do
+         {:ok, rep_perdida_act} <-
+           Emergencia.ReporteMascota.cambiar_estado(rep_perdida, :resuelta),
+         {:ok, rep_encontrada_act} <-
+           Emergencia.ReporteMascota.cambiar_estado(rep_encontrada, :resuelta) do
+      coincidencia_act = %{coincidencia | estado: :confirmada}
 
-       coincidencia_act = %{coincidencia | estado: :confirmada}
+      nuevos_reportes =
+        estado.reportes_mascotas
+        |> Map.put(rep_perdida.id, rep_perdida_act)
+        |> Map.put(rep_encontrada.id, rep_encontrada_act)
 
-       nuevos_reportes =
-         estado.reportes_mascotas
-         |> Map.put(rep_perdida.id, rep_perdida_act)
-         |> Map.put(rep_encontrada.id, rep_encontrada_act)
+      nuevas_coincidencias =
+        Map.put(estado.coincidencias_mascotas, id_coincidencia, coincidencia_act)
 
-       nuevas_coincidencias = Map.put(estado.coincidencias_mascotas, id_coincidencia, coincidencia_act)
+      estado_actualizado = %{
+        estado
+        | reportes_mascotas: nuevos_reportes,
+          coincidencias_mascotas: nuevas_coincidencias
+      }
 
-       estado_actualizado = %{estado |
-         reportes_mascotas: nuevos_reportes,
-         coincidencias_mascotas: nuevas_coincidencias
-       }
-
-       {:ok, coincidencia_act, estado_actualizado}
+      {:ok, coincidencia_act, estado_actualizado}
     else
       :error -> {:error, "Coincidencia no encontrada"}
       # Si la máquina de estados devuelve un error (ej. la mascota ya estaba resuelta),
@@ -74,7 +91,6 @@ defmodule Emergencia.Servicios.ServicioMascotas do
     with {:ok, rep_perdida} <- obtener_reporte(estado.reportes_mascotas, id_perdida),
          {:ok, rep_encontrada} <- obtener_reporte(estado.reportes_mascotas, id_encontrada),
          {:ok, coincidencia} <- CoincidenciaMascota.nueva(id_perdida, id_encontrada) do
-
       rep_perdida_act = %{rep_perdida | estado: :posible_coincidencia}
       rep_encontrada_act = %{rep_encontrada | estado: :posible_coincidencia}
 
@@ -86,9 +102,9 @@ defmodule Emergencia.Servicios.ServicioMascotas do
       nuevas_coincidencias = Map.put(estado.coincidencias_mascotas, coincidencia.id, coincidencia)
 
       estado_actualizado = %{
-        estado |
-        reportes_mascotas: nuevos_reportes,
-        coincidencias_mascotas: nuevas_coincidencias
+        estado
+        | reportes_mascotas: nuevos_reportes,
+          coincidencias_mascotas: nuevas_coincidencias
       }
 
       {:ok, coincidencia, estado_actualizado}
@@ -98,7 +114,6 @@ defmodule Emergencia.Servicios.ServicioMascotas do
   def resolver_reporte(estado, id_reporte, _id_usuario \\ "SISTEMA") do
     with {:ok, reporte} <- obtener_reporte(estado.reportes_mascotas, id_reporte),
          :ok <- validar_no_resuelto(reporte) do
-
       reporte_actualizado = %{reporte | estado: :resuelta}
       nuevos_reportes = Map.put(estado.reportes_mascotas, id_reporte, reporte_actualizado)
 
@@ -123,6 +138,7 @@ defmodule Emergencia.Servicios.ServicioMascotas do
           _ -> true
         end)
       end)
+
     {:ok, reportes}
   end
 
@@ -146,9 +162,14 @@ defmodule Emergencia.Servicios.ServicioMascotas do
     case buscar_coincidencias(estado, reporte.id) do
       {:ok, coincidencias} when coincidencias != [] ->
         # Aquí en un caso real se registraría la coincidencia o se enviaría un mensaje al coordinador
-        IO.puts("\n[NOTIFICACIÓN BACKGROUND] ¡Se encontraron #{length(coincidencias)} posibles coincidencias para el reporte de mascota '#{reporte.id}'!")
+        IO.puts(
+          "\n[NOTIFICACIÓN BACKGROUND] ¡Se encontraron #{length(coincidencias)} posibles coincidencias para el reporte de mascota '#{reporte.id}'!"
+        )
+
       _ ->
-        IO.puts("\n[NOTIFICACIÓN BACKGROUND] No se encontraron coincidencias inmediatas para la mascota.")
+        IO.puts(
+          "\n[NOTIFICACIÓN BACKGROUND] No se encontraron coincidencias inmediatas para la mascota."
+        )
     end
   end
 end

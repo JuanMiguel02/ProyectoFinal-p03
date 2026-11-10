@@ -1,7 +1,17 @@
 defmodule Emergencia.Necesidad do
   alias Emergencia.GeneradorID
 
-  @tipos_permitidos [:alimento, :medicina, :agua, :refugio, :personal, :transporte, :otro, :primeros_auxilios, :rescate]
+  @tipos_permitidos [
+    :alimento,
+    :medicina,
+    :agua,
+    :refugio,
+    :personal,
+    :transporte,
+    :otro,
+    :primeros_auxilios,
+    :rescate
+  ]
   @prioridades_permitidas [:baja, :media, :alta, :critica]
   @estados_permitidos [:pendiente, :asignada, :en_atencion, :atendida, :cancelada]
 
@@ -13,7 +23,10 @@ defmodule Emergencia.Necesidad do
     :cantidad_pendiente,
     :id_zona,
     :prioridad,
-    :estado
+    :id_responsable,
+    :estado,
+    :entidad_asociada,
+    :id_destinatario
   ]
   defstruct [
     :id,
@@ -27,8 +40,7 @@ defmodule Emergencia.Necesidad do
     :id_responsable,
     :estado,
     :entidad_asociada,
-    :id_destinatario,
-    :tipo_destinatario
+    :id_destinatario
   ]
 
   @type tipo_necesidad ::
@@ -43,11 +55,10 @@ defmodule Emergencia.Necesidad do
           cantidad_requerida: pos_integer(),
           id_zona: String.t(),
           prioridad: prioridad(),
-          id_responsable: String.t() | nil,
+          id_responsable: String.t(),
           estado: estado_necesidad(),
-          entidad_asociada: String.t() | nil,
-          id_destinatario: String.t() | nil,
-          tipo_destinatario: String.t() | nil
+          entidad_asociada: String.t(),
+          id_destinatario: String.t()
         }
 
   @doc """
@@ -60,7 +71,13 @@ defmodule Emergencia.Necesidad do
          :ok <- validar_enum(:tipo, tipo, @tipos_permitidos),
          :ok <- validar_enum(:prioridad, prioridad, @prioridades_permitidas),
          :ok <- validar_enum(:estado, estado, @estados_permitidos),
-         :ok <- validar_cantidad(cantidad) do
+         :ok <- validar_cantidad(cantidad),
+         :ok <-
+           validar_asociacion(
+             Keyword.get(opciones, :id_responsable),
+             Keyword.get(opciones, :id_destinatario),
+             Keyword.get(opciones, :entidad_asociada)
+           ) do
       {:ok,
        %__MODULE__{
          id: GeneradorID.generar_uuid(),
@@ -74,8 +91,7 @@ defmodule Emergencia.Necesidad do
          id_responsable: Keyword.get(opciones, :id_responsable),
          estado: estado,
          entidad_asociada: Keyword.get(opciones, :entidad_asociada),
-         id_destinatario: Keyword.get(opciones, :id_destinatario),
-         tipo_destinatario: Keyword.get(opciones, :tipo_destinatario)
+         id_destinatario: Keyword.get(opciones, :id_destinatario)
        }}
     end
   end
@@ -109,6 +125,24 @@ defmodule Emergencia.Necesidad do
     end
   end
 
+  defp validar_asociacion(responsable, destinatario, entidad) do
+    if texto_presente?(responsable) and texto_presente?(destinatario) and
+         entidad in [
+           "persona",
+           "familia",
+           "albergue",
+           "punto_atencion",
+           "centro_acopio",
+           "zona"
+         ] do
+      :ok
+    else
+      {:error, "La necesidad requiere responsable y destinatario válidos"}
+    end
+  end
+
+  defp texto_presente?(valor), do: is_binary(valor) and String.trim(valor) != ""
+
   def a_map(%__MODULE__{} = entidad) do
     entidad
     |> Map.from_struct()
@@ -119,6 +153,7 @@ defmodule Emergencia.Necesidad do
   end
 
   def desde_map(mapa) when is_map(mapa) do
+    mapa = completar_datos_legacy(mapa)
     campos = Map.keys(__MODULE__.__struct__()) -- [:__struct__]
 
     with {:ok, attrs} <- normalizar(mapa, campos),
@@ -126,6 +161,12 @@ defmodule Emergencia.Necesidad do
          {:ok, tipo} <- obtener_enum(attrs[:tipo], @tipos_permitidos, "tipo"),
          {:ok, prioridad} <- obtener_enum(attrs[:prioridad], @prioridades_permitidas, "prioridad"),
          {:ok, estado} <- obtener_enum(attrs[:estado], @estados_permitidos, "estado"),
+         :ok <-
+           validar_asociacion(
+             attrs[:id_responsable],
+             attrs[:id_destinatario],
+             attrs[:entidad_asociada]
+           ),
          {:ok, entidad} <-
            construir(
              attrs
@@ -141,6 +182,20 @@ defmodule Emergencia.Necesidad do
   end
 
   def desde_map(_), do: {:error, "La necesidad debe ser un mapa válido"}
+
+  defp completar_datos_legacy(mapa) do
+    mapa
+    |> Map.delete("tipo_destinatario")
+    |> Map.delete(:tipo_destinatario)
+    |> Map.update("id_responsable", "SISTEMA", &(&1 || "SISTEMA"))
+    |> Map.update("id_destinatario", valor_mapa(mapa, "id_zona", :id_zona), fn valor ->
+      valor || valor_mapa(mapa, "id_zona", :id_zona)
+    end)
+    |> Map.update("entidad_asociada", "zona", &(&1 || "zona"))
+  end
+
+  defp valor_mapa(mapa, clave_texto, clave_atomo),
+    do: Map.get(mapa, clave_texto, Map.get(mapa, clave_atomo))
 
   defp normalizar(mapa, campos) do
     Enum.reduce_while(mapa, {:ok, %{}}, fn {k, v}, {:ok, acc} ->
@@ -200,11 +255,13 @@ defmodule Emergencia.Necesidad do
   def cancelar(%__MODULE__{estado: estado} = necesidad) when estado in [:pendiente, :asignada] do
     {:ok, %{necesidad | estado: :cancelada}}
   end
+
   def cancelar(_), do: {:error, "Solo se pueden cancelar necesidades pendientes o asignadas"}
 
   @doc "Cierra una necesidad marcándola como atendida"
   def cerrar(%__MODULE__{estado: estado} = necesidad) when estado in [:asignada, :en_atencion] do
     {:ok, %{necesidad | estado: :atendida}}
   end
+
   def cerrar(_), do: {:error, "Solo se pueden cerrar necesidades en proceso de atención"}
 end

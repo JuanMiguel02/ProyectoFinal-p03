@@ -1,5 +1,33 @@
 [
   {
+    "descripcion": "Se registró el recurso Agua",
+    "fecha": "2026-11-10T02:49:08.831000Z",
+    "id": "aa9e43ef-301e-4ba0-8dd5-ad098735c476",
+    "id_usuario": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
+    "operacion": "REGISTRAR_RECURSO"
+  },
+  {
+    "descripcion": "El usuario admin registró a la persona PER-0002",
+    "fecha": "2026-11-10T20:35:03.050000Z",
+    "id": "a2faa13a-0ae4-4932-a5d2-3b6ab1580df2",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registro_persona"
+  },
+  {
+    "descripcion": "El usuario admin registró el ingreso de una persona a un albergue",
+    "fecha": "2026-11-10T20:42:01.596000Z",
+    "id": "ab74118e-83b8-402d-8e7a-111462e26511",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "ingreso_albergue"
+  },
+  {
+    "descripcion": "El usuario admin registró reporte de mascota perdida",
+    "fecha": "2026-11-10T20:54:03.561000Z",
+    "id": "e181b7e8-636f-4e36-8321-a77ba2e6ea0f",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_reporte_mascota"
+  },
+  {
     "descripcion": "El usuario coord cerró sesión",
     "fecha": "2026-11-10T02:49:44.475000Z",
     "id": "13474170-67a4-4ca6-8b19-b6d5e27ddadd",
@@ -7,39 +35,25 @@
     "operacion": "LOGOUT"
   },
   {
-    "descripcion": "El usuario vol cerró sesión",
-    "fecha": "2026-11-10T02:48:40.636000Z",
-    "id": "1e549e0f-3d86-46d0-9b83-814239d9a946",
-    "id_usuario": "3db02d33-6f68-46d9-b553-0799f3f8067c",
-    "operacion": "LOGOUT"
+    "descripcion": "El usuario admin registró 10 unidades de REC-0002 en PAT-0001",
+    "fecha": "2026-11-10T19:12:13.268000Z",
+    "id": "af68b876-9fc0-4fa9-be2c-66d488b8dca8",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_recurso"
   },
   {
-    "descripcion": "Se registró centro Acopio1",
-    "fecha": "2026-11-10T02:49:19.271000Z",
-    "id": "1f37f3cb-b328-44c2-8a85-b7e5fc2df2c7",
-    "id_usuario": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
-    "operacion": "REGISTRAR_CENTRO"
+    "descripcion": "El usuario admin registró la zona ZonaSur",
+    "fecha": "2026-11-10T20:00:22.586000Z",
+    "id": "c99f8bb8-f5e2-4535-aa01-6f4a67bf89d1",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_zona"
   },
   {
-    "descripcion": "Se registró el sector Sector1",
-    "fecha": "2026-11-10T02:49:04.158000Z",
-    "id": "2b42dffc-7aa1-45c6-b42b-3f308ea98de8",
-    "id_usuario": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
-    "operacion": "REGISTRAR_SECTOR"
-  },
-  {
-    "descripcion": "El usuario USR-0004 creó su propia cuenta como voluntario",
-    "fecha": "2026-11-10T02:48:15.921000Z",
-    "id": "3b8511a5-a679-4b7e-8111-bd274e518206",
-    "id_usuario": "3db02d33-6f68-46d9-b553-0799f3f8067c",
-    "operacion": "registro_usuario"
-  },
-  {
-    "descripcion": "Se registró necesidad de tipo agua",
-    "fecha": "2026-11-10T02:49:24.748000Z",
-    "id": "3d9d8237-7ba0-4d5e-90e9-dea8e776d65a",
-    "id_usuario": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
-    "operacion": "REGISTRAR_NECESIDAD"
+    "descripcion": "El usuario admin registró reporte de mascota perdida",
+    "fecha": "2026-11-10T20:55:05.396000Z",
+    "id": "6860c4c4-6985-447a-91ed-b1c66335f6b0",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_reporte_mascota"
   },
   {
     "descripcion": "El usuario pepe cerró sesión",
@@ -49,11 +63,11 @@
     "operacion": "LOGOUT"
   },
   {
-    "descripcion": "El usuario USR-0003 creó su propia cuenta como ciudadano",
-    "fecha": "2026-11-10T02:47:31.492000Z",
-    "id": "4ab1cec3-666b-40b1-9217-cc577e1c59a2",
-    "id_usuario": "88d0a24c-2705-4452-a946-124077dd68e8",
-    "operacion": "registro_usuario"
+    "descripcion": "El usuario admin confirmó la entrega de un mensaje",
+    "fecha": "2026-11-10T20:33:20.554000Z",
+    "id": "58694a39-5472-4b87-ad9e-b5c5d8520456",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "confirmar_entrega"
   },
   {
     "descripcion": "El usuario vol inició sesión",
@@ -63,18 +77,109 @@
     "operacion": "inicio_sesion"
   },
   {
-    "descripcion": "El usuario pepe inició sesión",
-    "fecha": "2026-11-10T02:47:31.496000Z",
-    "id": "947cb43b-33db-4e46-b98e-9c2506967def",
-    "id_usuario": "88d0a24c-2705-4452-a946-124077dd68e8",
+    "descripcion": "El usuario admin asignó una persona a la familia FAM-0001",
+    "fecha": "2026-11-10T20:36:42.561000Z",
+    "id": "f3ec3028-752b-44ff-b644-8d6ba40b8af8",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "asignacion_familia"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T20:56:16.050000Z",
+    "id": "ee526b29-76ab-4a00-870a-edc8217f378c",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
   },
   {
-    "descripcion": "Se registró el recurso Agua",
-    "fecha": "2026-11-10T02:49:08.831000Z",
-    "id": "aa9e43ef-301e-4ba0-8dd5-ad098735c476",
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T20:53:26.899000Z",
+    "id": "aeaf6835-577f-4f26-a48f-ed94f842d8ff",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario USR-0003 creó su propia cuenta como ciudadano",
+    "fecha": "2026-11-10T02:47:31.492000Z",
+    "id": "4ab1cec3-666b-40b1-9217-cc577e1c59a2",
+    "id_usuario": "88d0a24c-2705-4452-a946-124077dd68e8",
+    "operacion": "registro_usuario"
+  },
+  {
+    "descripcion": "El usuario admin registró una necesidad de tipo agua",
+    "fecha": "2026-11-10T20:02:08.737000Z",
+    "id": "27f403ee-a29d-4b44-be08-fe74050f94ba",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_necesidad"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T20:32:14.366000Z",
+    "id": "6dec7a6c-b7e8-4097-9e4e-2cb8bcbefe6b",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin registró reporte de mascota encontrada",
+    "fecha": "2026-11-10T20:43:54.474000Z",
+    "id": "eb06fd80-e0e1-434a-9e0a-021e593c64d5",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_reporte_mascota"
+  },
+  {
+    "descripcion": "El usuario admin registró a la familia FAM-0001",
+    "fecha": "2026-11-10T20:35:48.499000Z",
+    "id": "771dba8a-40dc-4dbf-b162-d5e2b632ff0f",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registro_familia"
+  },
+  {
+    "descripcion": "El usuario admin registró una necesidad de tipo agua",
+    "fecha": "2026-11-10T20:16:02.088000Z",
+    "id": "3ea0d91e-6171-41df-8f6e-a75c9378d9f7",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_necesidad"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T19:59:37.168000Z",
+    "id": "c3c99d38-93d0-4fa3-a90c-42bb9c9e25eb",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin transfirió 4 unidades del recurso REC-0002",
+    "fecha": "2026-11-10T19:14:25.407000Z",
+    "id": "93814c4a-9d84-4dac-a095-19a5b1c8a0d2",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "transferir_recurso"
+  },
+  {
+    "descripcion": "Se registró centro Acopio1",
+    "fecha": "2026-11-10T02:49:19.271000Z",
+    "id": "1f37f3cb-b328-44c2-8a85-b7e5fc2df2c7",
     "id_usuario": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
-    "operacion": "REGISTRAR_RECURSO"
+    "operacion": "REGISTRAR_CENTRO"
+  },
+  {
+    "descripcion": "El usuario admin envió un mensaje familiar",
+    "fecha": "2026-11-10T20:33:02.423000Z",
+    "id": "92be671c-88be-46cc-af15-a3806bc83dd0",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "enviar_mensaje"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T20:14:40.465000Z",
+    "id": "24568b90-c1fd-40ef-ba1e-ce3b28863d7e",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "Se registró el sector Sector1",
+    "fecha": "2026-11-10T02:49:04.158000Z",
+    "id": "2b42dffc-7aa1-45c6-b42b-3f308ea98de8",
+    "id_usuario": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
+    "operacion": "REGISTRAR_SECTOR"
   },
   {
     "descripcion": "El usuario coord inició sesión",
@@ -84,10 +189,108 @@
     "operacion": "inicio_sesion"
   },
   {
+    "descripcion": "El usuario admin registró reporte de mascota encontrada",
+    "fecha": "2026-11-10T20:57:01.026000Z",
+    "id": "77e940fe-6798-44ff-900b-c5edc275bb96",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_reporte_mascota"
+  },
+  {
+    "descripcion": "El usuario admin registró el albergue ALB-0001",
+    "fecha": "2026-11-10T20:38:55.376000Z",
+    "id": "0b105041-330d-4d89-85d6-cb9fcd6bd108",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registro_albergue"
+  },
+  {
+    "descripcion": "El usuario admin registró reporte de mascota perdida",
+    "fecha": "2026-11-10T20:43:20.610000Z",
+    "id": "fee58299-ba38-4b40-b36a-701924a97c80",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_reporte_mascota"
+  },
+  {
+    "descripcion": "El usuario admin registró a la persona PER-0001",
+    "fecha": "2026-11-10T20:17:28.105000Z",
+    "id": "dbdbbed6-0149-4e0f-a816-c1aec222dd48",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registro_persona"
+  },
+  {
+    "descripcion": "El usuario admin registró reporte de mascota perdida",
+    "fecha": "2026-11-10T20:56:41.248000Z",
+    "id": "a7737cb2-c36f-4dc5-a28e-a7504ee640f6",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_reporte_mascota"
+  },
+  {
+    "descripcion": "El usuario admin registró el punto de atención PuntoAyuda",
+    "fecha": "2026-11-10T19:10:11.998000Z",
+    "id": "d8cce6af-f072-452b-a244-7691cc131dbc",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_punto_atencion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T19:05:12.577000Z",
+    "id": "992bf48f-54b9-46cc-8f2f-2838d5d6e66f",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario USR-0004 creó su propia cuenta como voluntario",
+    "fecha": "2026-11-10T02:48:15.921000Z",
+    "id": "3b8511a5-a679-4b7e-8111-bd274e518206",
+    "id_usuario": "3db02d33-6f68-46d9-b553-0799f3f8067c",
+    "operacion": "registro_usuario"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T19:21:33.391000Z",
+    "id": "27a085da-4d4c-492f-a2d5-61e5ccb9b219",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario vol cerró sesión",
+    "fecha": "2026-11-10T02:48:40.636000Z",
+    "id": "1e549e0f-3d86-46d0-9b83-814239d9a946",
+    "id_usuario": "3db02d33-6f68-46d9-b553-0799f3f8067c",
+    "operacion": "LOGOUT"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T19:08:41.995000Z",
+    "id": "6732f377-f860-4be0-a394-a4440014666f",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "Se registró necesidad de tipo agua",
+    "fecha": "2026-11-10T02:49:24.748000Z",
+    "id": "3d9d8237-7ba0-4d5e-90e9-dea8e776d65a",
+    "id_usuario": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
+    "operacion": "REGISTRAR_NECESIDAD"
+  },
+  {
     "descripcion": "Se registró la zona Norte",
     "fecha": "2026-11-10T02:48:55.229000Z",
     "id": "f6b68753-8e70-40c1-803e-834426e16674",
     "id_usuario": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
     "operacion": "REGISTRAR_ZONA"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T20:41:59.821000Z",
+    "id": "ec6e2f2f-f31a-47cd-abdb-fad05c36dacb",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario pepe inició sesión",
+    "fecha": "2026-11-10T02:47:31.496000Z",
+    "id": "947cb43b-33db-4e46-b98e-9c2506967def",
+    "id_usuario": "88d0a24c-2705-4452-a946-124077dd68e8",
+    "operacion": "inicio_sesion"
   }
 ]

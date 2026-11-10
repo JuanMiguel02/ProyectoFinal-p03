@@ -1,4 +1,3 @@
-
 defmodule Emergencia.Consola.MenuAlbergues do
   @moduledoc """
   Gestiona la interfaz de consola para las operaciones
@@ -22,13 +21,26 @@ defmodule Emergencia.Consola.MenuAlbergues do
     opcion = Util.ingresar("\nSeleccione una opción: ", :texto)
 
     case opcion do
-      "1" -> registrar_albergue(sesion)
-      "2" -> ingresar_persona(sesion)
-      "3" -> registrar_salida(sesion)
-      "4" -> consultar_cupos(sesion)
-      "5" -> consultar_ocupacion(sesion)
-      "6" -> reporte_ocupacion(sesion)
-      "7" -> :ok
+      "1" ->
+        registrar_albergue(sesion)
+
+      "2" ->
+        ingresar_persona(sesion)
+
+      "3" ->
+        registrar_salida(sesion)
+
+      "4" ->
+        consultar_cupos(sesion)
+
+      "5" ->
+        consultar_ocupacion(sesion)
+
+      "6" ->
+        reporte_ocupacion(sesion)
+
+      "7" ->
+        :ok
 
       _ ->
         Util.mostrar("\nOpción no válida.", :error)
@@ -259,6 +271,7 @@ defmodule Emergencia.Consola.MenuAlbergues do
           Util.mostrar("Capacidad: #{albergue.capacidad_maxima}", :mensaje)
           Util.mostrar("Ocupación: #{albergue.ocupacion_actual}", :mensaje)
           Util.mostrar("Disponibles: #{albergue.cupos_disponibles}", :mensaje)
+
           Util.mostrar(
             "Porcentaje de ocupación: #{albergue.porcentaje_ocupacion}%",
             :mensaje
@@ -356,8 +369,7 @@ defmodule Emergencia.Consola.MenuAlbergues do
             {:error, "No se encontró ninguna persona."}
 
           {:ok, _personas} ->
-            {:error,
-             "Se encontraron varias personas. Utilice un identificador más específico."}
+            {:error, "Se encontraron varias personas. Utilice un identificador más específico."}
 
           {:error, motivo} ->
             {:error, motivo}

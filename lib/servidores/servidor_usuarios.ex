@@ -17,11 +17,14 @@ defmodule Emergencia.UsuariosServidor do
   # ============================================================
 
   def start_link(opciones \\ []) do
-    GenServer.start_link(__MODULE__, opciones,name: __MODULE__)
+    GenServer.start_link(__MODULE__, opciones, name: __MODULE__)
   end
 
   def registrar(nombre_usuario, contrasena, nombre_completo, tipo, opciones \\ []) do
-    GenServer.call(__MODULE__, {:registrar, nombre_usuario, contrasena, nombre_completo, tipo, opciones})
+    GenServer.call(
+      __MODULE__,
+      {:registrar, nombre_usuario, contrasena, nombre_completo, tipo, opciones}
+    )
   end
 
   def autenticar(nombre_usuario, contrasena) do
@@ -67,8 +70,19 @@ defmodule Emergencia.UsuariosServidor do
   # ============================================================
 
   @impl true
-  def handle_call({:registrar, nombre_usuario, contrasena, nombre_completo, tipo, opciones},_from, estado) do
-    case ServicioUsuario.registrar(estado,nombre_usuario,contrasena, nombre_completo, tipo, opciones) do
+  def handle_call(
+        {:registrar, nombre_usuario, contrasena, nombre_completo, tipo, opciones},
+        _from,
+        estado
+      ) do
+    case ServicioUsuario.registrar(
+           estado,
+           nombre_usuario,
+           contrasena,
+           nombre_completo,
+           tipo,
+           opciones
+         ) do
       {:ok, usuario, nuevo_estado} ->
         case GestorDatos.guardar_coleccion(
                %{usuarios: nuevo_estado.usuarios},
@@ -156,29 +170,29 @@ defmodule Emergencia.UsuariosServidor do
   end
 
   @impl true
-def handle_call({:autorizar, operacion}, {pid, _tag}, estado) do
-  sesion =
-    Enum.find(estado.sesiones, fn {_id_usuario, datos_sesion} ->
-      datos_sesion.pid == pid
-    end)
+  def handle_call({:autorizar, operacion}, {pid, _tag}, estado) do
+    sesion =
+      Enum.find(estado.sesiones, fn {_id_usuario, datos_sesion} ->
+        datos_sesion.pid == pid
+      end)
 
-  respuesta =
-    case sesion do
-      {id_usuario, _datos_sesion} ->
-        case Map.fetch(estado.usuarios, id_usuario) do
-          {:ok, usuario} ->
-            ServicioUsuario.autorizar(usuario, operacion)
+    respuesta =
+      case sesion do
+        {id_usuario, _datos_sesion} ->
+          case Map.fetch(estado.usuarios, id_usuario) do
+            {:ok, usuario} ->
+              ServicioUsuario.autorizar(usuario, operacion)
 
-          :error ->
-            {:error, :usuario_no_encontrado}
-        end
+            :error ->
+              {:error, :usuario_no_encontrado}
+          end
 
-      nil ->
-        {:error, :sesion_no_autenticada}
-    end
+        nil ->
+          {:error, :sesion_no_autenticada}
+      end
 
-  {:reply, respuesta, estado}
-end
+    {:reply, respuesta, estado}
+  end
 
   @impl true
   def handle_info(

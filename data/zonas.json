@@ -1,5 +1,13 @@
 [
   {
+    "codigo_zona": "ZON-0002",
+    "id": "6b12672f-4249-47f8-9c78-5f24fe239607",
+    "nivel_afectacion": "medio",
+    "nombre": "ZonaSur",
+    "personas_estimadas": 300,
+    "sectores": []
+  },
+  {
     "codigo_zona": "ZON-0001",
     "id": "d467bde6-fe02-499a-9015-2b93377cebc1",
     "nivel_afectacion": "alto",
@@ -12,7 +20,16 @@
         "nivel_afectacion": "alto",
         "nombre": "Sector1",
         "personas_afectadas": 50,
-        "puntos_atencion": []
+        "puntos_atencion": [
+          {
+            "codigo_punto_atencion": "PAT-0001",
+            "descripcion": "Almacen",
+            "id": "c9aa40dc-8abd-493f-84b7-daf34e9fef33",
+            "nombre": "PuntoAyuda",
+            "tipo": "logistico",
+            "ubicacion": "CRA14"
+          }
+        ]
       }
     ]
   }

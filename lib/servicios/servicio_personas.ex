@@ -35,14 +35,15 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   """
   def registrar(estado, nombre, documento, id_zona, estado_persona, opciones \\ []) do
     codigo_persona = GeneradorID.generar("PER", estado.personas, & &1.codigo_persona)
+
     with :ok <- validar_id_no_proporcionado(opciones),
          :ok <- validar_nombre(nombre),
          :ok <- validar_documento(documento),
          :ok <- validar_id_zona(id_zona),
          :ok <- validar_estado(estado_persona),
          :ok <- validar_documento_unico(estado.personas, documento),
-         {:ok, nueva_persona} <- Persona.nueva(nombre, codigo_persona, documento, id_zona, estado_persona, opciones) do
-
+         {:ok, nueva_persona} <-
+           Persona.nueva(nombre, codigo_persona, documento, id_zona, estado_persona, opciones) do
       nuevas_personas = Map.put(estado.personas, nueva_persona.id, nueva_persona)
 
       estado_actualizado = %{estado | personas: nuevas_personas}
@@ -90,14 +91,12 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   def asignar_a_familia(%EstadoPoblacion{} = estado, id_persona, id_familia) do
     with {:ok, persona} <- obtener_persona(estado.personas, id_persona),
          :ok <- validar_familia_existente(estado.familias, id_familia) do
+      persona_actualizada = %{persona | id_familia: id_familia}
+      nuevas_personas = Map.put(estado.personas, persona.id, persona_actualizada)
+      nuevo_estado = %{estado | personas: nuevas_personas}
 
-          persona_actualizada = %{persona | id_familia: id_familia}
-          nuevas_personas = Map.put(estado.personas, persona.id, persona_actualizada)
-          nuevo_estado = %{estado | personas: nuevas_personas}
-
-          {:ok, persona_actualizada, nuevo_estado}
-         end
-
+      {:ok, persona_actualizada, nuevo_estado}
+    end
   end
 
   @doc """
@@ -131,6 +130,7 @@ defmodule Emergencia.Servicios.ServicioPersonas do
   end
 
   defp contar_estado_recursivo([], _estado_buscado, total_acumulado), do: total_acumulado
+
   defp contar_estado_recursivo([persona | resto], estado_buscado, total_acumulado) do
     if persona.estado == estado_buscado do
       contar_estado_recursivo(resto, estado_buscado, total_acumulado + 1)
@@ -160,6 +160,7 @@ defmodule Emergencia.Servicios.ServicioPersonas do
       {:error, "La familia no existe"}
     end
   end
+
   defp validar_documento_unico(personas, documento) do
     existe =
       Enum.any?(personas, fn {_id, persona} ->

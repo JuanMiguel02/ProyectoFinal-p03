@@ -25,7 +25,10 @@ defmodule Emergencia.TerritorioServidor do
   end
 
   def registrar_sector(id_zona, nombre, nivel, personas_afectadas, id_usuario \\ "SISTEMA") do
-    GenServer.call(__MODULE__, {:registrar_sector, id_zona, nombre, nivel, personas_afectadas, id_usuario})
+    GenServer.call(
+      __MODULE__,
+      {:registrar_sector, id_zona, nombre, nivel, personas_afectadas, id_usuario}
+    )
   end
 
   def listar_zonas() do
@@ -46,7 +49,10 @@ defmodule Emergencia.TerritorioServidor do
   end
 
   def registrar_punto_atencion(id_sector, nombre, tipo, ubicacion, descripcion \\ nil) do
-    GenServer.call(__MODULE__, {:registrar_punto_atencion, id_sector, nombre, tipo, ubicacion, descripcion})
+    GenServer.call(
+      __MODULE__,
+      {:registrar_punto_atencion, id_sector, nombre, tipo, ubicacion, descripcion}
+    )
   end
 
   def estadisticas_zona(id_zona) do
@@ -64,6 +70,7 @@ defmodule Emergencia.TerritorioServidor do
           zonas: Map.get(datos, :zonas, %{}),
           centros_acopio: Map.get(datos, :centros_acopio, %{})
         }
+
         {:ok, estado}
 
       {:error, motivo} ->
@@ -79,6 +86,7 @@ defmodule Emergencia.TerritorioServidor do
           :ok -> {:reply, {:ok, resultado}, nuevo_estado}
           {:error, motivo} -> {:reply, {:error, {:error_persistencia, motivo}}, estado}
         end
+
       {:error, motivo} ->
         {:reply, {:error, motivo}, estado}
     end
@@ -91,13 +99,18 @@ defmodule Emergencia.TerritorioServidor do
   end
 
   @impl true
-  def handle_call({:registrar_sector, id_zona, nombre, nivel, personas, id_usuario}, _from, estado) do
+  def handle_call(
+        {:registrar_sector, id_zona, nombre, nivel, personas, id_usuario},
+        _from,
+        estado
+      ) do
     case ServicioTerritorio.registrar_sector(estado, id_zona, nombre, nivel, personas, id_usuario) do
       {:ok, resultado, nuevo_estado} ->
         case persistir(nuevo_estado) do
           :ok -> {:reply, {:ok, resultado}, nuevo_estado}
           {:error, motivo} -> {:reply, {:error, {:error_persistencia, motivo}}, estado}
         end
+
       {:error, motivo} ->
         {:reply, {:error, motivo}, estado}
     end
@@ -110,26 +123,43 @@ defmodule Emergencia.TerritorioServidor do
   end
 
   @impl true
-  def handle_call({:registrar_centro_acopio, nombre, direccion, capacidad, id_zona}, _from, estado) do
+  def handle_call(
+        {:registrar_centro_acopio, nombre, direccion, capacidad, id_zona},
+        _from,
+        estado
+      ) do
     case ServicioTerritorio.registrar_centro_acopio(estado, nombre, direccion, capacidad, id_zona) do
       {:ok, resultado, nuevo_estado} ->
         case persistir(nuevo_estado) do
           :ok -> {:reply, {:ok, resultado}, nuevo_estado}
           {:error, motivo} -> {:reply, {:error, {:error_persistencia, motivo}}, estado}
         end
+
       {:error, motivo} ->
         {:reply, {:error, motivo}, estado}
     end
   end
 
   @impl true
-  def handle_call({:registrar_punto_atencion, id_sector, nombre, tipo, ubicacion, descripcion}, _from, estado) do
-    case ServicioTerritorio.registrar_punto_atencion(estado, id_sector, nombre, tipo, ubicacion, descripcion) do
+  def handle_call(
+        {:registrar_punto_atencion, id_sector, nombre, tipo, ubicacion, descripcion},
+        _from,
+        estado
+      ) do
+    case ServicioTerritorio.registrar_punto_atencion(
+           estado,
+           id_sector,
+           nombre,
+           tipo,
+           ubicacion,
+           descripcion
+         ) do
       {:ok, resultado, nuevo_estado} ->
         case persistir(nuevo_estado) do
           :ok -> {:reply, {:ok, resultado}, nuevo_estado}
           {:error, motivo} -> {:reply, {:error, {:error_persistencia, motivo}}, estado}
         end
+
       {:error, motivo} ->
         {:reply, {:error, motivo}, estado}
     end
@@ -147,7 +177,8 @@ defmodule Emergencia.TerritorioServidor do
     {:reply, respuesta, estado}
   end
 
-  def handle_call(:listar_centros_acopio, _from, estado), do: {:reply, {:ok, Map.values(estado.centros_acopio)}, estado}
+  def handle_call(:listar_centros_acopio, _from, estado),
+    do: {:reply, {:ok, Map.values(estado.centros_acopio)}, estado}
 
   # ============================================================================
   # Persistencia

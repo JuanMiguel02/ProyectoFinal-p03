@@ -3,29 +3,35 @@ defmodule Emergencia.AsignacionRecurso do
 
   @estados_permitidos [:asignado, :entregado, :cancelado]
 
-  @enforce_keys [:id, :id_necesidad, :id_inventario, :cantidad_asignada, :fecha_asignada, :estado]
-  defstruct [:id, :id_necesidad, :id_inventario, :cantidad_asignada, :fecha_asignada, :estado]
+  @enforce_keys [:id, :id_necesidad, :cantidad_asignada, :fecha_asignada, :estado]
+  defstruct [
+    :id,
+    :id_necesidad,
+    :id_recurso,
+    :ubicacion,
+    :cantidad_asignada,
+    :fecha_asignada,
+    :estado
+  ]
 
   @type estado_asignacion :: :asignado | :entregado | :cancelado
   @type t :: %__MODULE__{
           id: String.t(),
           id_necesidad: String.t(),
-          id_inventario: String.t(),
+          id_recurso: String.t() | nil,
+          ubicacion: String.t() | nil,
           cantidad_asignada: pos_integer(),
           fecha_asignada: DateTime.t(),
           estado: estado_asignacion()
         }
 
-  @doc """
-  Crea una nueva asignación de recurso. Asigna la fecha actual y estado :asignado por defecto.
-  """
-  def nueva(id_necesidad, id_inventario, cantidad, opciones \\ []) do
+  def nueva_directa(id_necesidad, id_recurso, ubicacion, cantidad, opciones \\ []) do
     fecha = Keyword.get(opciones, :fecha_asignada, DateTime.utc_now())
     estado = Keyword.get(opciones, :estado, :asignado)
 
     cond do
-      is_nil(id_necesidad) or is_nil(id_inventario) ->
-        {:error, "ID de necesidad e ID de inventario son obligatorios"}
+      is_nil(id_necesidad) or is_nil(id_recurso) or is_nil(ubicacion) ->
+        {:error, "Necesidad, recurso y ubicación son obligatorios"}
 
       not is_integer(cantidad) or cantidad <= 0 ->
         {:error, "La cantidad asignada debe ser un número entero mayor a cero"}
@@ -38,7 +44,8 @@ defmodule Emergencia.AsignacionRecurso do
          %__MODULE__{
            id: GeneradorID.generar_uuid(),
            id_necesidad: id_necesidad,
-           id_inventario: id_inventario,
+           id_recurso: id_recurso,
+           ubicacion: ubicacion,
            cantidad_asignada: cantidad,
            fecha_asignada: fecha,
            estado: estado

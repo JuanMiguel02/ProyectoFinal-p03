@@ -68,8 +68,7 @@ defmodule Emergencia.MensajesServidor do
       {:ok, datos} ->
         estado = %EstadoMensajes{
           mensajes: Map.get(datos, :mensajes, %{}),
-          mensajes_destinatarios:
-            Map.get(datos, :mensajes_destinatarios, %{})
+          mensajes_destinatarios: Map.get(datos, :mensajes_destinatarios, %{})
         }
 
         {:ok, estado}

@@ -19,26 +19,34 @@ defmodule Emergencia.Servicios.ServicioTerritorio do
   end
 
   def buscar_zona(estado, identificador) do
-  zonas = Map.values(estado.zonas)
+    zonas = Map.values(estado.zonas)
 
-  case Enum.find(zonas, fn zona ->
-         zona.id == identificador or
-           zona.codigo_zona == String.upcase(identificador)
-       end) do
-    nil ->
-      {:error, "No se encontró una zona con el identificador '#{identificador}'"}
+    case Enum.find(zonas, fn zona ->
+           zona.id == identificador or
+             zona.codigo_zona == String.upcase(identificador)
+         end) do
+      nil ->
+        {:error, "No se encontró una zona con el identificador '#{identificador}'"}
 
-    zona ->
-      {:ok, zona}
+      zona ->
+        {:ok, zona}
+    end
   end
-end
 
   @doc """
   Registra un sector y lo asocia a una zona existente.
   """
-  def registrar_sector(estado_global, id_zona, nombre, nivel, personas_afectadas, _id_usuario \\ "SISTEMA") do
-   with {:ok, zona} <- obtener_zona(estado_global.zonas, id_zona) do
-      codigo_sector = GeneradorID.generar("SEC", Map.new(zona.sectores, &{&1.id, &1}), & &1.codigo_sector)
+  def registrar_sector(
+        estado_global,
+        id_zona,
+        nombre,
+        nivel,
+        personas_afectadas,
+        _id_usuario \\ "SISTEMA"
+      ) do
+    with {:ok, zona} <- obtener_zona(estado_global.zonas, id_zona) do
+      codigo_sector =
+        GeneradorID.generar("SEC", Map.new(zona.sectores, &{&1.id, &1}), & &1.codigo_sector)
 
       case Sector.nuevo(nombre, codigo_sector, nivel, personas_afectadas) do
         {:ok, nuevo_sector} ->
@@ -48,7 +56,9 @@ end
           # Eliminamos la dependencia del mapa plano 'sectores'
           estado_actualizado = %{estado_global | zonas: nuevas_zonas}
           {:ok, nuevo_sector, estado_actualizado}
-        error -> error
+
+        error ->
+          error
       end
     end
   end
@@ -69,6 +79,7 @@ end
         cantidad_sectores: length(zona.sectores),
         cantidad_puntos_atencion: total_puntos
       }
+
       {:ok, estadisticas}
     end
   end
@@ -89,11 +100,11 @@ end
   Registra un Centro de Acopio y lo vincula a una zona existente.
   """
   def registrar_centro_acopio(estado_global, nombre, direccion, capacidad, id_zona) do
-    codigo_centro = GeneradorID.generar("CAC", estado_global.centros_acopio, & &1.codigo_centro_acopio)
+    codigo_centro =
+      GeneradorID.generar("CAC", estado_global.centros_acopio, & &1.codigo_centro_acopio)
 
     with {:ok, _zona} <- obtener_zona(estado_global.zonas, id_zona),
          {:ok, centro} <- CentroAcopio.nuevo(nombre, codigo_centro, direccion, capacidad, id_zona) do
-
       nuevos_centros = Map.put(estado_global.centros_acopio, centro.id, centro)
       estado_actualizado = %{estado_global | centros_acopio: nuevos_centros}
 
@@ -108,27 +119,47 @@ end
   @doc """
   Registra un Punto de Atención y lo inyecta en la lista de puntos de un sector.
   """
-  def registrar_punto_atencion(estado_global, id_sector, nombre, tipo, ubicacion, descripcion \\ nil) do
-   codigo_punto = GeneradorID.generar("PAT", %{}, fn _ -> nil end)
+  def registrar_punto_atencion(
+        estado_global,
+        id_sector,
+        nombre,
+        tipo,
+        ubicacion,
+        descripcion \\ nil
+      ) do
+    puntos_existentes =
+      estado_global.zonas
+      |> Map.values()
+      |> Enum.flat_map(& &1.sectores)
+      |> Enum.flat_map(& &1.puntos_atencion)
 
-    {zona_encontrada, sector_encontrado} =
-      Enum.find_value(estado_global.zonas, {nil, nil}, fn {_id_z, z} ->
-        case Enum.find(z.sectores, &(&1.id == id_sector or &1.codigo_sector == id_sector)) do
-          nil -> false
-          s -> {z, s}
-        end
-      end)
+    codigo_punto =
+      GeneradorID.generar(
+        "PAT",
+        Map.new(puntos_existentes, &{&1.id, &1}),
+        & &1.codigo_punto_atencion
+      )
 
-    if is_nil(zona_encontrada) do
-      {:error, "El sector con identificador '#{id_sector}' no existe"}
-    else
-      {:ok, punto} = PuntoAtencion.nuevo(nombre, codigo_punto, tipo, ubicacion, descripcion)
+    with {zona_encontrada, sector_encontrado} when not is_nil(zona_encontrada) <-
+           Enum.find_value(estado_global.zonas, {nil, nil}, fn {_id_z, zona} ->
+             case Enum.find(zona.sectores, &(&1.id == id_sector or &1.codigo_sector == id_sector)) do
+               nil -> false
+               sector -> {zona, sector}
+             end
+           end),
+         {:ok, punto} <- PuntoAtencion.nuevo(nombre, codigo_punto, tipo, ubicacion, descripcion) do
+      sector_actualizado = %{
+        sector_encontrado
+        | puntos_atencion: [punto | sector_encontrado.puntos_atencion]
+      }
 
-      sector_actualizado = %{sector_encontrado | puntos_atencion: [punto | sector_encontrado.puntos_atencion]}
       zona_actualizada = actualizar_sector_en_zona(zona_encontrada, sector_actualizado)
       nuevas_zonas = Map.put(estado_global.zonas, zona_actualizada.id, zona_actualizada)
 
       {:ok, punto, %{estado_global | zonas: nuevas_zonas}}
+    else
+      {nil, nil} -> {:error, "El sector con identificador '#{id_sector}' no existe"}
+      {:error, _motivo} = error -> error
     end
   end
 
@@ -162,19 +193,28 @@ end
   # Helpers privados necesarios para la consistencia
 
   defp actualizar_sector_en_zona(zona, sector_actualizado) do
-    sectores_nuevos = Enum.map(zona.sectores, fn s ->
-      if s.id == sector_actualizado.id, do: sector_actualizado, else: s
-    end)
+    sectores_nuevos =
+      Enum.map(zona.sectores, fn s ->
+        if s.id == sector_actualizado.id, do: sector_actualizado, else: s
+      end)
+
     %{zona | sectores: sectores_nuevos}
   end
 
   defp recorrer_sectores_recursivo([], acc_afectados, acc_puntos), do: {acc_afectados, acc_puntos}
+
   defp recorrer_sectores_recursivo([sector | resto], acc_afectados, acc_puntos) do
     puntos_en_sector = contar_puntos_recursivo(sector.puntos_atencion, 0)
-    recorrer_sectores_recursivo(resto, acc_afectados + sector.personas_afectadas, acc_puntos + puntos_en_sector)
+
+    recorrer_sectores_recursivo(
+      resto,
+      acc_afectados + sector.personas_afectadas,
+      acc_puntos + puntos_en_sector
+    )
   end
 
   defp contar_puntos_recursivo([], acc), do: acc
+
   defp contar_puntos_recursivo([_punto | resto], acc) do
     contar_puntos_recursivo(resto, acc + 1)
   end

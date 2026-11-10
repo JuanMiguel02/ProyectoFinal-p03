@@ -17,9 +17,9 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
   def registrar_albergue(%Sesion{} = sesion, nombre, codigo_zona, capacidad_maxima) do
     with :ok <- Autenticacion.autorizar(sesion, :registrar_albergue),
          {:ok, zona} <- TerritorioServidor.buscar_zona(codigo_zona),
-         {:ok, albergue} <- PoblacionServidor.registrar_albergue(nombre, zona.id , capacidad_maxima) do
-
-       registrar_con_advertencia(
+         {:ok, albergue} <-
+           PoblacionServidor.registrar_albergue(nombre, zona.id, capacidad_maxima) do
+      registrar_con_advertencia(
         albergue,
         sesion.id_usuario,
         :registro_albergue,
@@ -35,8 +35,11 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
   """
   def ingresar_persona(%Sesion{} = sesion, id_persona, id_albergue) do
     with :ok <- Autenticacion.autorizar(sesion, :ingreso_albergue),
-         {:ok, registro} <- PoblacionServidor.ingresar_persona(Resolutor.persona(id_persona), Resolutor.albergue(id_albergue)) do
-
+         {:ok, registro} <-
+           PoblacionServidor.ingresar_persona(
+             Resolutor.persona(id_persona),
+             Resolutor.albergue(id_albergue)
+           ) do
       registrar_con_advertencia(
         registro,
         sesion.id_usuario,
@@ -48,16 +51,16 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
 
   def ingresar_persona(_, _, _), do: {:error, :sesion_invalida}
 
-   @doc """
+  @doc """
   Registra la salida de una persona de su albergue.
   """
   def registrar_salida(sesion, id_persona, nuevo_estado_persona \\ :localizada)
 
   def registrar_salida(%Sesion{} = sesion, id_persona, nuevo_estado_persona) do
     with :ok <- Autenticacion.autorizar(sesion, :salida_albergue),
-         {:ok, registro} <- PoblacionServidor.registrar_salida(Resolutor.persona(id_persona), nuevo_estado_persona) do
-
-       registrar_con_advertencia(
+         {:ok, registro} <-
+           PoblacionServidor.registrar_salida(Resolutor.persona(id_persona), nuevo_estado_persona) do
+      registrar_con_advertencia(
         registro,
         sesion.id_usuario,
         :salida_albergue,
@@ -68,7 +71,7 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
 
   def registrar_salida(_, _, _), do: {:error, :sesion_invalida}
 
-   @doc """
+  @doc """
   Consulta los cupos disponibles de un albergue.
   """
   def consultar_cupos(%Sesion{} = sesion, id_albergue) do
@@ -103,7 +106,7 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
 
   def listar_albergues(%Sesion{} = sesion) do
     with :ok <- Autenticacion.autorizar(sesion, :consultar_albergues),
-        {:ok, albergues} <- PoblacionServidor.listar_albergues() do
+         {:ok, albergues} <- PoblacionServidor.listar_albergues() do
       {:ok, albergues}
     end
   end
@@ -127,5 +130,4 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
         {:ok, resultado, {:advertencia, {:error_auditoria, motivo}}}
     end
   end
-
 end

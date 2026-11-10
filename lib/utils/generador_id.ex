@@ -1,4 +1,3 @@
-
 defmodule Emergencia.GeneradorID do
   @moduledoc """
   Genera UUID internos y códigos públicos consecutivos
@@ -18,7 +17,6 @@ defmodule Emergencia.GeneradorID do
   """
   def generar(prefijo, registros, obtener_codigo)
       when is_map(registros) and is_function(obtener_codigo, 1) do
-
     prefijo = normalizar_prefijo(prefijo)
 
     mayor_numero =
@@ -41,7 +39,6 @@ defmodule Emergencia.GeneradorID do
   """
   def generar(prefijo, numero)
       when is_integer(numero) and numero > 0 do
-
     "#{normalizar_prefijo(prefijo)}-#{String.pad_leading(Integer.to_string(numero), 4, "0")}"
   end
 

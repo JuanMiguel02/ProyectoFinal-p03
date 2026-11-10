@@ -6,6 +6,7 @@ defmodule Emergencia.Aplicacion.GestionResumen do
 
   alias Emergencia.Cliente.Sesion
   alias Emergencia.Aplicacion.Autenticacion
+
   alias Emergencia.{
     TerritorioServidor,
     RecursosServidor,
@@ -19,7 +20,7 @@ defmodule Emergencia.Aplicacion.GestionResumen do
       necesidades = lista(RecursosServidor.listar_necesidades())
       personas = lista(PoblacionServidor.buscar_personas([]))
       reportes = lista(MascotasServidor.listar_reportes())
-      inventarios = lista(RecursosServidor.listar_inventarios())
+      existencias = lista(RecursosServidor.listar_recursos())
 
       {:ok,
        %{
@@ -32,20 +33,20 @@ defmodule Emergencia.Aplicacion.GestionResumen do
          mensajes: length(lista(MensajesServidor.listar())),
          reportes_mascotas: length(reportes),
          reportes_mascotas_activos: Enum.count(reportes, &(&1.estado == :activa)),
-         unidades_disponibles: Enum.reduce(inventarios, 0, &(&1.cantidad_disponible + &2))
+         unidades_disponibles: Enum.reduce(existencias, 0, &(&1.cantidad + &2))
        }}
     end
   end
 
   def resumen_global(_), do: {:error, :sesion_invalida}
 
-  @doc "Inventarios con existencias por debajo de `umbral` unidades."
+  @doc "Existencias por debajo de `umbral` unidades."
   def recursos_criticos(sesion, umbral \\ 10)
 
   def recursos_criticos(%Sesion{} = sesion, umbral) do
     with :ok <- Autenticacion.autorizar(sesion, :consultar_recursos),
-         {:ok, inventarios} <- RecursosServidor.listar_inventarios() do
-      {:ok, Enum.filter(inventarios, &(&1.cantidad_disponible < umbral))}
+         {:ok, existencias} <- RecursosServidor.listar_recursos() do
+      {:ok, Enum.filter(existencias, &(&1.cantidad < umbral))}
     end
   end
 

@@ -47,127 +47,131 @@ defmodule Emergencia.Consola.MenuPersonas do
   # REGISTRAR PERSONA
   # ============================================================
 
- defp registrar_persona(sesion) do
-  Util.mostrar("\n========== REGISTRAR PERSONA ==========", :mensaje)
+  defp registrar_persona(sesion) do
+    Util.mostrar("\n========== REGISTRAR PERSONA ==========", :mensaje)
 
-  nombre =
-    Util.ingresar("Nombre completo: ", :texto)
+    nombre =
+      Util.ingresar("Nombre completo: ", :texto)
 
-  documento =
-    Util.ingresar("Documento: ", :texto)
+    documento =
+      Util.ingresar("Documento: ", :texto)
 
-  codigo_zona =
-    Util.ingresar("Código de la zona: ", :texto)
+    codigo_zona =
+      Util.ingresar("Código de la zona: ", :texto)
 
-  edad_texto =
-    Util.ingresar("Edad (deje vacío si no se conoce): ", :texto)
+    edad_texto =
+      Util.ingresar("Edad (deje vacío si no se conoce): ", :texto)
 
-  dato_referencia =
-    Util.ingresar("Dato de referencia (opcional): ", :texto)
+    dato_referencia =
+      Util.ingresar("Dato de referencia (opcional): ", :texto)
 
-  case seleccionar_estado() do
-    {:ok, estado} ->
-      opciones =
-        []
-        |> agregar_opcional(:edad, edad_texto)
-        |> agregar_opcional(:dato_referencia, dato_referencia)
+    case seleccionar_estado() do
+      {:ok, estado} ->
+        opciones =
+          []
+          |> agregar_opcional(:edad, edad_texto)
+          |> agregar_opcional(:dato_referencia, dato_referencia)
 
-      case GestionPersonas.registrar_persona(
-             sesion,
-             nombre,
-             documento,
-             codigo_zona,
-             estado,
-             opciones
-           ) do
-        {:ok, persona} ->
-          Util.mostrar(
-            "\nPersona registrada correctamente.",
-            :mensaje
-          )
+        case GestionPersonas.registrar_persona(
+               sesion,
+               nombre,
+               documento,
+               codigo_zona,
+               estado,
+               opciones
+             ) do
+          {:ok, persona} ->
+            Util.mostrar(
+              "\nPersona registrada correctamente.",
+              :mensaje
+            )
 
-          Util.mostrar("Código: #{persona.codigo_persona}", :mensaje)
-          Util.mostrar("Nombre: #{persona.nombre}", :mensaje)
+            Util.mostrar("Código: #{persona.codigo_persona}", :mensaje)
+            Util.mostrar("Nombre: #{persona.nombre}", :mensaje)
+            Util.mostrar("Edad: #{persona.edad || "No especificada"}", :mensaje)
+            Util.mostrar("Descripción: #{persona.dato_referencia || "No especificada"}", :mensaje)
 
-        {:ok, persona, {:advertencia, motivo}} ->
-          Util.mostrar(
-            "\nPersona registrada, pero ocurrió una advertencia: #{inspect(motivo)}",
-            :error
-          )
+          {:ok, persona, {:advertencia, motivo}} ->
+            Util.mostrar(
+              "\nPersona registrada, pero ocurrió una advertencia: #{inspect(motivo)}",
+              :error
+            )
 
-          Util.mostrar("Código: #{persona.codigo_persona}", :mensaje)
+            Util.mostrar("Código: #{persona.codigo_persona}", :mensaje)
 
-        {:error, motivo} ->
-          Util.mostrar("\n#{motivo}", :error)
-      end
+          {:error, motivo} ->
+            Util.mostrar("\n#{motivo}", :error)
+        end
 
-    {:error, motivo} ->
-      Util.mostrar("\n#{motivo}", :error)
+      {:error, motivo} ->
+        Util.mostrar("\n#{motivo}", :error)
+    end
+
+    iniciar(sesion)
   end
-
-  iniciar(sesion)
-end
 
   # ============================================================
   # BUSCAR PERSONA
   # ============================================================
 
-defp buscar_personas(sesion) do
-  Util.mostrar("\n========== BUSCAR PERSONAS ==========", :mensaje)
-  Util.mostrar("1. Buscar por nombre", :mensaje)
-  Util.mostrar("2. Buscar por documento", :mensaje)
-  Util.mostrar("3. Buscar por código", :mensaje)
-  Util.mostrar("4. Buscar por estado", :mensaje)
-  Util.mostrar("5. Buscar por zona", :mensaje)
+  defp buscar_personas(sesion) do
+    Util.mostrar("\n========== BUSCAR PERSONAS ==========", :mensaje)
+    Util.mostrar("1. Buscar por nombre", :mensaje)
+    Util.mostrar("2. Buscar por documento", :mensaje)
+    Util.mostrar("3. Buscar por código", :mensaje)
+    Util.mostrar("4. Buscar por estado", :mensaje)
+    Util.mostrar("5. Buscar por zona", :mensaje)
 
-  opcion = Util.ingresar("\nSeleccione un criterio: ", :texto)
+    opcion = Util.ingresar("\nSeleccione un criterio: ", :texto)
 
-  criterios =
-    case opcion do
-      "1" ->
-        nombre = Util.ingresar("Nombre: ", :texto)
-        [nombre: nombre]
+    criterios =
+      case opcion do
+        "1" ->
+          nombre = Util.ingresar("Nombre: ", :texto)
+          [nombre: nombre]
 
-      "2" ->
-        documento = Util.ingresar("Documento: ", :texto)
-        [documento: documento]
+        "2" ->
+          documento = Util.ingresar("Documento: ", :texto)
+          [documento: documento]
 
-      "3" ->
-        codigo = Util.ingresar("Código de persona: ", :texto)
-        [codigo_persona: codigo]
+        "3" ->
+          codigo = Util.ingresar("Código de persona: ", :texto)
+          [codigo_persona: codigo]
 
-      "4" ->
-        case seleccionar_estado() do
-          {:ok, estado} -> [estado: estado]
-          {:error, motivo} ->
-            Util.mostrar("\n#{motivo}", :error)
-            nil
-        end
+        "4" ->
+          case seleccionar_estado() do
+            {:ok, estado} ->
+              [estado: estado]
 
-      "5" ->
-        codigo_zona = Util.ingresar("Código de la zona: ", :texto)
-        [codigo_zona: codigo_zona]
+            {:error, motivo} ->
+              Util.mostrar("\n#{motivo}", :error)
+              nil
+          end
 
-      _ ->
-        Util.mostrar("\nOpción no válida.", :error)
-        nil
+        "5" ->
+          codigo_zona = Util.ingresar("Código de la zona: ", :texto)
+          [codigo_zona: codigo_zona]
+
+        _ ->
+          Util.mostrar("\nOpción no válida.", :error)
+          nil
+      end
+
+    if criterios != nil do
+      case GestionPersonas.buscar_personas(sesion, criterios) do
+        {:ok, []} ->
+          Util.mostrar("\nNo se encontraron personas.", :mensaje)
+
+        {:ok, personas} ->
+          Enum.each(personas, &mostrar_persona/1)
+
+        {:error, motivo} ->
+          Util.mostrar("\n#{motivo}", :error)
+      end
     end
 
-  if criterios != nil do
-    case GestionPersonas.buscar_personas(sesion, criterios) do
-      {:ok, []} ->
-        Util.mostrar("\nNo se encontraron personas.", :mensaje)
-
-      {:ok, personas} ->
-        Enum.each(personas, &mostrar_persona/1)
-
-      {:error, motivo} ->
-        Util.mostrar("\n#{motivo}", :error)
-    end
+    iniciar(sesion)
   end
-
-  iniciar(sesion)
-end
 
   # ============================================================
   # LISTAR PERSONAS
@@ -193,77 +197,77 @@ end
   # CAMBIAR ESTADO
   # ============================================================
 
-defp cambiar_estado(sesion) do
-  Util.mostrar("\n========== CAMBIAR ESTADO DE PERSONA ==========", :mensaje)
-  Util.mostrar("1. Buscar por código de persona", :mensaje)
-  Util.mostrar("2. Buscar por documento", :mensaje)
+  defp cambiar_estado(sesion) do
+    Util.mostrar("\n========== CAMBIAR ESTADO DE PERSONA ==========", :mensaje)
+    Util.mostrar("1. Buscar por código de persona", :mensaje)
+    Util.mostrar("2. Buscar por documento", :mensaje)
 
-  opcion = Util.ingresar("\nSeleccione una opción: ", :texto)
+    opcion = Util.ingresar("\nSeleccione una opción: ", :texto)
 
-  criterios =
-    case opcion do
-      "1" ->
-        codigo =
-          Util.ingresar("\nIngrese el código de persona: ", :texto)
+    criterios =
+      case opcion do
+        "1" ->
+          codigo =
+            Util.ingresar("\nIngrese el código de persona: ", :texto)
 
-        [codigo_persona: codigo]
+          [codigo_persona: codigo]
 
-      "2" ->
-        documento =
-          Util.ingresar("\nIngrese el documento de la persona: ", :texto)
+        "2" ->
+          documento =
+            Util.ingresar("\nIngrese el documento de la persona: ", :texto)
 
-        [documento: documento]
+          [documento: documento]
 
-      _ ->
-        Util.mostrar("\nOpción no válida.", :error)
-        nil
+        _ ->
+          Util.mostrar("\nOpción no válida.", :error)
+          nil
+      end
+
+    if criterios != nil do
+      case GestionPersonas.buscar_personas(sesion, criterios) do
+        {:ok, [persona]} ->
+          Util.mostrar(
+            "\nPersona encontrada: #{persona.nombre}",
+            :mensaje
+          )
+
+          case seleccionar_estado() do
+            {:ok, nuevo_estado} ->
+              case GestionPersonas.cambiar_estado(
+                     sesion,
+                     persona.id,
+                     nuevo_estado
+                   ) do
+                {:ok, _persona} ->
+                  Util.mostrar(
+                    "\nEstado de la persona actualizado correctamente.",
+                    :mensaje
+                  )
+
+                {:error, motivo} ->
+                  Util.mostrar("\n#{motivo}", :error)
+              end
+
+            {:error, motivo} ->
+              Util.mostrar("\n#{motivo}", :error)
+          end
+
+        {:ok, []} ->
+          Util.mostrar("\nNo se encontró la persona.", :error)
+
+        {:ok, _personas} ->
+          Util.mostrar(
+            "\nSe encontraron varias personas. Utilice un identificador más específico.",
+            :error
+          )
+
+        {:error, motivo} ->
+          Util.mostrar("\n#{motivo}", :error)
+      end
     end
 
-  if criterios != nil do
-    case GestionPersonas.buscar_personas(sesion, criterios) do
-      {:ok, [persona]} ->
-        Util.mostrar(
-          "\nPersona encontrada: #{persona.nombre}",
-          :mensaje
-        )
-
-        case seleccionar_estado() do
-          {:ok, nuevo_estado} ->
-            case GestionPersonas.cambiar_estado(
-                   sesion,
-                   persona.id,
-                   nuevo_estado
-                 ) do
-              {:ok, _persona} ->
-                Util.mostrar(
-                  "\nEstado de la persona actualizado correctamente.",
-                  :mensaje
-                )
-
-              {:error, motivo} ->
-                Util.mostrar("\n#{motivo}", :error)
-            end
-
-          {:error, motivo} ->
-            Util.mostrar("\n#{motivo}", :error)
-        end
-
-      {:ok, []} ->
-        Util.mostrar("\nNo se encontró la persona.", :error)
-
-      {:ok, _personas} ->
-        Util.mostrar(
-          "\nSe encontraron varias personas. Utilice un identificador más específico.",
-          :error
-        )
-
-      {:error, motivo} ->
-        Util.mostrar("\n#{motivo}", :error)
-    end
+    iniciar(sesion)
   end
-
-  iniciar(sesion)
-end
 
   defp seleccionar_estado do
     estados = [
@@ -296,33 +300,33 @@ end
   # CONSULTAR HISTORIAL
   # ============================================================
 
- defp consultar_historial(sesion) do
-  identificador =
-    Util.ingresar(
-      "\nIngrese el código o documento de la persona: ",
-      :texto
-    )
-
-  case GestionPersonas.consultar_historial(sesion, identificador) do
-    {:ok, []} ->
-      Util.mostrar(
-        "\nLa persona no tiene registros en su historial.",
-        :mensaje
+  defp consultar_historial(sesion) do
+    identificador =
+      Util.ingresar(
+        "\nIngrese el código o documento de la persona: ",
+        :texto
       )
 
-    {:ok, historial} ->
-      Util.mostrar("\n========== HISTORIAL DE LA PERSONA ==========", :mensaje)
+    case GestionPersonas.consultar_historial(sesion, identificador) do
+      {:ok, []} ->
+        Util.mostrar(
+          "\nLa persona no tiene registros en su historial.",
+          :mensaje
+        )
 
-      Enum.each(historial, fn registro ->
-        Util.mostrar(inspect(registro, pretty: true), :mensaje)
-      end)
+      {:ok, historial} ->
+        Util.mostrar("\n========== HISTORIAL DE LA PERSONA ==========", :mensaje)
 
-    {:error, motivo} ->
-      Util.mostrar("\n#{motivo}", :error)
+        Enum.each(historial, fn registro ->
+          Util.mostrar(inspect(registro, pretty: true), :mensaje)
+        end)
+
+      {:error, motivo} ->
+        Util.mostrar("\n#{motivo}", :error)
+    end
+
+    iniciar(sesion)
   end
-
-  iniciar(sesion)
-end
 
   # ============================================================
   # MOSTRAR PERSONA
@@ -334,6 +338,8 @@ end
     Util.mostrar("Nombre: #{persona.nombre}", :mensaje)
     Util.mostrar("Documento: #{persona.documento}", :mensaje)
     Util.mostrar("Estado: #{persona.estado}", :mensaje)
+    Util.mostrar("Edad: #{persona.edad || "No especificada"}", :mensaje)
+    Util.mostrar("Descripción: #{persona.dato_referencia || "No especificada"}", :mensaje)
   end
 
   defp agregar_opcional(opciones, :edad, ""), do: opciones

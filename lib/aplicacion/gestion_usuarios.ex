@@ -1,4 +1,3 @@
-
 defmodule Emergencia.Aplicacion.GestionUsuarios do
   @moduledoc """
   Coordina el registro y la administración de las cuentas
@@ -13,10 +12,9 @@ defmodule Emergencia.Aplicacion.GestionUsuarios do
   # 1. REGISTRO PÚBLICO
   # ============================================================
 
-  def registrar_usuario(nombre_usuario,contrasena, nombre_completo, tipo) when tipo in [:ciudadano, :voluntario] do
-
+  def registrar_usuario(nombre_usuario, contrasena, nombre_completo, tipo)
+      when tipo in [:ciudadano, :voluntario] do
     case UsuariosServidor.registrar(nombre_usuario, contrasena, nombre_completo, tipo) do
-
       {:ok, usuario} ->
         registrar_con_advertencia(
           usuario,
@@ -30,7 +28,7 @@ defmodule Emergencia.Aplicacion.GestionUsuarios do
     end
   end
 
-  def registrar_usuario(_nombre_usuario,_contrasena, _nombre_completo, _tipo ) do
+  def registrar_usuario(_nombre_usuario, _contrasena, _nombre_completo, _tipo) do
     {:error, :rol_no_permitido_para_autoregistro}
   end
 
@@ -38,10 +36,15 @@ defmodule Emergencia.Aplicacion.GestionUsuarios do
   # 2. REGISTRO ADMINISTRATIVO
   # ============================================================
 
-  def registrar_usuario(%Sesion{tipo_usuario: :administrador} = sesion, nombre_usuario, contrasena, nombre_completo, tipo) when tipo in [:ciudadano, :voluntario, :coordinador] do
-
-    case UsuariosServidor.registrar(nombre_usuario,contrasena,nombre_completo,tipo) do
-
+  def registrar_usuario(
+        %Sesion{tipo_usuario: :administrador} = sesion,
+        nombre_usuario,
+        contrasena,
+        nombre_completo,
+        tipo
+      )
+      when tipo in [:ciudadano, :voluntario, :coordinador] do
+    case UsuariosServidor.registrar(nombre_usuario, contrasena, nombre_completo, tipo) do
       {:ok, usuario} ->
         registrar_con_advertencia(
           usuario,
@@ -86,19 +89,16 @@ defmodule Emergencia.Aplicacion.GestionUsuarios do
          accion,
          descripcion
        ) do
-
     case ActividadesServidor.registrar(
            id_responsable,
            accion,
            descripcion
          ) do
-
       {:ok, _actividad} ->
         {:ok, resultado}
 
       {:error, motivo} ->
-        {:ok, resultado,
-         {:advertencia, {:error_auditoria, motivo}}}
+        {:ok, resultado, {:advertencia, {:error_auditoria, motivo}}}
     end
   end
 end

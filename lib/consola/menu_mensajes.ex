@@ -26,8 +26,21 @@ defmodule Emergencia.Consola.MenuMensajes do
         contenido = Util.ingresar("Contenido del mensaje: ", :texto)
 
         case GestionMensajes.enviar_mensaje(sesion, documento, contenido) do
-          {:error, motivo} -> Util.mostrar("Error: #{inspect(motivo)}", :error)
-          _ok -> Util.mostrar("Mensaje enviado con éxito.", :mensaje)
+          {:error, motivo} ->
+            Util.mostrar("Error: #{inspect(motivo)}", :error)
+
+          {:ok, {_mensaje, destinatarios}} ->
+            codigos = Enum.map_join(destinatarios, ", ", & &1.codigo)
+
+            Util.mostrar(
+              "Mensaje enviado. Código(s) para confirmar entrega: #{codigos}",
+              :mensaje
+            )
+
+          {:ok, {_mensaje, destinatarios}, {:advertencia, motivo}} ->
+            codigos = Enum.map_join(destinatarios, ", ", & &1.codigo)
+            Util.mostrar("Mensaje enviado. Código(s): #{codigos}", :mensaje)
+            Util.mostrar("Advertencia: #{inspect(motivo)}", :error)
         end
 
         iniciar(sesion)
@@ -41,4 +54,3 @@ defmodule Emergencia.Consola.MenuMensajes do
     end
   end
 end
-
