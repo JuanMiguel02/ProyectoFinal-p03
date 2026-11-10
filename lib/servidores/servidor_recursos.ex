@@ -17,42 +17,43 @@ defmodule Emergencia.RecursosServidor do
   }
 
   alias Emergencia.Servicios.ServicioRecursos
+  alias Emergencia.NodoServidor
 
   def start_link(opciones \\ []) do
     GenServer.start_link(__MODULE__, opciones, name: __MODULE__)
   end
 
   def registrar_necesidad(tipo, cantidad, id_zona, prioridad, opciones \\ []) do
-    GenServer.call(
+    NodoServidor.llamar(
       __MODULE__,
       {:registrar_necesidad, tipo, cantidad, id_zona, prioridad, opciones}
     )
   end
 
-  def listar_necesidades, do: GenServer.call(__MODULE__, :listar_necesidades)
+  def listar_necesidades, do: NodoServidor.llamar(__MODULE__, :listar_necesidades)
 
   def listar_necesidades_ordenadas,
-    do: GenServer.call(__MODULE__, :listar_necesidades_ordenadas)
+    do: NodoServidor.llamar(__MODULE__, :listar_necesidades_ordenadas)
 
   def registrar_recurso(nombre, cantidad, unidad, ubicacion) do
-    GenServer.call(__MODULE__, {:registrar_recurso, nombre, cantidad, unidad, ubicacion})
+    NodoServidor.llamar(__MODULE__, {:registrar_recurso, nombre, cantidad, unidad, ubicacion})
   end
 
   def listar_recursos(filtros \\ %{}),
-    do: GenServer.call(__MODULE__, {:listar_recursos, filtros})
+    do: NodoServidor.llamar(__MODULE__, {:listar_recursos, filtros})
 
-  def listar_todos_recursos, do: GenServer.call(__MODULE__, :listar_todos_recursos)
+  def listar_todos_recursos, do: NodoServidor.llamar(__MODULE__, :listar_todos_recursos)
 
   def asignar_recurso_directo(id_necesidad, codigo_recurso, cantidad, _id_usuario \\ "SISTEMA") do
-    GenServer.call(__MODULE__, {:asignar_recurso, id_necesidad, codigo_recurso, cantidad})
+    NodoServidor.llamar(__MODULE__, {:asignar_recurso, id_necesidad, codigo_recurso, cantidad})
   end
 
   def transferir_recurso(codigo, origen, destino, cantidad) do
-    GenServer.call(__MODULE__, {:transferir_recurso, codigo, origen, destino, cantidad})
+    NodoServidor.llamar(__MODULE__, {:transferir_recurso, codigo, origen, destino, cantidad})
   end
 
   def calcular_stock_global(codigo_recurso) do
-    GenServer.call(__MODULE__, {:calcular_stock_global, codigo_recurso})
+    NodoServidor.llamar(__MODULE__, {:calcular_stock_global, codigo_recurso})
   end
 
   def listar_centros_acopio, do: Emergencia.TerritorioServidor.listar_centros_acopio()

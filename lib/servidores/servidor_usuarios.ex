@@ -11,6 +11,7 @@ defmodule Emergencia.UsuariosServidor do
   alias Emergencia.EstadoUsuarios
   alias Emergencia.GestorDatos
   alias Emergencia.Servicios.ServicioUsuario
+  alias Emergencia.NodoServidor
 
   # ============================================================
   # INTERFAZ PÚBLICA
@@ -21,22 +22,22 @@ defmodule Emergencia.UsuariosServidor do
   end
 
   def registrar(nombre_usuario, contrasena, nombre_completo, tipo, opciones \\ []) do
-    GenServer.call(
+    NodoServidor.llamar(
       __MODULE__,
       {:registrar, nombre_usuario, contrasena, nombre_completo, tipo, opciones}
     )
   end
 
   def autenticar(nombre_usuario, contrasena) do
-    GenServer.call(__MODULE__, {:autenticar, nombre_usuario, contrasena})
+    NodoServidor.llamar(__MODULE__, {:autenticar, nombre_usuario, contrasena})
   end
 
   def autorizar(operacion) do
-    GenServer.call(__MODULE__, {:autorizar, operacion})
+    NodoServidor.llamar(__MODULE__, {:autorizar, operacion})
   end
 
   def cerrar_sesion do
-    GenServer.call(__MODULE__, :cerrar_sesion)
+    NodoServidor.llamar(__MODULE__, :cerrar_sesion)
   end
 
   # ============================================================

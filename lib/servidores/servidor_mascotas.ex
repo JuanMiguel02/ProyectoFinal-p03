@@ -8,6 +8,7 @@ defmodule Emergencia.MascotasServidor do
   alias Emergencia.EstadoMascotas
   alias Emergencia.GestorDatos
   alias Emergencia.Servicios.ServicioMascotas
+  alias Emergencia.NodoServidor
 
   # ============================================================================
   # API pública
@@ -17,33 +18,37 @@ defmodule Emergencia.MascotasServidor do
   end
 
   def registrar_reporte(tipo, especie, color, tamano, id_zona, id_contacto, opciones \\ []) do
-    GenServer.call(
+    NodoServidor.llamar(
       __MODULE__,
       {:registrar_reporte, tipo, especie, color, tamano, id_zona, id_contacto, opciones}
     )
   end
 
   def buscar_coincidencias(id_reporte) do
-    GenServer.call(__MODULE__, {:buscar_coincidencias, id_reporte})
+    NodoServidor.llamar(__MODULE__, {:buscar_coincidencias, id_reporte})
   end
 
   def registrar_coincidencia(id_perdida, id_encontrada, id_usuario \\ "SISTEMA") do
-    GenServer.call(__MODULE__, {:registrar_coincidencia, id_perdida, id_encontrada, id_usuario})
+    NodoServidor.llamar(
+      __MODULE__,
+      {:registrar_coincidencia, id_perdida, id_encontrada, id_usuario}
+    )
   end
 
   def resolver_reporte(id_reporte, id_usuario \\ "SISTEMA") do
-    GenServer.call(__MODULE__, {:resolver_reporte, id_reporte, id_usuario})
+    NodoServidor.llamar(__MODULE__, {:resolver_reporte, id_reporte, id_usuario})
   end
 
   def confirmar_coincidencia(id_coincidencia, id_usuario \\ "SISTEMA") do
-    GenServer.call(__MODULE__, {:confirmar_coincidencia, id_coincidencia, id_usuario})
+    NodoServidor.llamar(__MODULE__, {:confirmar_coincidencia, id_coincidencia, id_usuario})
   end
 
-  def listar_reportes, do: GenServer.call(__MODULE__, :listar_reportes)
+  def listar_reportes, do: NodoServidor.llamar(__MODULE__, :listar_reportes)
 
-  def listar_coincidencias, do: GenServer.call(__MODULE__, :listar_coincidencias)
+  def listar_coincidencias, do: NodoServidor.llamar(__MODULE__, :listar_coincidencias)
 
-  def buscar_reportes(criterios), do: GenServer.call(__MODULE__, {:buscar_reportes, criterios})
+  def buscar_reportes(criterios),
+    do: NodoServidor.llamar(__MODULE__, {:buscar_reportes, criterios})
 
   # ============================================================================
   # Callbacks de GenServer

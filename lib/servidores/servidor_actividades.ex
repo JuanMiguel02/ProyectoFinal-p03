@@ -8,6 +8,7 @@ defmodule Emergencia.ActividadesServidor do
   alias Emergencia.EstadoActividades
   alias Emergencia.GestorDatos
   alias Emergencia.Servicios.ServicioActividad
+  alias Emergencia.NodoServidor
 
   # ===========================================================================
   # API pública
@@ -18,19 +19,19 @@ defmodule Emergencia.ActividadesServidor do
   end
 
   def registrar(id_usuario, accion, descripcion, opciones \\ []) do
-    GenServer.call(__MODULE__, {:registrar, id_usuario, accion, descripcion, opciones})
+    NodoServidor.llamar(__MODULE__, {:registrar, id_usuario, accion, descripcion, opciones})
   end
 
   def listar do
-    GenServer.call(__MODULE__, :listar)
+    NodoServidor.llamar(__MODULE__, :listar)
   end
 
   def listar_por_usuario(id_usuario) do
-    GenServer.call(__MODULE__, {:listar_por_usuario, id_usuario})
+    NodoServidor.llamar(__MODULE__, {:listar_por_usuario, id_usuario})
   end
 
   def buscar(id_actividad) do
-    GenServer.call(__MODULE__, {:buscar, id_actividad})
+    NodoServidor.llamar(__MODULE__, {:buscar, id_actividad})
   end
 
   # ===========================================================================
