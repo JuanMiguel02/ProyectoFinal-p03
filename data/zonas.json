@@ -1,5 +1,13 @@
 [
   {
+    "codigo_zona": "ZON-0003",
+    "id": "40ac0453-2de0-4836-951d-c3be2c65afd5",
+    "nivel_afectacion": "bajo",
+    "nombre": "Zona Este",
+    "personas_estimadas": 200,
+    "sectores": []
+  },
+  {
     "codigo_zona": "ZON-0002",
     "id": "6b12672f-4249-47f8-9c78-5f24fe239607",
     "nivel_afectacion": "medio",

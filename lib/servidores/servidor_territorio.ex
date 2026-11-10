@@ -8,6 +8,7 @@ defmodule Emergencia.TerritorioServidor do
   alias Emergencia.EstadoTerritorio
   alias Emergencia.GestorDatos
   alias Emergencia.Servicios.ServicioTerritorio
+  alias Emergencia.NodoServidor
 
   # ============================================================================
   # API pública
@@ -17,46 +18,52 @@ defmodule Emergencia.TerritorioServidor do
   end
 
   def registrar_zona(nombre, nivel, personas_estimadas, id_usuario \\ "SISTEMA") do
-    GenServer.call(__MODULE__, {:registrar_zona, nombre, nivel, personas_estimadas, id_usuario})
+    NodoServidor.llamar(
+      __MODULE__,
+      {:registrar_zona, nombre, nivel, personas_estimadas, id_usuario}
+    )
   end
 
   def buscar_zona(identificador) do
-    GenServer.call(__MODULE__, {:buscar_zona, identificador})
+    NodoServidor.llamar(__MODULE__, {:buscar_zona, identificador})
   end
 
   def registrar_sector(id_zona, nombre, nivel, personas_afectadas, id_usuario \\ "SISTEMA") do
-    GenServer.call(
+    NodoServidor.llamar(
       __MODULE__,
       {:registrar_sector, id_zona, nombre, nivel, personas_afectadas, id_usuario}
     )
   end
 
   def listar_zonas() do
-    GenServer.call(__MODULE__, :listar_zonas)
+    NodoServidor.llamar(__MODULE__, :listar_zonas)
   end
 
   def listar_sectores(id_zona) do
-    GenServer.call(__MODULE__, {:listar_sectores, id_zona})
+    NodoServidor.llamar(__MODULE__, {:listar_sectores, id_zona})
   end
 
-  def listar_centros_acopio, do: GenServer.call(__MODULE__, :listar_centros_acopio)
+  def listar_centros_acopio, do: NodoServidor.llamar(__MODULE__, :listar_centros_acopio)
   ### ============================================================================
   ### API pública (Agregar a Emergencia.TerritorioServidor)
   ### ============================================================================
 
   def registrar_centro_acopio(nombre, direccion, capacidad, id_zona) do
-    GenServer.call(__MODULE__, {:registrar_centro_acopio, nombre, direccion, capacidad, id_zona})
+    NodoServidor.llamar(
+      __MODULE__,
+      {:registrar_centro_acopio, nombre, direccion, capacidad, id_zona}
+    )
   end
 
   def registrar_punto_atencion(id_sector, nombre, tipo, ubicacion, descripcion \\ nil) do
-    GenServer.call(
+    NodoServidor.llamar(
       __MODULE__,
       {:registrar_punto_atencion, id_sector, nombre, tipo, ubicacion, descripcion}
     )
   end
 
   def estadisticas_zona(id_zona) do
-    GenServer.call(__MODULE__, {:estadisticas_zona, id_zona})
+    NodoServidor.llamar(__MODULE__, {:estadisticas_zona, id_zona})
   end
 
   # ============================================================================

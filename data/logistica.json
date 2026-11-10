@@ -2,12 +2,17 @@
   "asignaciones": [],
   "existencias": [
     {
+      "cantidad": 6,
+      "codigo_recurso": "REC-0002",
+      "ubicacion": "ALB-0001"
+    },
+    {
       "cantidad": 4,
       "codigo_recurso": "REC-0002",
       "ubicacion": "CAC-0001"
     },
     {
-      "cantidad": 6,
+      "cantidad": 0,
       "codigo_recurso": "REC-0002",
       "ubicacion": "PAT-0001"
     }
@@ -21,6 +26,15 @@
       "tipo_movimiento": "ingreso",
       "ubicacion_destino": "PAT-0001",
       "ubicacion_origen": null
+    },
+    {
+      "cantidad": 6,
+      "fecha": "2026-11-10T21:44:51.873000Z",
+      "id": "924e5294-73ca-4d4c-b04d-d22b74e3007f",
+      "id_recurso": "2605f2ff-a6db-430b-8922-f8077155ab77",
+      "tipo_movimiento": "transferencia",
+      "ubicacion_destino": "ALB-0001",
+      "ubicacion_origen": "PAT-0001"
     },
     {
       "cantidad": 4,

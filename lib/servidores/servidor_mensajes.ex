@@ -9,6 +9,7 @@ defmodule Emergencia.MensajesServidor do
   alias Emergencia.EstadoMensajes
   alias Emergencia.GestorDatos
   alias Emergencia.Servicios.ServicioComunicacion
+  alias Emergencia.NodoServidor
 
   # ============================================================================
   # 1. Inicio del servidor
@@ -26,7 +27,7 @@ defmodule Emergencia.MensajesServidor do
   Envía un mensaje a una o varias personas.
   """
   def enviar_mensaje(id_remitente, contenido, lista_ids_personas, opciones \\ []) do
-    GenServer.call(
+    NodoServidor.llamar(
       __MODULE__,
       {:enviar_mensaje, id_remitente, contenido, lista_ids_personas, opciones}
     )
@@ -36,26 +37,26 @@ defmodule Emergencia.MensajesServidor do
   Confirma la entrega de un mensaje a una persona.
   """
   def confirmar_entrega(id_mensaje_destinatario) do
-    GenServer.call(__MODULE__, {:confirmar_entrega, id_mensaje_destinatario})
+    NodoServidor.llamar(__MODULE__, {:confirmar_entrega, id_mensaje_destinatario})
   end
 
   @doc """
   Consulta los mensajes asociados a una persona.
   """
   def obtener_mensajes_persona(id_persona) do
-    GenServer.call(__MODULE__, {:obtener_mensajes_persona, id_persona})
+    NodoServidor.llamar(__MODULE__, {:obtener_mensajes_persona, id_persona})
   end
 
   @doc """
   Consulta el estado de entrega de un mensaje.
   """
   def consultar_estado_envio(id_mensaje) do
-    GenServer.call(__MODULE__, {:consultar_estado_envio, id_mensaje})
+    NodoServidor.llamar(__MODULE__, {:consultar_estado_envio, id_mensaje})
   end
 
   @doc "Lista todos los mensajes registrados"
   def listar do
-    GenServer.call(__MODULE__, :listar)
+    NodoServidor.llamar(__MODULE__, :listar)
   end
 
   # ============================================================================

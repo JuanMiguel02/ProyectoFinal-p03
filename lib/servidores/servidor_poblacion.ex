@@ -13,6 +13,7 @@ defmodule Emergencia.PoblacionServidor do
   alias Emergencia.Servicios.ServicioAlbergue
   alias Emergencia.Servicios.ServicioPersonas
   alias Emergencia.Servicios.ServicioFamilia
+  alias Emergencia.NodoServidor
 
   # ============================================================================
   # API pública
@@ -27,35 +28,35 @@ defmodule Emergencia.PoblacionServidor do
   # ----------------------------------------------------------------------------
 
   def registrar_albergue(nombre, id_zona, capacidad_maxima) do
-    GenServer.call(__MODULE__, {:registrar_albergue, nombre, id_zona, capacidad_maxima})
+    NodoServidor.llamar(__MODULE__, {:registrar_albergue, nombre, id_zona, capacidad_maxima})
   end
 
   def ingresar_persona(id_persona, id_albergue) do
-    GenServer.call(__MODULE__, {:ingresar_persona, id_persona, id_albergue})
+    NodoServidor.llamar(__MODULE__, {:ingresar_persona, id_persona, id_albergue})
   end
 
   def registrar_salida(id_persona, nuevo_estado_persona \\ :localizada) do
-    GenServer.call(__MODULE__, {:registrar_salida, id_persona, nuevo_estado_persona})
+    NodoServidor.llamar(__MODULE__, {:registrar_salida, id_persona, nuevo_estado_persona})
   end
 
   def consultar_cupos(id_albergue) do
-    GenServer.call(__MODULE__, {:consultar_cupos, id_albergue})
+    NodoServidor.llamar(__MODULE__, {:consultar_cupos, id_albergue})
   end
 
   def consultar_ocupacion(id_albergue) do
-    GenServer.call(__MODULE__, {:consultar_ocupacion, id_albergue})
+    NodoServidor.llamar(__MODULE__, {:consultar_ocupacion, id_albergue})
   end
 
   def reporte_ocupacion do
-    GenServer.call(__MODULE__, :reporte_ocupacion)
+    NodoServidor.llamar(__MODULE__, :reporte_ocupacion)
   end
 
   def listar_albergues do
-    GenServer.call(__MODULE__, :listar_albergues)
+    NodoServidor.llamar(__MODULE__, :listar_albergues)
   end
 
   def buscar_albergue(identificador) do
-    GenServer.call(__MODULE__, {:buscar_albergue, identificador})
+    NodoServidor.llamar(__MODULE__, {:buscar_albergue, identificador})
   end
 
   # ============================================================================
@@ -63,30 +64,30 @@ defmodule Emergencia.PoblacionServidor do
   # ============================================================================
 
   def registrar_persona(nombre, documento, id_zona, estado_persona, opciones \\ []) do
-    GenServer.call(
+    NodoServidor.llamar(
       __MODULE__,
       {:registrar_persona, nombre, documento, id_zona, estado_persona, opciones}
     )
   end
 
   def cambiar_estado_persona(id_persona, nuevo_estado) do
-    GenServer.call(__MODULE__, {:cambiar_estado_persona, id_persona, nuevo_estado})
+    NodoServidor.llamar(__MODULE__, {:cambiar_estado_persona, id_persona, nuevo_estado})
   end
 
   def buscar_personas(criterios) do
-    GenServer.call(__MODULE__, {:buscar_personas, criterios})
+    NodoServidor.llamar(__MODULE__, {:buscar_personas, criterios})
   end
 
   def consultar_historial_persona(documento_o_id) do
-    GenServer.call(__MODULE__, {:consultar_historial_persona, documento_o_id})
+    NodoServidor.llamar(__MODULE__, {:consultar_historial_persona, documento_o_id})
   end
 
   def asignar_familia(id_persona, id_familia) do
-    GenServer.call(__MODULE__, {:asignar_familia, id_persona, id_familia})
+    NodoServidor.llamar(__MODULE__, {:asignar_familia, id_persona, id_familia})
   end
 
   def consultar_persona(id_persona) do
-    GenServer.call(__MODULE__, {:consultar_persona, id_persona})
+    NodoServidor.llamar(__MODULE__, {:consultar_persona, id_persona})
   end
 
   # ============================================================================
@@ -94,19 +95,19 @@ defmodule Emergencia.PoblacionServidor do
   # ============================================================================
 
   def registrar_familia(nombre) do
-    GenServer.call(__MODULE__, {:registrar_familia, nombre})
+    NodoServidor.llamar(__MODULE__, {:registrar_familia, nombre})
   end
 
   def buscar_familia(id_o_codigo) do
-    GenServer.call(__MODULE__, {:buscar_familia, id_o_codigo})
+    NodoServidor.llamar(__MODULE__, {:buscar_familia, id_o_codigo})
   end
 
   def listar_familias do
-    GenServer.call(__MODULE__, :listar_familias)
+    NodoServidor.llamar(__MODULE__, :listar_familias)
   end
 
   def consultar_integrantes(id_o_codigo_familia) do
-    GenServer.call(__MODULE__, {:consultar_integrantes, id_o_codigo_familia})
+    NodoServidor.llamar(__MODULE__, {:consultar_integrantes, id_o_codigo_familia})
   end
 
   # ============================================================================

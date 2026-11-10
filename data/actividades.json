@@ -42,11 +42,25 @@
     "operacion": "registrar_recurso"
   },
   {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T22:46:51.311000Z",
+    "id": "45423dec-3be1-4bda-a940-3aa1b1b5e0b0",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
     "descripcion": "El usuario admin registró la zona ZonaSur",
     "fecha": "2026-11-10T20:00:22.586000Z",
     "id": "c99f8bb8-f5e2-4535-aa01-6f4a67bf89d1",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "registrar_zona"
+  },
+  {
+    "descripcion": "El usuario coord inició sesión",
+    "fecha": "2026-11-10T21:41:06.593000Z",
+    "id": "98fc137d-5984-4193-a72e-04321e8cf95b",
+    "id_usuario": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
+    "operacion": "inicio_sesion"
   },
   {
     "descripcion": "El usuario admin registró reporte de mascota perdida",
@@ -84,9 +98,23 @@
     "operacion": "asignacion_familia"
   },
   {
+    "descripcion": "El usuario admin transfirió 6 unidades del recurso REC-0002",
+    "fecha": "2026-11-10T21:44:51.890000Z",
+    "id": "19d44a03-fac5-44fb-9ed8-2afa46611fa3",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "transferir_recurso"
+  },
+  {
     "descripcion": "El usuario admin inició sesión",
     "fecha": "2026-11-10T20:56:16.050000Z",
     "id": "ee526b29-76ab-4a00-870a-edc8217f378c",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T21:38:50.068000Z",
+    "id": "d9a86da5-b453-499b-a63d-7e357e46c611",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
   },
@@ -147,6 +175,13 @@
     "operacion": "inicio_sesion"
   },
   {
+    "descripcion": "El usuario vol inició sesión",
+    "fecha": "2026-11-10T22:48:50.571000Z",
+    "id": "df9621ac-a389-4e2b-96fc-c9e3a81df226",
+    "id_usuario": "3db02d33-6f68-46d9-b553-0799f3f8067c",
+    "operacion": "inicio_sesion"
+  },
+  {
     "descripcion": "El usuario admin transfirió 4 unidades del recurso REC-0002",
     "fecha": "2026-11-10T19:14:25.407000Z",
     "id": "93814c4a-9d84-4dac-a095-19a5b1c8a0d2",
@@ -189,6 +224,13 @@
     "operacion": "inicio_sesion"
   },
   {
+    "descripcion": "El usuario admin registró la zona Zona Este",
+    "fecha": "2026-11-10T21:42:18.806000Z",
+    "id": "5aa4a61b-15c2-4f24-ab5f-fb9cf730fd3d",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_zona"
+  },
+  {
     "descripcion": "El usuario admin registró reporte de mascota encontrada",
     "fecha": "2026-11-10T20:57:01.026000Z",
     "id": "77e940fe-6798-44ff-900b-c5edc275bb96",
@@ -215,6 +257,13 @@
     "id": "dbdbbed6-0149-4e0f-a816-c1aec222dd48",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "registro_persona"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T22:49:22.893000Z",
+    "id": "a3912e8b-ec0c-4e41-8d41-9c1ad97ceb13",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
   },
   {
     "descripcion": "El usuario admin registró reporte de mascota perdida",
@@ -263,6 +312,20 @@
     "fecha": "2026-11-10T19:08:41.995000Z",
     "id": "6732f377-f860-4be0-a394-a4440014666f",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario vol registró a la persona PER-0003",
+    "fecha": "2026-11-10T22:50:21.224000Z",
+    "id": "83be6238-f43b-4011-8782-9969910e53d8",
+    "id_usuario": "3db02d33-6f68-46d9-b553-0799f3f8067c",
+    "operacion": "registro_persona"
+  },
+  {
+    "descripcion": "El usuario vol inició sesión",
+    "fecha": "2026-11-10T22:48:06.766000Z",
+    "id": "38967191-daa3-41b9-bc99-0bb99e6269ac",
+    "id_usuario": "3db02d33-6f68-46d9-b553-0799f3f8067c",
     "operacion": "inicio_sesion"
   },
   {
