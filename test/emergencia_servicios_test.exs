@@ -14,7 +14,7 @@ defmodule EmergenciaServiciosTest do
   # ============================================================================
   describe "ServicioTerritorio" do
     test "registra una zona correctamente y calcula estadísticas vacías" do
-      estado_inicial = %EstadoTerritorio{zonas: %{}, sectores: %{}}
+      estado_inicial = %EstadoTerritorio{zonas: %{}}
 
       assert {:ok, zona, nuevo_estado} =
                ServicioTerritorio.registrar_zona(estado_inicial, "Zona Sur", :alto, 500)
