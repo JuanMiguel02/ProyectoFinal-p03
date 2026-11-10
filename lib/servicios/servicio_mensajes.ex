@@ -4,7 +4,7 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
   confirmación de entregas y consulta de notificaciones.
   """
 
-  alias Emergencia.{EstadoMensajes, Mensaje, MensajeDestinatario}
+  alias Emergencia.{EstadoMensajes, GeneradorID, Mensaje, MensajeDestinatario}
 
   # ============================================================================
   # 1. Enviar mensajes
@@ -26,13 +26,15 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
     with :ok <- validar_destinatarios(lista_ids_personas),
          {:ok, nuevo_mensaje} <- Mensaje.nuevo(id_remitente, contenido, opciones),
          {:ok, destinatarios_map, lista_destinatarios} <-
-           generar_destinatarios(nuevo_mensaje.id_envio, lista_ids_personas) do
+           generar_destinatarios(
+             nuevo_mensaje.id_envio,
+             lista_ids_personas,
+             estado.mensajes_destinatarios
+           ) do
       nuevo_estado = %{
         estado
-        | mensajes:
-            Map.put(estado.mensajes, nuevo_mensaje.id_envio, nuevo_mensaje),
-          mensajes_destinatarios:
-            Map.merge(estado.mensajes_destinatarios, destinatarios_map)
+        | mensajes: Map.put(estado.mensajes, nuevo_mensaje.id_envio, nuevo_mensaje),
+          mensajes_destinatarios: Map.merge(estado.mensajes_destinatarios, destinatarios_map)
       }
 
       {:ok, {nuevo_mensaje, lista_destinatarios}, nuevo_estado}
@@ -48,10 +50,7 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
   """
   def confirmar_entrega(%EstadoMensajes{} = estado, id_mensaje_destinatario) do
     with {:ok, registro} <-
-           obtener_destinatario(
-             estado.mensajes_destinatarios,
-             id_mensaje_destinatario
-           ),
+           obtener_destinatario(estado.mensajes_destinatarios, id_mensaje_destinatario),
          {:ok, registro_actualizado} <-
            MensajeDestinatario.marcar_entregado(registro) do
       nuevo_estado = %{
@@ -59,7 +58,7 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
         | mensajes_destinatarios:
             Map.put(
               estado.mensajes_destinatarios,
-              id_mensaje_destinatario,
+              registro.id_mensaje_destinatario,
               registro_actualizado
             )
       }
@@ -83,6 +82,7 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
       |> Enum.map(fn registro ->
         %{
           id_registro: registro.id_mensaje_destinatario,
+          codigo_registro: registro.codigo,
           mensaje: Map.get(estado.mensajes, registro.id_envio),
           estado_entrega: registro.estado,
           fecha_entrega: registro.fecha_entrega
@@ -147,35 +147,40 @@ defmodule Emergencia.Servicios.ServicioComunicacion do
   defp validar_destinatarios(_),
     do: {:error, "La lista de destinatarios debe ser válida"}
 
-  defp generar_destinatarios(id_mensaje, lista_ids) do
-    resultados =
-      Enum.map(lista_ids, fn id_persona ->
-        MensajeDestinatario.nuevo(id_mensaje, id_persona, :pendiente)
-      end)
+  defp generar_destinatarios(id_mensaje, lista_ids, existentes) do
+    Enum.reduce_while(lista_ids, {:ok, %{}, []}, fn id_persona, {:ok, nuevos, registros} ->
+      codigo =
+        GeneradorID.generar(
+          "MDE",
+          Map.merge(existentes, nuevos),
+          & &1.codigo
+        )
 
-    case Enum.find(resultados, &match?({:error, _}, &1)) do
-      nil ->
-        registros = Enum.map(resultados, fn {:ok, registro} -> registro end)
+      case MensajeDestinatario.nuevo(id_mensaje, id_persona, :pendiente, codigo: codigo) do
+        {:ok, registro} ->
+          nuevos = Map.put(nuevos, registro.id_mensaje_destinatario, registro)
+          {:cont, {:ok, nuevos, [registro | registros]}}
 
-        mapa =
-          Map.new(registros, fn registro ->
-            {registro.id_mensaje_destinatario, registro}
-          end)
-
-        {:ok, mapa, registros}
-
-      {:error, motivo} ->
-        {:error, motivo}
+        {:error, motivo} ->
+          {:halt, {:error, motivo}}
+      end
+    end)
+    |> case do
+      {:ok, mapa, registros} -> {:ok, mapa, Enum.reverse(registros)}
+      error -> error
     end
   end
 
-  defp obtener_destinatario(mapa, id) do
-    case Map.fetch(mapa, id) do
+  defp obtener_destinatario(mapa, identificador) do
+    case Map.fetch(mapa, identificador) do
       {:ok, registro} ->
         {:ok, registro}
 
       :error ->
-        {:error, "El registro de entrega '#{id}' no existe"}
+        case Enum.find(Map.values(mapa), &(&1.codigo == identificador)) do
+          nil -> {:error, "No existe un registro de entrega con código '#{identificador}'"}
+          registro -> {:ok, registro}
+        end
     end
   end
 end

@@ -6,47 +6,45 @@ defmodule Emergencia.Aplicacion.GestionFamilias do
 
   alias Emergencia.Cliente.Sesion
   alias Emergencia.Aplicacion.Autenticacion
+  alias Emergencia.Aplicacion.Resolutor
   alias Emergencia.PoblacionServidor
   alias Emergencia.ActividadesServidor
 
   def registrar_familia(%Sesion{} = sesion, nombre) do
     with :ok <- Autenticacion.autorizar(sesion, :registrar_familia),
          {:ok, familia} <- PoblacionServidor.registrar_familia(nombre) do
-
-        registrar_con_advertencia(
+      registrar_con_advertencia(
         familia,
         sesion.id_usuario,
         :registro_familia,
         "El usuario #{sesion.nombre_usuario} registró a la familia #{familia.codigo_familia}"
-        )
-
-      end
+      )
+    end
   end
 
   def registrar_familia(_, _), do: {:error, :sesion_invalida}
-  
- @doc """
+
+  @doc """
   Registra una nueva familia.
   """
   def asignar_familia(%Sesion{} = sesion, id_persona, id_familia) do
     with :ok <- Autenticacion.autorizar(sesion, :asignar_familia),
-          {:ok, persona} <- PoblacionServidor.asignar_familia(id_persona, id_familia) do
-
-        registrar_con_advertencia(
+         {:ok, persona} <- PoblacionServidor.asignar_familia(id_persona, id_familia) do
+      registrar_con_advertencia(
         persona,
         sesion.id_usuario,
         :asignacion_familia,
         "El usuario #{sesion.nombre_usuario} asignó la persona " <>
           "#{persona.codigo_persona} a una familia"
       )
-      end
+    end
   end
 
   def asignar_familia(_, _, _) do
     {:error, :sesion_invalida}
   end
 
-   @doc """
+  @doc """
   Busca una familia mediante su UUID o código.
   """
   def buscar_familia(%Sesion{} = sesion, id_o_codigo) do
@@ -68,7 +66,7 @@ defmodule Emergencia.Aplicacion.GestionFamilias do
 
   def listar_familias(_), do: {:error, :sesion_invalida}
 
-    @doc """
+  @doc """
   Consulta los integrantes de una familia mediante su UUID o código.
   """
   def consultar_integrantes(%Sesion{} = sesion, id_o_codigo_familia) do
@@ -79,18 +77,20 @@ defmodule Emergencia.Aplicacion.GestionFamilias do
 
   def consultar_integrantes(_, _), do: {:error, :sesion_invalida}
 
-   @doc """
+  @doc """
   Asigna una persona a una familia.
 
-  Recibe el UUID de la persona y el UUID o código de la familia.
+  Recibe el UUID, código o documento de la persona, y el UUID o código de la familia.
   """
   def asignar_persona(%Sesion{} = sesion, id_persona, id_o_codigo_familia) do
     with :ok <- Autenticacion.autorizar(sesion, :asignar_familia),
+         id_persona <- Resolutor.persona(id_persona),
          {:ok, familia} <- PoblacionServidor.buscar_familia(id_o_codigo_familia),
-         {:ok, persona} <- PoblacionServidor.asignar_familia(
-           id_persona,
-           familia.id
-         ) do
+         {:ok, persona} <-
+           PoblacionServidor.asignar_familia(
+             id_persona,
+             familia.id
+           ) do
       registrar_con_advertencia(
         persona,
         sesion.id_usuario,

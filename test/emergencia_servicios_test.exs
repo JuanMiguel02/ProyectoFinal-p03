@@ -7,12 +7,124 @@ defmodule EmergenciaServiciosTest do
   alias Emergencia.EstadoTerritorio
   alias Emergencia.EstadoRecursos
   alias Emergencia.EstadoMascotas
+  alias Emergencia.EstadoMensajes
+  alias Emergencia.MensajeDestinatario
+  alias Emergencia.Necesidad
+  alias Emergencia.Persona
 
   alias Emergencia.Servicios.{
     ServicioTerritorio,
     ServicioRecursos,
-    ServicioMascotas
+    ServicioMascotas,
+    ServicioComunicacion
   }
+
+  describe "MensajeDestinatario" do
+    test "genera un código público y permite confirmar con ese código" do
+      assert {:ok, {_mensaje, [destinatario]}, estado} =
+               ServicioComunicacion.enviar_mensaje(
+                 %EstadoMensajes{},
+                 "USR-1",
+                 "Estoy bien",
+                 ["PER-1"]
+               )
+
+      assert destinatario.codigo == "MDE-0001"
+
+      assert {:ok, {_segundo_mensaje, [segundo_destinatario]}, _estado} =
+               ServicioComunicacion.enviar_mensaje(
+                 estado,
+                 "USR-1",
+                 "Otro aviso",
+                 ["PER-2"]
+               )
+
+      assert segundo_destinatario.codigo == "MDE-0002"
+
+      assert {:ok, entregado, _estado_actualizado} =
+               ServicioComunicacion.confirmar_entrega(estado, destinatario.codigo)
+
+      assert entregado.codigo == destinatario.codigo
+      assert entregado.estado == :entregado
+      assert %DateTime{} = entregado.fecha_entrega
+    end
+
+    test "restaura destinatarios antiguos sin código" do
+      id = "15564ab5-67da-4a14-9e88-d9f1fb002c4e"
+
+      assert {:ok, destinatario} =
+               MensajeDestinatario.desde_map(%{
+                 "id_mensaje_destinatario" => id,
+                 "id_envio" => "envio-1",
+                 "id_persona" => "persona-1",
+                 "fecha_entrega" => nil,
+                 "estado" => "pendiente"
+               })
+
+      assert destinatario.codigo == "MDE-" <> String.upcase(id)
+    end
+  end
+
+  describe "Necesidad" do
+    test "requiere responsable y destinatario, e informa el tipo de entidad asociada" do
+      opciones = [
+        id_responsable: "USR-1",
+        id_destinatario: "PER-1",
+        entidad_asociada: "persona"
+      ]
+
+      assert {:ok, necesidad} =
+               Necesidad.nueva("NEC-1", :agua, 10, "ZON-1", :alta, opciones)
+
+      assert necesidad.id_responsable == "USR-1"
+      assert necesidad.id_destinatario == "PER-1"
+      assert necesidad.entidad_asociada == "persona"
+      refute Map.has_key?(Map.from_struct(necesidad), :tipo_destinatario)
+
+      assert {:error, "La necesidad requiere responsable y destinatario válidos"} =
+               Necesidad.nueva("NEC-2", :agua, 10, "ZON-1", :alta)
+    end
+
+    test "migra necesidades antiguas asociándolas a su zona" do
+      assert {:ok, necesidad} =
+               Necesidad.nueva(
+                 "NEC-1",
+                 :agua,
+                 10,
+                 "ZON-1",
+                 :alta,
+                 id_responsable: "USR-1",
+                 id_destinatario: "PER-1",
+                 entidad_asociada: "persona"
+               )
+
+      mapa =
+        necesidad
+        |> Necesidad.a_map()
+        |> Map.merge(%{
+          "id_responsable" => nil,
+          "id_destinatario" => nil,
+          "entidad_asociada" => nil,
+          "tipo_destinatario" => "persona"
+        })
+
+      assert {:ok, migrada} = Necesidad.desde_map(mapa)
+      assert migrada.id_responsable == "SISTEMA"
+      assert migrada.id_destinatario == "ZON-1"
+      assert migrada.entidad_asociada == "zona"
+    end
+  end
+
+  describe "Persona" do
+    test "permite pasar de sin_informacion a en_albergue" do
+      assert {:ok, persona} =
+               Persona.nueva("Ana", "PER-1", "123", "ZON-1", :sin_informacion)
+
+      assert {:ok, persona_actualizada} = Persona.cambiar_estado(persona, :en_albergue)
+      assert persona_actualizada.estado == :en_albergue
+      assert [{:en_albergue, %DateTime{}} | _] = persona_actualizada.historial_estados
+    end
+  end
 
   # ============================================================================
   # Pruebas de Gestión Territorial
@@ -46,7 +158,14 @@ defmodule EmergenciaServiciosTest do
       estado = %EstadoRecursos{}
 
       assert {:ok, necesidad, estado} =
-               ServicioRecursos.registrar_necesidad(estado, :agua, 50, "zona_1", :critica)
+               ServicioRecursos.registrar_necesidad(
+                 estado,
+                 :agua,
+                 50,
+                 "zona_1",
+                 :critica,
+                 opciones_necesidad("zona_1")
+               )
 
       assert {:ok, recurso, estado} =
                ServicioRecursos.registrar_recurso(
@@ -79,7 +198,7 @@ defmodule EmergenciaServiciosTest do
           100,
           "zona_1",
           :alta,
-          entidad_asociada: nil
+          opciones_necesidad("zona_1")
         )
 
       {:ok, _recurso, estado} =
@@ -162,7 +281,7 @@ defmodule EmergenciaServiciosTest do
                ServicioRecursos.listar_recursos(estado)
     end
 
-    test "asigna recursos disponibles sin depender de entidad asociada" do
+    test "asigna recursos y conserva la asociación de la necesidad" do
       {:ok, necesidad, estado_logistica} =
         ServicioRecursos.registrar_necesidad(
           %EstadoRecursos{},
@@ -170,7 +289,7 @@ defmodule EmergenciaServiciosTest do
           20,
           "zona_1",
           :critica,
-          entidad_asociada: nil
+          opciones_necesidad("zona_1")
         )
 
       {:ok, _recurso, estado_logistica} =
@@ -230,6 +349,14 @@ defmodule EmergenciaServiciosTest do
                {5, "CAC-2"}
              ]
     end
+  end
+
+  defp opciones_necesidad(id_zona) do
+    [
+      id_responsable: "SISTEMA",
+      id_destinatario: id_zona,
+      entidad_asociada: "zona"
+    ]
   end
 
   # ============================================================================

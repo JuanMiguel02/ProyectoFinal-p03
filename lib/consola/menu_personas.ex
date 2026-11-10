@@ -88,6 +88,8 @@ defmodule Emergencia.Consola.MenuPersonas do
 
             Util.mostrar("Código: #{persona.codigo_persona}", :mensaje)
             Util.mostrar("Nombre: #{persona.nombre}", :mensaje)
+            Util.mostrar("Edad: #{persona.edad || "No especificada"}", :mensaje)
+            Util.mostrar("Descripción: #{persona.dato_referencia || "No especificada"}", :mensaje)
 
           {:ok, persona, {:advertencia, motivo}} ->
             Util.mostrar(
@@ -336,6 +338,8 @@ defmodule Emergencia.Consola.MenuPersonas do
     Util.mostrar("Nombre: #{persona.nombre}", :mensaje)
     Util.mostrar("Documento: #{persona.documento}", :mensaje)
     Util.mostrar("Estado: #{persona.estado}", :mensaje)
+    Util.mostrar("Edad: #{persona.edad || "No especificada"}", :mensaje)
+    Util.mostrar("Descripción: #{persona.dato_referencia || "No especificada"}", :mensaje)
   end
 
   defp agregar_opcional(opciones, :edad, ""), do: opciones

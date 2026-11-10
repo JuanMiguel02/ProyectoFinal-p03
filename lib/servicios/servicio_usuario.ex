@@ -27,9 +27,16 @@ defmodule Emergencia.Servicios.ServicioUsuario do
          :ok <- validar_nombre_completo(nombre_completo),
          :ok <- validar_tipo(tipo),
          :ok <- validar_unicidad_nombre_usuario(estado.usuarios, nombre_usuario),
-         {:ok, nuevo_usuario} <- Usuario.nuevo(nombre_usuario, contrasena, nombre_completo, tipo, codigo_usuario, id_zona),
+         {:ok, nuevo_usuario} <-
+           Usuario.nuevo(
+             nombre_usuario,
+             contrasena,
+             nombre_completo,
+             tipo,
+             codigo_usuario,
+             id_zona
+           ),
          :ok <- validar_unicidad_id(estado.usuarios, nuevo_usuario.id) do
-
       nuevos_usuarios = Map.put(estado.usuarios, nuevo_usuario.id, nuevo_usuario)
 
       nuevo_estado = %{estado | usuarios: nuevos_usuarios}
@@ -88,24 +95,23 @@ defmodule Emergencia.Servicios.ServicioUsuario do
   @doc """
   Comprueba si un usuario puede realizar una operación.
   """
-def autorizar(%Usuario{tipo_usuario: tipo}, operacion) do
-  autorizar(tipo, operacion)
-end
-
-def autorizar(tipo, operacion) when tipo in @tipos_permitidos do
-  if permitido?(tipo, operacion) do
-    :ok
-  else
-    {:error,
-     "Acceso denegado: el rol :#{tipo} no tiene permiso para '#{operacion}'"}
+  def autorizar(%Usuario{tipo_usuario: tipo}, operacion) do
+    autorizar(tipo, operacion)
   end
-end
 
-def autorizar(_tipo, _operacion) do
-  {:error, "Tipo de usuario no válido"}
-end
+  def autorizar(tipo, operacion) when tipo in @tipos_permitidos do
+    if permitido?(tipo, operacion) do
+      :ok
+    else
+      {:error, "Acceso denegado: el rol :#{tipo} no tiene permiso para '#{operacion}'"}
+    end
+  end
 
- @permisos_ciudadano [
+  def autorizar(_tipo, _operacion) do
+    {:error, "Tipo de usuario no válido"}
+  end
+
+  @permisos_ciudadano [
     :registrar_persona,
     :consultar_personas,
     :consultar_historial,
@@ -286,4 +292,3 @@ end
     end
   end
 end
-

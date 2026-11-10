@@ -108,18 +108,17 @@ defmodule Emergencia.Servicios.ServicioAlbergue do
     end
   end
 
-
   # ===========================================================================
   # Consulta de albergues
   # ===========================================================================
 
   def buscar_albergue(estado, identificador) do
-  albergue =
-    Enum.find(Map.values(estado.albergues), fn albergue ->
-      albergue.id == identificador or
-        String.downcase(albergue.codigo) ==
-          String.downcase(identificador)
-    end)
+    albergue =
+      Enum.find(Map.values(estado.albergues), fn albergue ->
+        albergue.id == identificador or
+          String.downcase(albergue.codigo) ==
+            String.downcase(identificador)
+      end)
 
     case albergue do
       nil -> {:error, "El albergue '#{identificador}' no existe"}
@@ -178,6 +177,7 @@ defmodule Emergencia.Servicios.ServicioAlbergue do
   end
 
   defp sumar_capacidad_recursivo([], total_acumulado), do: total_acumulado
+
   defp sumar_capacidad_recursivo([albergue | resto], total_acumulado) do
     sumar_capacidad_recursivo(resto, total_acumulado + albergue.capacidad_maxima)
   end
@@ -243,6 +243,4 @@ defmodule Emergencia.Servicios.ServicioAlbergue do
       :ok
     end
   end
-
-
 end

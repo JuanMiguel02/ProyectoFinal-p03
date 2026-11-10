@@ -12,18 +12,11 @@ defmodule Emergencia.RecursosServidor do
   use GenServer
 
   alias Emergencia.{
-    AsignacionRecurso,
     EstadoRecursos,
-    GestorDatos,
-    MovimientoRecurso,
-    Necesidad,
-    Recurso
+    GestorDatos
   }
 
-  alias Emergencia.Almacenamiento.JSON
   alias Emergencia.Servicios.ServicioRecursos
-
-  @archivo "logistica.json"
 
   def start_link(opciones \\ []) do
     GenServer.start_link(__MODULE__, opciones, name: __MODULE__)
@@ -67,7 +60,7 @@ defmodule Emergencia.RecursosServidor do
   @impl true
   def init(_opciones) do
     case cargar_estado() do
-      {:ok, estado} -> {:ok, estado}
+      {:ok, datos} -> {:ok, struct(EstadoRecursos, datos)}
       {:error, motivo} -> {:stop, {:error_cargando_recursos, motivo}}
     end
   end
@@ -139,107 +132,10 @@ defmodule Emergencia.RecursosServidor do
   end
 
   defp cargar_estado do
-    case JSON.cargar(@archivo) do
-      {:ok, mapa} when is_map(mapa) ->
-        reconstruir_estado(mapa)
-
-      {:ok, []} ->
-        migrar_datos_anteriores()
-
-      {:ok, otro} ->
-        {:error,
-         "El archivo #{@archivo} debe contener un objeto JSON, se recibió #{inspect(otro)}"}
-
-      error ->
-        error
-    end
+    GestorDatos.cargar_estado_recursos()
   end
-
-  defp reconstruir_estado(mapa) do
-    with {:ok, recursos} <- reconstruir_coleccion(Map.get(mapa, "recursos", []), Recurso),
-         {:ok, movimientos} <-
-           reconstruir_coleccion(Map.get(mapa, "movimientos", []), MovimientoRecurso),
-         {:ok, existencias} <- reconstruir_existencias(Map.get(mapa, "existencias", [])),
-         {:ok, necesidades} <- cargar_o_migrar_necesidades(mapa),
-         {:ok, asignaciones} <-
-           reconstruir_coleccion(Map.get(mapa, "asignaciones", []), AsignacionRecurso) do
-      {:ok,
-       %EstadoRecursos{
-         recursos: Map.new(recursos, &{&1.id, &1}),
-         existencias: existencias,
-         movimientos: Map.new(movimientos, &{&1.id, &1}),
-         necesidades: Map.new(necesidades, &{&1.id, &1}),
-         asignaciones: Map.new(asignaciones, &{&1.id, &1})
-       }}
-    end
-  end
-
-  defp cargar_o_migrar_necesidades(mapa) do
-    case Map.fetch(mapa, "necesidades") do
-      {:ok, lista} -> reconstruir_coleccion(lista, Necesidad)
-      :error -> GestorDatos.cargar_coleccion("necesidades.json", Necesidad, :id)
-    end
-  end
-
-  defp migrar_datos_anteriores do
-    with {:ok, recursos} <- GestorDatos.cargar_coleccion("recursos.json", Recurso, :id),
-         {:ok, necesidades} <- GestorDatos.cargar_coleccion("necesidades.json", Necesidad, :id) do
-      {:ok,
-       %EstadoRecursos{
-         recursos: recursos,
-         existencias: %{},
-         movimientos: %{},
-         necesidades: necesidades,
-         asignaciones: %{}
-       }}
-    end
-  end
-
-  defp reconstruir_coleccion(lista, modulo) when is_list(lista) do
-    Enum.reduce_while(lista, {:ok, []}, fn mapa, {:ok, acc} ->
-      case apply(modulo, :desde_map, [mapa]) do
-        {:ok, entidad} -> {:cont, {:ok, [entidad | acc]}}
-        {:error, motivo} -> {:halt, {:error, motivo}}
-      end
-    end)
-    |> case do
-      {:ok, entidades} -> {:ok, Enum.reverse(entidades)}
-      error -> error
-    end
-  end
-
-  defp reconstruir_coleccion(_, _), do: {:error, "La colección debe ser una lista"}
-
-  defp reconstruir_existencias(lista) when is_list(lista) do
-    Enum.reduce_while(lista, {:ok, %{}}, fn
-      %{"codigo_recurso" => codigo, "ubicacion" => ubicacion, "cantidad" => cantidad}, {:ok, acc}
-      when is_binary(codigo) and is_binary(ubicacion) and is_integer(cantidad) and cantidad >= 0 ->
-        {:cont, {:ok, Map.put(acc, {codigo, ubicacion}, cantidad)}}
-
-      _, _ ->
-        {:halt, {:error, "Registro de existencias inválido"}}
-    end)
-  end
-
-  defp reconstruir_existencias(_), do: {:error, "Las existencias deben ser una lista"}
 
   defp persistir(%EstadoRecursos{} = estado) do
-    JSON.guardar(@archivo, %{
-      "recursos" => Enum.map(estado.recursos, fn {_id, recurso} -> Recurso.a_map(recurso) end),
-      "existencias" =>
-        Enum.map(estado.existencias, fn {{codigo, ubicacion}, cantidad} ->
-          %{"codigo_recurso" => codigo, "ubicacion" => ubicacion, "cantidad" => cantidad}
-        end),
-      "movimientos" =>
-        Enum.map(estado.movimientos, fn {_id, movimiento} ->
-          MovimientoRecurso.a_map(movimiento)
-        end),
-      "necesidades" =>
-        Enum.map(estado.necesidades, fn {_id, necesidad} -> Necesidad.a_map(necesidad) end),
-      "asignaciones" =>
-        Enum.map(estado.asignaciones, fn {_id, asignacion} ->
-          AsignacionRecurso.a_map(asignacion)
-        end)
-    })
+    GestorDatos.guardar_estado_recursos(estado)
   end
 end

@@ -36,17 +36,44 @@
     {
       "cantidad_pendiente": 30,
       "cantidad_requerida": 30,
-      "codigo_necesidad": "NEC-0001",
-      "descripcion": "Punto de atención sector 3",
-      "entidad_asociada": null,
+      "codigo_necesidad": "NEC-0003",
+      "descripcion": "Se necesita agua pa el punto de ayuda",
+      "entidad_asociada": "punto_atencion",
       "estado": "pendiente",
-      "id": "98fec8e5-76d4-4c84-aec3-22416499e4c7",
-      "id_destinatario": null,
-      "id_responsable": null,
+      "id": "595a0752-8991-41e2-bfe9-f1f93e77638c",
+      "id_destinatario": "c9aa40dc-8abd-493f-84b7-daf34e9fef33",
+      "id_responsable": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
       "id_zona": "d467bde6-fe02-499a-9015-2b93377cebc1",
       "prioridad": "critica",
-      "tipo": "agua",
-      "tipo_destinatario": null
+      "tipo": "agua"
+    },
+    {
+      "cantidad_pendiente": 30,
+      "cantidad_requerida": 30,
+      "codigo_necesidad": "NEC-0001",
+      "descripcion": "Punto de atención sector 3",
+      "entidad_asociada": "zona",
+      "estado": "pendiente",
+      "id": "98fec8e5-76d4-4c84-aec3-22416499e4c7",
+      "id_destinatario": "d467bde6-fe02-499a-9015-2b93377cebc1",
+      "id_responsable": "SISTEMA",
+      "id_zona": "d467bde6-fe02-499a-9015-2b93377cebc1",
+      "prioridad": "critica",
+      "tipo": "agua"
+    },
+    {
+      "cantidad_pendiente": 20,
+      "cantidad_requerida": 20,
+      "codigo_necesidad": "NEC-0002",
+      "descripcion": "agua",
+      "entidad_asociada": "zona",
+      "estado": "pendiente",
+      "id": "bb4fef5d-e949-4f31-8946-cffdc0cd2f6c",
+      "id_destinatario": "6b12672f-4249-47f8-9c78-5f24fe239607",
+      "id_responsable": "SISTEMA",
+      "id_zona": "6b12672f-4249-47f8-9c78-5f24fe239607",
+      "prioridad": "media",
+      "tipo": "agua"
     }
   ],
   "recursos": [

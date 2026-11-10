@@ -1,5 +1,5 @@
 defmodule Emergencia.Aplicacion.Autenticacion do
- @moduledoc """
+  @moduledoc """
   Coordina el registro de usuarios, inicio y cierre de sesión,
   autorización y auditoría de las operaciones de autenticación.
   """
@@ -11,9 +11,8 @@ defmodule Emergencia.Aplicacion.Autenticacion do
   # ============================================================
   #  INICIO DE SESIÓN
   # ============================================================
-    def iniciar_sesion(nombre_usuario, contrasena) do
+  def iniciar_sesion(nombre_usuario, contrasena) do
     with {:ok, usuario} <- UsuariosServidor.autenticar(nombre_usuario, contrasena) do
-
       sesion = %Sesion{
         id_usuario: usuario.id,
         codigo_usuario: usuario.codigo_usuario,
@@ -44,8 +43,8 @@ defmodule Emergencia.Aplicacion.Autenticacion do
                :cierre_sesion,
                "El usuario #{sesion.nombre_usuario} cerró sesión"
              ) do
-
-          {:ok, _actividad} -> :ok
+          {:ok, _actividad} ->
+            :ok
 
           {:error, motivo} ->
             {:ok, {:advertencia, {:error_auditoria, motivo}}}
@@ -93,5 +92,4 @@ defmodule Emergencia.Aplicacion.Autenticacion do
       descripcion
     )
   end
-
 end

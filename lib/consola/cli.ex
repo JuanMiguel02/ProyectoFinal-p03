@@ -24,6 +24,7 @@ defmodule Emergencia.Consola.CLI do
     GestionTerritorio,
     GestionRecursos,
     GestionPersonas,
+    GestionFamilias,
     GestionAlbergues,
     GestionMensajes,
     GestionMascotas,
@@ -78,16 +79,31 @@ defmodule Emergencia.Consola.CLI do
 
   # Permite agrupar texto entre comillas como un solo argumento
   defp parsear_argumentos(cadena) do
-    ~r/[^\s"']+|"([^"]*)"|'([^']*)'/
+    ~r/[^\s=]+=(?:"[^"]*"|'[^']*'|[^\s]+)|"[^"]*"|'[^']*'|[^\s]+/
     |> Regex.scan(cadena)
-    |> Enum.map(fn
-      [completo] -> completo
-      [_, grupo1] when grupo1 != "" -> grupo1
-      [_, _, grupo2] -> grupo2
-      _ -> ""
-    end)
+    |> Enum.map(fn [argumento] -> limpiar_argumento(argumento) end)
     |> Enum.reject(&(&1 == ""))
   end
+
+  defp limpiar_argumento(argumento) do
+    case String.split(argumento, "=", parts: 2) do
+      [clave, valor] ->
+        "#{clave}=#{quitar_comillas(valor)}"
+
+      [valor] ->
+        quitar_comillas(valor)
+    end
+  end
+
+  defp quitar_comillas(<<"\"", resto::binary>>) do
+    String.trim_trailing(resto, "\"")
+  end
+
+  defp quitar_comillas(<<"'", resto::binary>>) do
+    String.trim_trailing(resto, "'")
+  end
+
+  defp quitar_comillas(valor), do: valor
 
   # ============================================================================
   # 1. COMANDOS GENERALES
@@ -115,7 +131,10 @@ defmodule Emergencia.Consola.CLI do
           zone_stats <zona>
 
         Recursos y Necesidades:
-          register_need <tipo> <cantidad> <prioridad> <zona> <descripcion>
+          register_need <tipo> <cantidad> <prioridad> <zona> <destinatario> <descripcion>
+            destinatario: código de persona/familia/albergue/punto/centro/zona o documento de persona
+            ejemplo: register_need agua 30 critica ZON-0001 PER-0001 "Agua para Andrés"
+
           register_resource <nombre> <cantidad> <unidad> <ubicacion>
           assign_resource <necesidad> <recurso> <cantidad>
           transfer_resource <recurso> <origen> <destino> <cantidad>
@@ -128,18 +147,22 @@ defmodule Emergencia.Consola.CLI do
           critical_resources
 
         Población y Albergues:
-          report_person <documento> <nombre> <zona> <estado>
+          report_person <documento> <nombre> <zona> <estado> [edad=<años>] [descripcion="..."]
           find_person <documento>
-          register_shelter <codigo> <nombre> <zona> <capacidad>
+          register_family <nombre>
+          add_person_to_family <documento_o_codigo_persona> <codigo_familia>
+          register_shelter <nombre> <zona> <capacidad>
           check_shelter <albergue>
           shelter_report
           register_entry <albergue> <documento>
           register_exit <albergue> <documento>
 
         Comunicaciones y Mascotas:
+          send_person_message <documento> <contenido>
           send_family_message <documento_o_familia> <contenido>
           list_family_messages <documento>
-          confirm_delivery <id_registro_destinatario>
+          confirm_delivery <codigo_destinatario>
+          complete_message <codigo_destinatario> (marca entrega completada)
           report_pet <lost|found> <especie> <nombre> <color> <tamano> <zona> <contacto>
           match_pets
 
@@ -305,14 +328,23 @@ defmodule Emergencia.Consola.CLI do
   # 4. RECURSOS Y NECESIDADES
   # ============================================================================
 
-  defp evaluar_comando(["register_need", tipo, cantidad, prioridad, zona, descripcion], sesion) do
+  defp evaluar_comando(
+         ["register_need", tipo, cantidad, prioridad, zona, destinatario, descripcion],
+         sesion
+       ) do
     ejecutar(
       sesion,
       fn ->
         with {:ok, tipo} <- a_atomo(tipo),
              {:ok, cantidad} <- a_entero(cantidad),
              {:ok, prioridad} <- a_atomo(prioridad) do
-          GestionRecursos.registrar_necesidad(sesion, tipo, cantidad, zona, prioridad,
+          GestionRecursos.registrar_necesidad(
+            sesion,
+            tipo,
+            cantidad,
+            zona,
+            prioridad,
+            destinatario,
             descripcion: descripcion
           )
         end
@@ -445,15 +477,35 @@ defmodule Emergencia.Consola.CLI do
   # 5. POBLACIÓN Y ALBERGUES
   # ============================================================================
 
-  defp evaluar_comando(["report_person", documento, nombre, zona, estado], sesion) do
+  defp evaluar_comando(
+         ["report_person", documento, nombre, zona, estado | campos_opcionales],
+         sesion
+       ) do
     ejecutar(
       sesion,
       fn ->
-        with {:ok, estado} <- a_atomo(estado) do
-          GestionPersonas.registrar_persona(sesion, nombre, documento, zona, estado)
+        with {:ok, estado} <- a_atomo(estado),
+             {:ok, opciones} <- parsear_opciones_persona(campos_opcionales) do
+          GestionPersonas.registrar_persona(
+            sesion,
+            nombre,
+            documento,
+            zona,
+            estado,
+            opciones
+          )
         end
       end,
-      fn p -> "Persona registrada [Código: #{p.codigo_persona}]" end
+      fn p ->
+        campos = [
+          "Persona registrada [Código: #{p.codigo_persona}]",
+          "Nombre: #{p.nombre}",
+          "Edad: #{if is_nil(p.edad), do: "No especificada", else: p.edad}",
+          "Descripción: #{p.dato_referencia || "No especificada"}"
+        ]
+
+        Enum.join(campos, " | ")
+      end
     )
   end
 
@@ -480,9 +532,27 @@ defmodule Emergencia.Consola.CLI do
     )
   end
 
-  defp evaluar_comando(["register_shelter", _codigo, nombre, zona, capacidad], sesion) do
-    # El código del albergue lo genera el sistema; el argumento se conserva
-    # solo por compatibilidad con el comando de referencia.
+  defp evaluar_comando(["register_family", nombre], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionFamilias.registrar_familia(sesion, nombre) end,
+      fn familia ->
+        "Familia registrada [Código: #{familia.codigo_familia}, ID: #{familia.id}]"
+      end
+    )
+  end
+
+  defp evaluar_comando(["add_person_to_family", persona, familia], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionFamilias.asignar_persona(sesion, persona, familia) end,
+      fn persona_asignada ->
+        "Persona #{persona_asignada.codigo_persona} asignada a la familia correctamente."
+      end
+    )
+  end
+
+  defp evaluar_comando(["register_shelter", nombre, zona, capacidad], sesion) do
     ejecutar(
       sesion,
       fn ->
@@ -545,7 +615,15 @@ defmodule Emergencia.Consola.CLI do
     ejecutar(
       sesion,
       fn -> GestionMensajes.enviar_mensaje(sesion, destinatario, contenido) end,
-      fn _resultado -> "¡Mensaje enviado y enrutado con éxito!" end
+      &formatear_mensaje_enviado/1
+    )
+  end
+
+  defp evaluar_comando(["send_person_message", documento, contenido], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionMensajes.enviar_mensaje(sesion, documento, contenido) end,
+      &formatear_mensaje_enviado/1
     )
   end
 
@@ -560,7 +638,7 @@ defmodule Emergencia.Consola.CLI do
         mensajes ->
           "\n--- Mensajes ---\n" <>
             Enum.map_join(mensajes, "\n", fn m ->
-              "[#{m.id_registro}] Estado: #{m.estado_entrega} | Texto: #{m.mensaje.contenido}"
+              "[#{m.codigo_registro}] Estado: #{m.estado_entrega} | Texto: #{m.mensaje.contenido}"
             end)
       end
     )
@@ -571,6 +649,14 @@ defmodule Emergencia.Consola.CLI do
       sesion,
       fn -> GestionMensajes.confirmar_entrega(sesion, id_registro) end,
       fn _resultado -> "¡Entrega confirmada exitosamente!" end
+    )
+  end
+
+  defp evaluar_comando(["complete_message", id_registro], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionMensajes.confirmar_entrega(sesion, id_registro) end,
+      fn _resultado -> "Mensaje marcado como completado (entregado)." end
     )
   end
 
@@ -732,7 +818,7 @@ defmodule Emergencia.Consola.CLI do
         necesidades ->
           "\n--- Necesidades ---\n" <>
             Enum.map_join(necesidades, "\n", fn n ->
-              "Código: #{n.codigo_necesidad} | Tipo: #{n.tipo} | Prioridad: #{n.prioridad} | Cant: #{n.cantidad_requerida} | Estado: #{n.estado}"
+              "Código: #{n.codigo_necesidad} | Tipo: #{n.tipo} | Prioridad: #{n.prioridad} | Cant: #{n.cantidad_requerida} | Destinatario: #{n.entidad_asociada} (#{n.id_destinatario}) | Estado: #{n.estado}"
             end)
       end
     )
@@ -829,5 +915,30 @@ defmodule Emergencia.Consola.CLI do
            {:error, "Filtro no válido: '#{filtro}' (usa zona=, tipo=, prioridad= o estado=)"}}
       end
     end)
+  end
+
+  defp parsear_opciones_persona(campos) do
+    Enum.reduce_while(campos, {:ok, []}, fn campo, {:ok, opciones} ->
+      case String.split(campo, "=", parts: 2) do
+        ["edad", valor] ->
+          with {:ok, edad} <- a_entero(valor),
+               true <- edad >= 0 do
+            {:cont, {:ok, Keyword.put(opciones, :edad, edad)}}
+          else
+            _ -> {:halt, {:error, "La edad debe ser un entero no negativo"}}
+          end
+
+        ["descripcion", descripcion] when descripcion != "" ->
+          {:cont, {:ok, Keyword.put(opciones, :dato_referencia, descripcion)}}
+
+        _ ->
+          {:halt, {:error, "Opción de persona no válida: '#{campo}' (usa edad= y descripcion=)"}}
+      end
+    end)
+  end
+
+  defp formatear_mensaje_enviado({_mensaje, destinatarios}) do
+    codigos = Enum.map_join(destinatarios, ", ", & &1.codigo)
+    "Mensaje enviado. Código(s) para confirmar entrega: #{codigos}"
   end
 end

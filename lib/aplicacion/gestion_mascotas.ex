@@ -10,10 +10,29 @@ defmodule Emergencia.Aplicacion.GestionMascotas do
   alias Emergencia.TerritorioServidor
 
   def registrar_reporte(sesion, tipo, especie, color, tamano, zona_cod, contacto, opciones \\ [])
-  def registrar_reporte(%Sesion{} = sesion, tipo, especie, color, tamano, zona_cod, _contacto, opciones) do
+
+  def registrar_reporte(
+        %Sesion{} = sesion,
+        tipo,
+        especie,
+        color,
+        tamano,
+        zona_cod,
+        _contacto,
+        opciones
+      ) do
     with :ok <- Autenticacion.autorizar(sesion, :crear_reporte_mascota),
          {:ok, zona} <- TerritorioServidor.buscar_zona(zona_cod),
-         {:ok, reporte} <- MascotasServidor.registrar_reporte(tipo, especie, color, tamano, zona.id, sesion.id_usuario, opciones) do
+         {:ok, reporte} <-
+           MascotasServidor.registrar_reporte(
+             tipo,
+             especie,
+             color,
+             tamano,
+             zona.id,
+             sesion.id_usuario,
+             opciones
+           ) do
       registrar_con_advertencia(
         reporte,
         sesion.id_usuario,
@@ -43,7 +62,8 @@ defmodule Emergencia.Aplicacion.GestionMascotas do
 
   def confirmar_coincidencia(%Sesion{} = sesion, id_coincidencia) do
     with :ok <- Autenticacion.autorizar(sesion, :confirmar_coincidencia),
-         {:ok, coincidencia} <- MascotasServidor.confirmar_coincidencia(id_coincidencia, sesion.id_usuario) do
+         {:ok, coincidencia} <-
+           MascotasServidor.confirmar_coincidencia(id_coincidencia, sesion.id_usuario) do
       registrar_con_advertencia(
         coincidencia,
         sesion.id_usuario,

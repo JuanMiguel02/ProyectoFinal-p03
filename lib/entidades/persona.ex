@@ -75,27 +75,29 @@ defmodule Emergencia.Persona do
 
   def cambiar_estado(%__MODULE__{} = persona, nuevo_estado) do
     # Matriz de transiciones lógicas de la emergencia
-      transiciones_validas = %{
-        sin_informacion: [:reportada, :localizada],
-        reportada: [:localizada, :trasladada, :en_albergue, :reunificada],
-        localizada: [:trasladada, :en_albergue, :reunificada],
-        trasladada: [:en_albergue, :reunificada, :localizada],
-        en_albergue: [:reunificada, :localizada, :trasladada],
-        reunificada: [] # Estado final, no debería volver atrás
-      }
+    transiciones_validas = %{
+      sin_informacion: [:reportada, :localizada, :en_albergue],
+      reportada: [:localizada, :trasladada, :en_albergue, :reunificada],
+      localizada: [:trasladada, :en_albergue, :reunificada],
+      trasladada: [:en_albergue, :reunificada, :localizada],
+      en_albergue: [:reunificada, :localizada, :trasladada],
+      # Estado final, no debería volver atrás
+      reunificada: []
+    }
 
-      if nuevo_estado in @estados_permitidos do
-        permitidas = Map.get(transiciones_validas, persona.estado, [])
+    if nuevo_estado in @estados_permitidos do
+      permitidas = Map.get(transiciones_validas, persona.estado, [])
 
-        if nuevo_estado in permitidas do
-          historial = [{nuevo_estado, DateTime.utc_now()} | persona.historial_estados]
-          {:ok, %{persona | estado: nuevo_estado, historial_estados: historial}}
-        else
-          {:error, "Transición no permitida: No se puede pasar de '#{persona.estado}' a '#{nuevo_estado}'"}
-        end
+      if nuevo_estado in permitidas do
+        historial = [{nuevo_estado, DateTime.utc_now()} | persona.historial_estados]
+        {:ok, %{persona | estado: nuevo_estado, historial_estados: historial}}
       else
-        {:error, "Estado de persona inválido"}
+        {:error,
+         "Transición no permitida: No se puede pasar de '#{persona.estado}' a '#{nuevo_estado}'"}
       end
+    else
+      {:error, "Estado de persona inválido"}
+    end
   end
 
   def a_map(%__MODULE__{} = persona) do

@@ -16,13 +16,40 @@ defmodule Emergencia.Aplicacion.GestionRecursos do
   # Necesidades
   # ------------------------------------------------------------------
 
-  def registrar_necesidad(sesion, tipo, cantidad, codigo_zona, prioridad, opciones \\ [])
+  def registrar_necesidad(
+        sesion,
+        tipo,
+        cantidad,
+        codigo_zona,
+        prioridad,
+        codigo_destinatario,
+        opciones \\ []
+      )
 
-  def registrar_necesidad(%Sesion{} = sesion, tipo, cantidad, codigo_zona, prioridad, opciones) do
+  def registrar_necesidad(
+        %Sesion{} = sesion,
+        tipo,
+        cantidad,
+        codigo_zona,
+        prioridad,
+        codigo_destinatario,
+        opciones
+      ) do
     with :ok <- Autenticacion.autorizar(sesion, :crear_necesidad),
          {:ok, zona} <- TerritorioServidor.buscar_zona(codigo_zona),
+         {:ok, destinatario} <- Resolutor.destinatario_necesidad(codigo_destinatario),
          {:ok, necesidad} <-
-           RecursosServidor.registrar_necesidad(tipo, cantidad, zona.id, prioridad, opciones) do
+           RecursosServidor.registrar_necesidad(
+             tipo,
+             cantidad,
+             zona.id,
+             prioridad,
+             Keyword.merge(opciones,
+               id_responsable: sesion.id_usuario,
+               id_destinatario: destinatario.id,
+               entidad_asociada: destinatario.entidad_asociada
+             )
+           ) do
       registrar_con_advertencia(
         necesidad,
         sesion.id_usuario,
@@ -32,7 +59,7 @@ defmodule Emergencia.Aplicacion.GestionRecursos do
     end
   end
 
-  def registrar_necesidad(_, _, _, _, _, _), do: {:error, :sesion_invalida}
+  def registrar_necesidad(_, _, _, _, _, _, _), do: {:error, :sesion_invalida}
 
   def listar_necesidades(%Sesion{} = sesion) do
     with :ok <- Autenticacion.autorizar(sesion, :consultar_necesidades) do
@@ -84,6 +111,7 @@ defmodule Emergencia.Aplicacion.GestionRecursos do
         ubicacion
       ) do
     with :ok <- Autenticacion.autorizar(sesion, :asignar_recursos),
+         {:ok, ubicacion} <- Resolutor.ubicacion_recurso(ubicacion),
          {:ok, recurso} <-
            RecursosServidor.registrar_recurso(
              nombre,
@@ -127,6 +155,8 @@ defmodule Emergencia.Aplicacion.GestionRecursos do
   def transferir_recurso(%Sesion{} = sesion, recurso_cod, origen, destino, cantidad) do
     with :ok <- Autenticacion.autorizar(sesion, :asignar_recursos),
          codigo <- Resolutor.codigo_recurso(recurso_cod),
+         {:ok, origen} <- Resolutor.ubicacion_recurso(origen),
+         {:ok, destino} <- Resolutor.ubicacion_recurso(destino),
          {:ok, mov} <-
            RecursosServidor.transferir_recurso(codigo, origen, destino, cantidad) do
       registrar_con_advertencia(

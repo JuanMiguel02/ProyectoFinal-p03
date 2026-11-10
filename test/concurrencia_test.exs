@@ -52,11 +52,19 @@ defmodule Emergencia.ConcurrenciaTest do
         :agua,
         50,
         "zona_1",
-        :critica
+        :critica,
+        opciones_necesidad("zona_1")
       )
 
     {:ok, necesidad2, estado} =
-      ServicioRecursos.registrar_necesidad(estado, :agua, 50, "zona_2", :alta)
+      ServicioRecursos.registrar_necesidad(
+        estado,
+        :agua,
+        50,
+        "zona_2",
+        :alta,
+        opciones_necesidad("zona_2")
+      )
 
     {:ok, _recurso, estado} =
       ServicioRecursos.registrar_recurso(
@@ -89,5 +97,13 @@ defmodule Emergencia.ConcurrenciaTest do
     estado_final = Agent.get(pid, & &1)
     assert Enum.sum(Map.values(estado_final.existencias)) == 0
     assert length(Map.values(estado_final.asignaciones)) == 1
+  end
+
+  defp opciones_necesidad(id_zona) do
+    [
+      id_responsable: "SISTEMA",
+      id_destinatario: id_zona,
+      entidad_asociada: "zona"
+    ]
   end
 end

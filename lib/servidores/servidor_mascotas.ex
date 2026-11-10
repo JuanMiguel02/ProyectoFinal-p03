@@ -17,7 +17,10 @@ defmodule Emergencia.MascotasServidor do
   end
 
   def registrar_reporte(tipo, especie, color, tamano, id_zona, id_contacto, opciones \\ []) do
-    GenServer.call(__MODULE__, {:registrar_reporte, tipo, especie, color, tamano, id_zona, id_contacto, opciones})
+    GenServer.call(
+      __MODULE__,
+      {:registrar_reporte, tipo, especie, color, tamano, id_zona, id_contacto, opciones}
+    )
   end
 
   def buscar_coincidencias(id_reporte) do
@@ -53,6 +56,7 @@ defmodule Emergencia.MascotasServidor do
           reportes_mascotas: Map.get(datos, :reportes_mascotas, %{}),
           coincidencias_mascotas: Map.get(datos, :coincidencias_mascotas, %{})
         }
+
         {:ok, estado}
 
       {:error, motivo} ->
@@ -61,15 +65,30 @@ defmodule Emergencia.MascotasServidor do
   end
 
   @impl true
-  def handle_call({:registrar_reporte, tipo, especie, color, tamano, id_zona, id_contacto, opciones}, _from, estado) do
+  def handle_call(
+        {:registrar_reporte, tipo, especie, color, tamano, id_zona, id_contacto, opciones},
+        _from,
+        estado
+      ) do
     # 1. Ejecutamos la lógica pura (usamos 'nuevo' internamente en el struct)
-    case ServicioMascotas.registrar_reporte(estado, tipo, especie, color, tamano, id_zona, id_contacto, opciones) do
+    case ServicioMascotas.registrar_reporte(
+           estado,
+           tipo,
+           especie,
+           color,
+           tamano,
+           id_zona,
+           id_contacto,
+           opciones
+         ) do
       {:ok, reporte, nuevo_estado} ->
-
         # 2. PROCESAMIENTO ASÍNCRONO SUPERVISADO
         # Lanza un proceso hijo independiente y supervisado
         Task.Supervisor.start_child(Emergencia.TaskSupervisor, fn ->
-          IO.puts("Iniciando búsqueda de coincidencias en background para el reporte: #{reporte.id}...")
+          IO.puts(
+            "Iniciando búsqueda de coincidencias en background para el reporte: #{reporte.id}..."
+          )
+
           ServicioMascotas.evaluar_coincidencias_background(reporte, nuevo_estado)
         end)
 
@@ -108,6 +127,7 @@ defmodule Emergencia.MascotasServidor do
     case ServicioMascotas.confirmar_coincidencia(estado, id_coincidencia, id_usuario) do
       {:ok, resultado, nuevo_estado} ->
         procesar_persistencia(resultado, nuevo_estado, estado)
+
       {:error, motivo} ->
         {:reply, {:error, motivo}, estado}
     end

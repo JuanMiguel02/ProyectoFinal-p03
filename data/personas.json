@@ -1,0 +1,40 @@
+[
+  {
+    "codigo_persona": "PER-0001",
+    "dato_referencia": null,
+    "documento": "123456",
+    "edad": null,
+    "estado": "en_albergue",
+    "historial_estados": [
+      [
+        "en_albergue",
+        "2026-11-10T20:42:01.563000Z"
+      ],
+      [
+        "sin_informacion",
+        "2026-11-10T20:17:28.065000Z"
+      ]
+    ],
+    "id": "1cc12a36-e69b-4748-a4df-54e1969a952b",
+    "id_familia": "ccacd5e5-6ece-4856-ac20-1f1f7ad90c15",
+    "id_zona": "6b12672f-4249-47f8-9c78-5f24fe239607",
+    "nombre": "Paco Jones"
+  },
+  {
+    "codigo_persona": "PER-0002",
+    "dato_referencia": null,
+    "documento": "98765",
+    "edad": 48,
+    "estado": "sin_informacion",
+    "historial_estados": [
+      [
+        "sin_informacion",
+        "2026-11-10T20:35:03.018000Z"
+      ]
+    ],
+    "id": "b42298a7-ff7c-41df-b3ec-134895cfe06f",
+    "id_familia": null,
+    "id_zona": "6b12672f-4249-47f8-9c78-5f24fe239607",
+    "nombre": "Julian Casablancas"
+  }
+]

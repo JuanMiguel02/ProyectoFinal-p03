@@ -3,12 +3,13 @@ defmodule Emergencia.MensajeDestinatario do
 
   @estados_permitidos [:pendiente, :entregado]
 
-  @enforce_keys [:id_mensaje_destinatario, :id_envio, :id_persona, :estado]
-  defstruct [:id_mensaje_destinatario, :id_envio, :id_persona, :fecha_entrega, :estado]
+  @enforce_keys [:id_mensaje_destinatario, :codigo, :id_envio, :id_persona, :estado]
+  defstruct [:id_mensaje_destinatario, :codigo, :id_envio, :id_persona, :fecha_entrega, :estado]
 
   @type estado_mensaje :: :pendiente | :entregado
   @type t :: %__MODULE__{
           id_mensaje_destinatario: String.t(),
+          codigo: String.t(),
           id_envio: String.t(),
           id_persona: String.t(),
           fecha_entrega: DateTime.t() | nil,
@@ -19,11 +20,13 @@ defmodule Emergencia.MensajeDestinatario do
   Crea un nuevo destinatario para un mensaje. Por defecto el estado es :pendiente.
   """
   def nuevo(id_envio, id_persona, estado \\ :pendiente, opciones \\ []) do
+    codigo = Keyword.get(opciones, :codigo)
     fecha_entrega = Keyword.get(opciones, :fecha_entrega)
 
     cond do
-      is_nil(id_envio) or is_nil(id_persona) ->
-        {:error, "ID de envío e ID de persona son obligatorios"}
+      not texto_presente?(codigo) or not texto_presente?(id_envio) or
+          not texto_presente?(id_persona) ->
+        {:error, "Código, ID de envío e ID de persona son obligatorios"}
 
       estado not in @estados_permitidos ->
         {:error, "Estado :#{estado} inválido. Opciones: #{inspect(@estados_permitidos)}"}
@@ -36,6 +39,7 @@ defmodule Emergencia.MensajeDestinatario do
         {:ok,
          %__MODULE__{
            id_mensaje_destinatario: GeneradorID.generar_uuid(),
+           codigo: codigo,
            id_envio: id_envio,
            id_persona: id_persona,
            fecha_entrega: fecha_entrega,
@@ -68,10 +72,12 @@ defmodule Emergencia.MensajeDestinatario do
   end
 
   def desde_map(mapa) when is_map(mapa) do
+    mapa = completar_codigo_legacy(mapa)
     campos = Map.keys(__MODULE__.__struct__()) -- [:__struct__]
 
     with {:ok, attrs} <- normalizar(mapa, campos),
          :ok <- validar_id(attrs),
+         :ok <- validar_codigo(attrs[:codigo]),
          {:ok, estado} <- obtener_estado(attrs[:estado]),
          {:ok, fecha} <- obtener_fecha(attrs[:fecha_entrega]),
          {:ok, entidad} <-
@@ -84,6 +90,21 @@ defmodule Emergencia.MensajeDestinatario do
   end
 
   def desde_map(_), do: {:error, "El destinatario debe ser un mapa válido"}
+
+  defp completar_codigo_legacy(mapa) do
+    id = Map.get(mapa, "id_mensaje_destinatario", Map.get(mapa, :id_mensaje_destinatario))
+
+    case Map.get(mapa, "codigo", Map.get(mapa, :codigo)) do
+      codigo when is_binary(codigo) and codigo != "" ->
+        mapa
+
+      _ when is_binary(id) and id != "" ->
+        Map.put(mapa, "codigo", "MDE-" <> String.upcase(id))
+
+      _ ->
+        mapa
+    end
+  end
 
   defp normalizar(mapa, campos) do
     Enum.reduce_while(mapa, {:ok, %{}}, fn {k, v}, {:ok, acc} ->
@@ -101,6 +122,11 @@ defmodule Emergencia.MensajeDestinatario do
         do: :ok,
         else: {:error, "ID del destinatario inválido"}
       )
+
+  defp validar_codigo(codigo) when is_binary(codigo) and codigo != "", do: :ok
+  defp validar_codigo(_), do: {:error, "Código del destinatario inválido"}
+
+  defp texto_presente?(texto), do: is_binary(texto) and String.trim(texto) != ""
 
   defp obtener_estado(estado) when estado in @estados_permitidos, do: {:ok, estado}
 

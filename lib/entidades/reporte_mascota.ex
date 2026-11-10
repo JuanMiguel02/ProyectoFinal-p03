@@ -181,14 +181,16 @@ defmodule Emergencia.ReporteMascota do
     transiciones_validas = %{
       activa: [:posible_coincidencia, :resuelta],
       posible_coincidencia: [:activa, :resuelta],
-      resuelta: [] # Es un estado final, no se puede reabrir
+      # Es un estado final, no se puede reabrir
+      resuelta: []
     }
 
     if nuevo_estado in @estados_permitidos do
       if nuevo_estado in Map.get(transiciones_validas, reporte.estado, []) do
         {:ok, %{reporte | estado: nuevo_estado}}
       else
-        {:error, "Transición no permitida: No se puede pasar de '#{reporte.estado}' a '#{nuevo_estado}'"}
+        {:error,
+         "Transición no permitida: No se puede pasar de '#{reporte.estado}' a '#{nuevo_estado}'"}
       end
     else
       {:error, "Estado de reporte inválido"}

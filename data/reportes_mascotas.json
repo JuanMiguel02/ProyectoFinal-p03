@@ -1,0 +1,28 @@
+[
+  {
+    "caracteristicas": null,
+    "color": "blanco",
+    "especie": "perro",
+    "estado": "activa",
+    "fecha_reporte": "2026-11-10T20:57:01.004000Z",
+    "id": "3addbb89-5d0a-4465-9031-027948c9b812",
+    "id_usuario_contacto": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "id_zona": "d467bde6-fe02-499a-9015-2b93377cebc1",
+    "nombre": "desconocido",
+    "tamano": "mediano",
+    "tipo": "encontrada"
+  },
+  {
+    "caracteristicas": null,
+    "color": "blanco",
+    "especie": "perro",
+    "estado": "activa",
+    "fecha_reporte": "2026-11-10T20:56:41.232000Z",
+    "id": "46a7a48b-b535-4f42-b6d4-71cf041aba02",
+    "id_usuario_contacto": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "id_zona": "d467bde6-fe02-499a-9015-2b93377cebc1",
+    "nombre": "coco",
+    "tamano": "mediano",
+    "tipo": "perdida"
+  }
+]

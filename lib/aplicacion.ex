@@ -1,4 +1,3 @@
-
 defmodule Emergencia.Application do
   use Application
 

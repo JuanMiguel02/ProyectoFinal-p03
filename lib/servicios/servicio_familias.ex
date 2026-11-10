@@ -14,6 +14,7 @@ defmodule Emergencia.Servicios.ServicioFamilia do
 
   def registrar(%EstadoPoblacion{} = estado, nombre) do
     codigo_familia = GeneradorID.generar("FAM", estado.familias, & &1.codigo_familia)
+
     with {:ok, familia} <- Familia.nueva(nombre, codigo_familia) do
       nuevas_familias = Map.put(estado.familias, familia.id, familia)
 

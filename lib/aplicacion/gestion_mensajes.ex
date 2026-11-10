@@ -10,14 +10,15 @@ defmodule Emergencia.Aplicacion.GestionMensajes do
   alias Emergencia.PoblacionServidor
   alias Emergencia.ActividadesServidor
 
-
   def enviar_mensaje(sesion, doc_id_o_familia, contenido, opciones \\ [])
+
   def enviar_mensaje(%Sesion{} = sesion, doc_id_o_familia, contenido, opciones) do
     with :ok <- Autenticacion.autorizar(sesion, :despachar_mensaje) do
       ids_personas =
         case PoblacionServidor.consultar_integrantes(doc_id_o_familia) do
           {:ok, integrantes} when integrantes != [] ->
             Enum.map(integrantes, & &1.id)
+
           _ ->
             [resolver_id_persona(doc_id_o_familia)]
         end
@@ -30,7 +31,9 @@ defmodule Emergencia.Aplicacion.GestionMensajes do
             :enviar_mensaje,
             "El usuario #{sesion.nombre_usuario} envió un mensaje familiar"
           )
-        error -> error
+
+        error ->
+          error
       end
     end
   end
