@@ -33,7 +33,7 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
   Ingresa una persona a un albergue.
   """
   def ingresar_persona(%Sesion{} = sesion, id_persona, id_albergue) do
-    with :ok <- Autenticacion.autorizar(sesion, :gestionar_albergues),
+    with :ok <- Autenticacion.autorizar(sesion, :ingreso_albergue),
          {:ok, registro} <- PoblacionServidor.ingresar_persona( id_persona, id_albergue) do
 
       registrar_con_advertencia(
@@ -53,7 +53,7 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
   def registrar_salida(sesion, id_persona, nuevo_estado_persona \\ :localizada)
 
   def registrar_salida(%Sesion{} = sesion, id_persona, nuevo_estado_persona) do
-    with :ok <- Autenticacion.autorizar(sesion, :gestionar_albergues),
+    with :ok <- Autenticacion.autorizar(sesion, :salida_albergue),
          {:ok, registro} <- PoblacionServidor.registrar_salida(id_persona, nuevo_estado_persona) do
 
        registrar_con_advertencia(

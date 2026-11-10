@@ -10,7 +10,7 @@ defmodule Emergencia.Aplicacion.GestionFamilias do
   alias Emergencia.ActividadesServidor
 
   def registrar_familia(%Sesion{} = sesion, nombre) do
-    with :ok <- Autenticacion.autorizar(sesion, :registrar_persona),
+    with :ok <- Autenticacion.autorizar(sesion, :registrar_familia),
          {:ok, familia} <- PoblacionServidor.registrar_familia(nombre) do
 
         registrar_con_advertencia(
@@ -23,6 +23,8 @@ defmodule Emergencia.Aplicacion.GestionFamilias do
       end
   end
 
+  def registrar_familia(_, _), do: {:error, :sesion_invalida}
+  
  @doc """
   Registra una nueva familia.
   """

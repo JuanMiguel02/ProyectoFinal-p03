@@ -50,6 +50,7 @@ defmodule Emergencia.Aplicacion.GestionPersonas do
     end
   end
 
+  def cambiar_estado(_, _, _), do: {:error, :sesion_invalida}
   # ============================================================
   # BUSCAR PERSONAS
   # ============================================================

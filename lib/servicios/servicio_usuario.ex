@@ -105,68 +105,46 @@ def autorizar(_tipo, _operacion) do
   {:error, "Tipo de usuario no válido"}
 end
 
-# Administrador
-defp permitido?(:administrador, _operacion), do: true
+ @permisos_ciudadano [
+    :registrar_persona,
+    :consultar_personas,
+    :consultar_historial,
+    :consultar_familias,
+    :crear_reporte_mascota,
+    :consultar_reportes,
+    :crear_necesidad,
+    :enviar_mensaje
+  ]
 
-# Coordinador
-defp permitido?(:coordinador, operacion)
-     when operacion in [
-            :crear_zona,
-            :crear_sector,
-            :asignar_recursos,
-            :despachar_mensaje,
+  @permisos_voluntario @permisos_ciudadano ++
+                         [
+                           :cambiar_estado_persona,
+                           :registrar_familia,
+                           :asignar_familia,
+                           :ingreso_albergue,
+                           :salida_albergue,
+                           :consultar_albergues,
+                           :consultar_recursos,
+                           :consultar_necesidades
+                         ]
 
-            :registrar_persona,
-            :cambiar_estado_persona,
-            :consultar_personas,
+  @permisos_coordinador @permisos_voluntario ++
+                          [
+                            :crear_zona,
+                            :crear_sector,
+                            :registrar_albergue,
+                            :asignar_recursos,
+                            :transferir_recursos,
+                            :confirmar_coincidencia,
+                            :consultar_mensajes,
+                            :consultar_actividades
+                          ]
 
-            :registrar_familia,
-            :consultar_familias,
-            :asignar_familia,
-
-            :gestionar_albergues,
-            :registrar_albergue,
-            :ingreso_albergue,
-            :salida_albergue,
-            :consultar_albergues,
-
-            :crear_reporte_mascota,
-            :crear_necesidad,
-            :consultar_reportes
-          ],
-     do: true
-
-# Voluntario
-defp permitido?(:voluntario, operacion)
-     when operacion in [
-            :registrar_persona,
-            :cambiar_estado_persona,
-            :consultar_personas,
-
-            :registrar_familia,
-            :consultar_familias,
-            :asignar_familia,
-
-            :ingreso_albergue,
-            :salida_albergue,
-            :consultar_albergues,
-
-            :crear_reporte_mascota,
-            :crear_necesidad,
-            :consultar_reportes
-          ],
-     do: true
-
-# Ciudadano
-defp permitido?(:ciudadano, operacion)
-     when operacion in [
-            :crear_reporte_mascota,
-            :crear_necesidad,
-            :consultar_reportes
-          ],
-     do: true
-
-defp permitido?(_, _), do: false
+  defp permitido?(:administrador, _operacion), do: true
+  defp permitido?(:coordinador, op) when op in @permisos_coordinador, do: true
+  defp permitido?(:voluntario, op) when op in @permisos_voluntario, do: true
+  defp permitido?(:ciudadano, op) when op in @permisos_ciudadano, do: true
+  defp permitido?(_, _), do: false
 
   # ============================================================
   # 5. VALIDACIÓN DE USUARIOS CARGADOS DESDE JSON
