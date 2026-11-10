@@ -61,43 +61,47 @@ defmodule Emergencia.Consola.CLI do
   defp evaluar_comando(["help"], sesion) do
     IO.puts("""
     ================== COMANDOS DISPONIBLES ==================
-      Autenticación:
-        connect <usuario> <contraseña> <tipo> <zona>
-        disconnect
+        Autenticación:
+          connect <usuario> <contraseña> <tipo> <zona>
+          disconnect
 
-      Territorio:
-        register_zone <nombre> <nivel> <personas>
-        register_sector <zona> <nombre> <nivel> <personas>
-        list_zones
+        Territorio:
+          register_zone <nombre> <nivel> <personas>
+          register_sector <zona> <nombre> <nivel> <personas>
+          register_center <nombre> <direccion> <capacidad> <zona>
+          list_zones
+          zone_stats <zona>
 
-      Recursos y Necesidades:
-        register_need <tipo> <cantidad> <prioridad> <zona> <descripcion>
-        register_resource <nombre> <categoria> <unidad>
-        add_inventory <ubicacion> <tipo_ubic> <recurso> <cantidad>
-        assign_resource <necesidad> <inventario> <cantidad>
-        list_needs [zona=X] [prioridad=Y] [estado=Z]
-        list_resources
-        critical_resources
-        pending_needs
+        Recursos y Necesidades:
+          register_need <tipo> <cantidad> <prioridad> <zona> <descripcion>
+          register_resource <nombre> <categoria> <unidad>
+          add_inventory <ubicacion> <tipo_ubic> <recurso> <cantidad>
+          assign_resource <necesidad> <inventario> <cantidad>
+          transfer_resource <recurso> <origen> <destino> <cantidad>
+          egreso <recurso> <origen> <cantidad>
+          list_needs [filtros...]
+          list_resources
+          critical_resources
 
-      Población y Albergues:
-        report_person <documento> <nombre> <zona> <estado>
-        find_person <documento>
-        register_shelter <codigo> <nombre> <zona> <capacidad>
-        check_shelter <albergue>
-        register_entry <albergue> <documento>
-        register_exit <albergue> <documento>
+        Población y Albergues:
+          report_person <documento> <nombre> <zona> <estado>
+          find_person <documento>
+          register_shelter <codigo> <nombre> <zona> <capacidad>
+          check_shelter <albergue>
+          register_entry <albergue> <documento>
+          register_exit <albergue> <documento>
 
-      Comunicaciones y Mascotas:
-        send_family_message <documento> <contenido>
-        list_family_messages <documento>
-        report_pet <lost|found> <especie> <nombre> <color> <tamano> <zona> <contacto>
-        match_pets
+        Comunicaciones y Mascotas:
+          send_family_message <documento_o_familia> <contenido>
+          list_family_messages <documento>
+          confirm_delivery <id_registro_destinatario>
+          report_pet <lost|found> <especie> <nombre> <color> <tamano> <zona> <contacto>
+          match_pets
 
-      General:
-        summary
-        exit
-    ==========================================================
+        General:
+          summary
+          exit
+      ==========================================================
     """)
     sesion
   end
@@ -196,6 +200,46 @@ if sesion do
         IO.puts("\n--- Zonas ---")
         Enum.each(zonas, fn z -> IO.puts("ID: #{z.id} | Código: #{z.codigo_zona} | Nombre: #{z.nombre}") end)
       _ -> IO.puts("No hay zonas registradas.")
+    end
+    sesion
+  end
+
+  defp evaluar_comando(["register_center", nombre, direccion, cap, zona_cod], sesion) do
+    if sesion do
+      id_zona = resolver_id_zona(zona_cod)
+      case TerritorioServidor.registrar_centro_acopio(nombre, direccion, String.to_integer(cap), id_zona) do
+        {:ok, c} ->
+          ActividadesServidor.registrar(sesion.id_usuario, "REGISTRAR_CENTRO", "Se registró centro #{nombre}")
+          IO.puts("Centro de acopio registrado [Código: #{c.codigo_centro_acopio}, ID: #{c.id}]")
+        {:error, m} -> IO.puts("Error: #{inspect(m)}")
+      end
+    else
+      IO.puts("Inicia sesión primero.")
+    end
+    sesion
+  end
+
+  defp evaluar_comando(["zone_stats", zona_cod], sesion) do
+    id_zona = resolver_id_zona(zona_cod)
+    case TerritorioServidor.estadisticas_zona(id_zona) do
+      {:ok, stats} ->
+        IO.puts("\n--- Estadísticas de la Zona ---")
+        IO.puts("Nombre: #{stats.zona}")
+        IO.puts("Nivel General: #{stats.nivel_general}")
+        IO.puts("Personas Estimadas: #{stats.personas_estimadas_zona}")
+        IO.puts("Personas Afectadas en Sectores: #{stats.personas_afectadas_sectores}")
+        IO.puts("Total Sectores: #{stats.cantidad_sectores}")
+        IO.puts("Puntos de Atención: #{stats.cantidad_puntos_atencion}")
+
+        case TerritorioServidor.listar_sectores(id_zona) do
+          {:ok, sectores} when sectores != [] ->
+            IO.puts("\n--- Sectores Registrados ---")
+            Enum.each(sectores, fn s ->
+              IO.puts("Código: #{s.codigo_sector} | Nombre: #{s.nombre} | Afectados: #{s.personas_afectadas}")
+            end)
+          _ -> IO.puts("No hay sectores registrados en esta zona.")
+        end
+      {:error, m} -> IO.puts("Error: #{inspect(m)}")
     end
     sesion
   end
@@ -330,6 +374,24 @@ if sesion do
     sesion
   end
 
+  defp evaluar_comando(["egreso", recurso_cod, origen_cod, cant], sesion) do
+    if sesion do
+      cantidad = String.to_integer(cant)
+      id_recurso = resolver_id_recurso(recurso_cod)
+      {id_origen, _tipo_origen} = resolver_ubicacion_transferencia(origen_cod)
+
+      case RecursosServidor.registrar_egreso(id_recurso, id_origen, cantidad) do
+        {:ok, mov} ->
+          ActividadesServidor.registrar(sesion.id_usuario, "EGRESO_RECURSO", "Se registró egreso de #{cantidad} unidades del recurso #{recurso_cod}")
+          IO.puts("Egreso registrado exitosamente [Movimiento ID: #{mov.id}]")
+        {:error, motivo} ->
+          IO.puts("Error en el egreso: #{inspect(motivo)}")
+      end
+    else
+      IO.puts("Error: Inicia sesión primero.")
+    end
+    sesion
+  end
   # ============================================================================
   # 5. POBLACIÓN Y ALBERGUES
   # ============================================================================
@@ -496,6 +558,20 @@ if sesion do
           IO.puts("[#{n.prioridad}] Código: #{n.codigo_necesidad} | Tipo: #{n.tipo} | Pendiente: #{n.cantidad_pendiente}")
         end)
       _ -> IO.puts("Sin necesidades.")
+    end
+    sesion
+  end
+
+  defp evaluar_comando(["confirm_delivery", id_dest], sesion) do
+    if sesion do
+      case MensajesServidor.confirmar_entrega(id_dest) do
+        {:ok, _} ->
+          ActividadesServidor.registrar(sesion.id_usuario, "CONFIRMAR_ENTREGA", "Se confirmó entrega de mensaje a destinatario")
+          IO.puts("¡Entrega confirmada exitosamente!")
+        {:error, m} -> IO.puts("Error: #{inspect(m)}")
+      end
+    else
+      IO.puts("Inicia sesión primero.")
     end
     sesion
   end

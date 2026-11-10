@@ -1,5 +1,6 @@
 defmodule Emergencia.Consola.MenuMensajes do
-  alias Emergencia.MensajesServidor
+  alias Emergencia.Aplicacion.GestionMensajes
+  alias Util
 
   def iniciar(sesion) do
     Util.mostrar("\n--- GESTIÓN DE MENSAJES ---", :mensaje)
@@ -7,25 +8,24 @@ defmodule Emergencia.Consola.MenuMensajes do
     Util.mostrar("2. Enviar nuevo mensaje", :mensaje)
     Util.mostrar("3. Volver al menú principal", :mensaje)
 
-    case IO.gets("Seleccione una opción: ") |> String.trim() do
+    case Util.ingresar("Seleccione una opción: ", :texto) do
       "1" ->
-        case MensajesServidor.listar() do
+        case GestionMensajes.listar_mensajes(sesion) do
           {:ok, mensajes} ->
             Enum.each(mensajes, fn m ->
-              Util.mostrar(" [#{m.fecha}] De: #{m.remitente} Para: #{m.destinatario} -> #{m.contenido}", :mensaje)
+              Util.mostrar(" [#{m.fecha}] De: #{m.id_remitente} -> #{m.contenido}", :mensaje)
             end)
-          _ -> Util.mostrar("No hay mensajes registrados.", :error)
+          {:error, msg} -> Util.mostrar("Error: #{inspect(msg)}", :error)
         end
         iniciar(sesion)
 
       "2" ->
-        remitente = sesion.id
-        destinatario = IO.gets("ID del destinatario (Familia/Persona): ") |> String.trim()
-        contenido = IO.gets("Contenido del mensaje: ") |> String.trim()
+        destinatario = Util.ingresar("ID o Documento del destinatario (Familia/Persona): ", :texto)
+        contenido = Util.ingresar("Contenido del mensaje: ", :texto)
 
-        case MensajesServidor.enviar_mensaje(remitente, destinatario, contenido) do
+        case GestionMensajes.enviar_mensaje(sesion, destinatario, contenido) do
           {:ok, _} -> Util.mostrar("Mensaje enviado con éxito.", :mensaje)
-          {:error, msg} -> Util.mostrar("Error: #{msg}", :error)
+          {:error, msg} -> Util.mostrar("Error: #{inspect(msg)}", :error)
         end
         iniciar(sesion)
 

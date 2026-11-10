@@ -162,4 +162,28 @@ defmodule Emergencia.Servicios.ServicioRecursos do
       {:error, "Inventario insuficiente. Solicitado: #{requerida}, Disponible: #{disponible}"}
     end
   end
+
+  def registrar_egreso(estado, id_recurso, id_ubicacion_origen, cantidad) do
+    inv_origen = Enum.find(Map.values(estado.inventarios), fn i ->
+      i.id_recurso == id_recurso and i.id_ubicacion == id_ubicacion_origen
+    end)
+
+    if is_nil(inv_origen) do
+      {:error, "No hay inventario registrado del recurso en el origen especificado"}
+    else
+      with :ok <- validar_disponibilidad(inv_origen, cantidad),
+           {:ok, movimiento} <- MovimientoRecurso.nuevo(cantidad, :egreso, id_inventario_origen: inv_origen.id) do
+
+        nuevo_inv_origen = %{inv_origen | cantidad_disponible: inv_origen.cantidad_disponible - cantidad}
+
+        nuevo_estado = %{
+          estado |
+          inventarios: Map.put(estado.inventarios, nuevo_inv_origen.id, nuevo_inv_origen),
+          movimientos_recursos: Map.put(estado.movimientos_recursos, movimiento.id, movimiento)
+        }
+
+        {:ok, movimiento, nuevo_estado}
+      end
+    end
+  end
 end
