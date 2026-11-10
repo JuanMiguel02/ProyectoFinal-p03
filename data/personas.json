@@ -21,6 +21,23 @@
     "nombre": "Paco Jones"
   },
   {
+    "codigo_persona": "PER-0003",
+    "dato_referencia": "Pelo largo castaño",
+    "documento": "4213123",
+    "edad": 38,
+    "estado": "sin_informacion",
+    "historial_estados": [
+      [
+        "sin_informacion",
+        "2026-11-10T22:50:21.185000Z"
+      ]
+    ],
+    "id": "436956a1-393f-4cfa-90ef-7f55f2513ece",
+    "id_familia": null,
+    "id_zona": "6b12672f-4249-47f8-9c78-5f24fe239607",
+    "nombre": "Alex Turner"
+  },
+  {
     "codigo_persona": "PER-0002",
     "dato_referencia": null,
     "documento": "98765",
