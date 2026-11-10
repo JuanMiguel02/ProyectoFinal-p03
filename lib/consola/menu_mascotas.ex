@@ -1,13 +1,12 @@
 defmodule Emergencia.Consola.MenuMascotas do
-  alias Emergencia.Consola.Util
   alias Emergencia.MascotasServidor
 
   def iniciar(sesion) do
-    Util.mostrar("\n--- GESTIÓN DE MASCOTAS ---", :titulo)
-    Util.mostrar("1. Ver reportes (Pérdidas y Encontradas)", :opcion)
-    Util.mostrar("2. Ver coincidencias sugeridas", :opcion)
-    Util.mostrar("3. Confirmar una coincidencia", :opcion)
-    Util.mostrar("4. Volver al menú principal", :opcion)
+    Util.mostrar("\n--- GESTIÓN DE MASCOTAS ---", :mensaje)
+    Util.mostrar("1. Ver reportes (Pérdidas y Encontradas)", :mensaje)
+    Util.mostrar("2. Ver coincidencias sugeridas", :mensaje)
+    Util.mostrar("3. Confirmar una coincidencia", :mensaje)
+    Util.mostrar("4. Volver al menú principal", :mensaje)
 
     case IO.gets("Seleccione una opción: ") |> String.trim() do
       "1" ->
@@ -33,7 +32,7 @@ defmodule Emergencia.Consola.MenuMascotas do
       "3" ->
         id_coincidencia = IO.gets("Ingrese el ID de la coincidencia a confirmar: ") |> String.trim()
         case MascotasServidor.confirmar_coincidencia(id_coincidencia, sesion.id) do
-          {:ok, _, _} -> Util.mostrar("Coincidencia confirmada. Los reportes han sido cerrados en conjunto.", :exito)
+          {:ok, _, _} -> Util.mostrar("Coincidencia confirmada. Los reportes han sido cerrados en conjunto.", :mensaje)
           {:error, msg} -> Util.mostrar("Error: #{msg}", :error)
         end
         iniciar(sesion)

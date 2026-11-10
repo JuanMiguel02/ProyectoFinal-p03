@@ -1,12 +1,11 @@
 defmodule Emergencia.Consola.MenuRecursos do
-  alias Emergencia.Consola.Util
   alias Emergencia.RecursosServidor
 
   def iniciar(sesion) do
-    Util.mostrar("\n--- GESTIÓN DE RECURSOS ---", :titulo)
-    Util.mostrar("1. Listar Inventarios Disponibles", :opcion)
-    Util.mostrar("2. Listar Necesidades Registradas", :opcion)
-    Util.mostrar("3. Volver al menú principal", :opcion)
+    Util.mostrar("\n--- GESTIÓN DE RECURSOS ---", :mensaje)
+    Util.mostrar("1. Listar Inventarios Disponibles", :mensaje)
+    Util.mostrar("2. Listar Necesidades Registradas", :mensaje)
+    Util.mostrar("3. Volver al menú principal", :mensaje)
 
     case IO.gets("Seleccione una opción: ") |> String.trim() do
       "1" ->

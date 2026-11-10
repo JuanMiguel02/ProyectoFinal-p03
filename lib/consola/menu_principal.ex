@@ -119,10 +119,6 @@ defmodule Emergencia.Consola.MenuPrincipal do
       )
 
       iniciar(sesion)
-  end
-end
-
-  defp mostrar_modulo_no_disponible(nombre) do
-    Util.mostrar("\nEl módulo de #{nombre} todavía no está disponible.", :mensaje)
+    end
   end
 end

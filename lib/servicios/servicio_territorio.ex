@@ -73,11 +73,6 @@ end
     end
   end
 
-  defp calcular_afectados_recursivo([], acumulado), do: acumulado
-  defp calcular_afectados_recursivo([sector | resto], acumulado) do
-    calcular_afectados_recursivo(resto, acumulado + sector.personas_afectadas)
-  end
-
   defp obtener_zona(zonas, id_zona) do
     case Map.fetch(zonas, id_zona) do
       {:ok, zona} -> {:ok, zona}
@@ -165,12 +160,6 @@ end
   end
 
   # Helpers privados necesarios para la consistencia
-  defp obtener_sector(sectores, id_sector) do
-    case Map.fetch(sectores, id_sector) do
-      {:ok, sector} -> {:ok, sector}
-      :error -> {:error, "El sector con ID '#{id_sector}' no existe"}
-    end
-  end
 
   defp actualizar_sector_en_zona(zona, sector_actualizado) do
     sectores_nuevos = Enum.map(zona.sectores, fn s ->
@@ -178,7 +167,7 @@ end
     end)
     %{zona | sectores: sectores_nuevos}
   end
-  
+
   defp recorrer_sectores_recursivo([], acc_afectados, acc_puntos), do: {acc_afectados, acc_puntos}
   defp recorrer_sectores_recursivo([sector | resto], acc_afectados, acc_puntos) do
     puntos_en_sector = contar_puntos_recursivo(sector.puntos_atencion, 0)

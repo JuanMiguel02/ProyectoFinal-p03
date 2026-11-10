@@ -6,7 +6,6 @@ defmodule Emergencia.GestorDatos do
     Persona,
     Familia,
     Zona,
-    Sector,
     CentroAcopio,
     InventarioUbicacion,
     Albergue,

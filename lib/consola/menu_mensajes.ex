@@ -1,12 +1,11 @@
 defmodule Emergencia.Consola.MenuMensajes do
-  alias Emergencia.Consola.Util
   alias Emergencia.MensajesServidor
 
   def iniciar(sesion) do
-    Util.mostrar("\n--- GESTIÓN DE MENSAJES ---", :titulo)
-    Util.mostrar("1. Ver historial de mensajes", :opcion)
-    Util.mostrar("2. Enviar nuevo mensaje", :opcion)
-    Util.mostrar("3. Volver al menú principal", :opcion)
+    Util.mostrar("\n--- GESTIÓN DE MENSAJES ---", :mensaje)
+    Util.mostrar("1. Ver historial de mensajes", :mensaje)
+    Util.mostrar("2. Enviar nuevo mensaje", :mensaje)
+    Util.mostrar("3. Volver al menú principal", :mensaje)
 
     case IO.gets("Seleccione una opción: ") |> String.trim() do
       "1" ->
@@ -25,7 +24,7 @@ defmodule Emergencia.Consola.MenuMensajes do
         contenido = IO.gets("Contenido del mensaje: ") |> String.trim()
 
         case MensajesServidor.enviar_mensaje(remitente, destinatario, contenido) do
-          {:ok, _} -> Util.mostrar("Mensaje enviado con éxito.", :exito)
+          {:ok, _} -> Util.mostrar("Mensaje enviado con éxito.", :mensaje)
           {:error, msg} -> Util.mostrar("Error: #{msg}", :error)
         end
         iniciar(sesion)
