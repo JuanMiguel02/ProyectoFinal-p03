@@ -1,22 +1,59 @@
 defmodule Emergencia.Consola.CLI do
   @moduledoc """
-  Interfaz de línea de comandos (CLI) principal para la gestión de emergencias.
-  Soporta códigos cortos (ZON-0001, NEC-0001, etc.), UUIDs y cadenas con comillas.
-  Cada comando valida el rol del usuario con Autenticacion.autorizar/2,
-  igual que los menús.
-  """
-  alias Emergencia.Aplicacion.Autenticacion
+  Interfaz de línea de comandos (capa de PRESENTACIÓN).
 
-  alias Emergencia.{
-    UsuariosServidor,
-    TerritorioServidor,
-    RecursosServidor,
-    PoblacionServidor,
-    MensajesServidor,
-    MascotasServidor,
-    ActividadesServidor,
-    GestorDatos
+  Arquitectura por capas:
+
+      Datos <- Servicio <- Servidor <- Gestión (Aplicación) <- CLI
+
+  Este módulo únicamente:
+
+    * lee y parsea lo que escribe el usuario,
+    * convierte los textos a tipos de Elixir (enteros, átomos),
+    * invoca funciones de `Emergencia.Aplicacion.*` pasando la sesión,
+    * da formato a las respuestas.
+
+  No conoce a los servidores (`*Servidor`), ni a los servicios, ni a la
+  persistencia. La autorización, la resolución de códigos (`ZON-0001`,
+  `NEC-0001`, documentos, UUIDs) y la auditoría viven en la capa de Aplicación.
+  """
+
+  alias Emergencia.Aplicacion.{
+    Autenticacion,
+    GestionUsuarios,
+    GestionTerritorio,
+    GestionRecursos,
+    GestionPersonas,
+    GestionAlbergues,
+    GestionMensajes,
+    GestionMascotas,
+    GestionResumen
   }
+
+  @tipos_usuario %{
+    "ciudadano" => :ciudadano,
+    "voluntario" => :voluntario,
+    "coordinador" => :coordinador,
+    "administrador" => :administrador
+  }
+
+  @tipos_reporte %{
+    "lost" => :perdida,
+    "perdida" => :perdida,
+    "found" => :encontrada,
+    "encontrada" => :encontrada
+  }
+
+  @filtros_necesidades %{
+    "zona" => :zona,
+    "tipo" => :tipo,
+    "prioridad" => :prioridad,
+    "estado" => :estado
+  }
+
+  # ============================================================================
+  # BUCLE PRINCIPAL
+  # ============================================================================
 
   def iniciar do
     IO.puts("\n========================================================")
@@ -28,36 +65,36 @@ defmodule Emergencia.Consola.CLI do
 
   defp bucle_principal(sesion) do
     prompt = if sesion, do: "[#{sesion.nombre_usuario} (#{sesion.tipo_usuario})]> ", else: "> "
-    comando_crudo = IO.gets(prompt) |> String.trim()
 
-    # Parseo inteligente que respeta las cadenas entre comillas dobles
-    argumentos = parsear_argumentos(comando_crudo)
+    case IO.gets(prompt) do
+      linea when is_binary(linea) ->
+        argumentos = linea |> String.trim() |> parsear_argumentos()
+        bucle_principal(evaluar_comando(argumentos, sesion))
 
-    nueva_sesion = evaluar_comando(argumentos, sesion)
-    bucle_principal(nueva_sesion)
+      _fin_de_entrada ->
+        evaluar_comando(["exit"], sesion)
+    end
   end
 
-  # Permite agrupar texto entre comillas dobles como un solo argumento
+  # Permite agrupar texto entre comillas como un solo argumento
   defp parsear_argumentos(cadena) do
-    Regex.scan(~r/[^\s"']+|"([^"]*)"|'([^']*)'/, cadena)
+    ~r/[^\s"']+|"([^"]*)"|'([^']*)'/
+    |> Regex.scan(cadena)
     |> Enum.map(fn
-      [full] -> full
-      [_, match1] when match1 != "" -> match1
-      [_, _, match2] -> match2
+      [completo] -> completo
+      [_, grupo1] when grupo1 != "" -> grupo1
+      [_, _, grupo2] -> grupo2
       _ -> ""
     end)
     |> Enum.reject(&(&1 == ""))
   end
 
   # ============================================================================
-  # 1. COMANDOS GENERALES Y DE SISTEMA
+  # 1. COMANDOS GENERALES
   # ============================================================================
 
   defp evaluar_comando(["exit"], sesion) do
-    if sesion do
-      ActividadesServidor.registrar(sesion.id_usuario, "LOGOUT", "El usuario cerró sesión al salir del sistema")
-      UsuariosServidor.cerrar_sesion()
-    end
+    if sesion, do: Autenticacion.cerrar_sesion(sesion)
     IO.puts("Saliendo del sistema de emergencias. ¡Hasta pronto!")
     System.halt(0)
   end
@@ -70,35 +107,39 @@ defmodule Emergencia.Consola.CLI do
           disconnect
 
         Territorio:
-          register_zone <nombre> <nivel> <personas>          (coordinador+)
-          register_sector <zona> <nombre> <nivel> <personas> (coordinador+)
-          register_center <nombre> <direccion> <capacidad> <zona> (coordinador+)
+          register_zone <nombre> <nivel> <personas>
+          register_sector <zona> <nombre> <nivel> <personas>
+          register_center <nombre> <direccion> <capacidad> <zona>
           list_zones
           zone_stats <zona>
 
         Recursos y Necesidades:
           register_need <tipo> <cantidad> <prioridad> <zona> <descripcion>
-          register_resource <nombre> <categoria> <unidad>    (coordinador+)
-          add_inventory <ubicacion> <tipo_ubic> <recurso> <cantidad> (coordinador+)
-          assign_resource <necesidad> <inventario> <cantidad> (coordinador+)
-          transfer_resource <recurso> <origen> <destino> <cantidad> (coordinador+)
-          egreso <recurso> <origen> <cantidad>               (coordinador+)
-          list_needs [filtros...]                            (voluntario+)
-          list_resources                                     (voluntario+)
-          critical_resources                                 (voluntario+)
+          register_resource <nombre> <categoria> <unidad>
+          add_inventory <ubicacion> <tipo_ubic> <recurso> <cantidad>
+          assign_resource <necesidad> <inventario> <cantidad>
+          transfer_resource <recurso> <origen> <destino> <cantidad>
+          egreso <recurso> <origen> <cantidad>
+          list_needs [zona=..] [tipo=..] [prioridad=..] [estado=..]
+          pending_needs
+          list_ordered_needs
+          list_resources
+          check_stock <recurso>
+          critical_resources
 
         Población y Albergues:
           report_person <documento> <nombre> <zona> <estado>
           find_person <documento>
-          register_shelter <codigo> <nombre> <zona> <capacidad> (coordinador+)
-          check_shelter <albergue>                           (voluntario+)
-          register_entry <albergue> <documento>              (voluntario+)
-          register_exit <albergue> <documento>               (voluntario+)
+          register_shelter <codigo> <nombre> <zona> <capacidad>
+          check_shelter <albergue>
+          shelter_report
+          register_entry <albergue> <documento>
+          register_exit <albergue> <documento>
 
         Comunicaciones y Mascotas:
           send_family_message <documento_o_familia> <contenido>
-          list_family_messages <documento>                   (coordinador+)
-          confirm_delivery <id_registro_destinatario>        (coordinador+)
+          list_family_messages <documento>
+          confirm_delivery <id_registro_destinatario>
           report_pet <lost|found> <especie> <nombre> <color> <tamano> <zona> <contacto>
           match_pets
 
@@ -107,6 +148,7 @@ defmodule Emergencia.Consola.CLI do
           exit
       ==========================================================
     """)
+
     sesion
   end
 
@@ -116,440 +158,457 @@ defmodule Emergencia.Consola.CLI do
   # 2. AUTENTICACIÓN
   # ============================================================================
 
-  defp evaluar_comando(["connect", username, pass, tipo_str, zona_o_codigo], sesion) do
-    if sesion do
-      IO.puts("Ya hay una sesión activa. Usa 'disconnect' primero.")
-      sesion
-    else
-      tipos_validos = %{
-        "ciudadano" => :ciudadano,
-        "voluntario" => :voluntario,
-        "coordinador" => :coordinador,
-        "administrador" => :administrador
-      }
+  defp evaluar_comando(["connect", usuario, contrasena, tipo_texto, _zona], sesion) do
+    cond do
+      sesion != nil ->
+        IO.puts("Ya hay una sesión activa. Usa 'disconnect' primero.")
+        sesion
 
-      tipo = Map.get(tipos_validos, String.downcase(tipo_str))
-
-      if is_nil(tipo) do
-        IO.puts("Error: Tipo de usuario no válido.")
+      is_nil(Map.get(@tipos_usuario, String.downcase(tipo_texto))) ->
+        IO.puts("Error: Tipo de usuario no válido (ciudadano, voluntario, coordinador, administrador).")
         nil
-      else
-        _zona_id = resolver_id_zona(zona_o_codigo)
 
-        # El registro público solo permite ciudadano/voluntario (lo valida GestionUsuarios).
-        # El rol real de la sesión sale siempre del usuario guardado, no de lo escrito.
-        case Emergencia.Aplicacion.GestionUsuarios.registrar_usuario(username, pass, username, tipo) do
-          {:ok, _} -> IO.puts("Cuenta creada exitosamente.")
-          {:ok, _, _advertencia} -> IO.puts("Cuenta creada exitosamente.")
-          {:error, _} -> :ok # Probablemente ya existe, intentamos login
-        end
-
-        case Emergencia.Aplicacion.Autenticacion.iniciar_sesion(username, pass) do
-          {:ok, auth} ->
-            IO.puts("Conectado exitosamente como #{auth.nombre_completo}.")
-            auth
-
-          {:ok, auth, _advertencia} ->
-            IO.puts("Conectado exitosamente como #{auth.nombre_completo}.")
-            auth
-
-          {:error, m} ->
-            IO.puts("Error de autenticación: #{inspect(m)}")
-            nil
-        end
-      end
+      true ->
+        tipo = Map.fetch!(@tipos_usuario, String.downcase(tipo_texto))
+        conectar(usuario, contrasena, tipo)
     end
   end
 
+  defp evaluar_comando(["disconnect"], nil) do
+    IO.puts("No hay ninguna sesión activa.")
+    nil
+  end
+
   defp evaluar_comando(["disconnect"], sesion) do
-    if sesion do
-      ActividadesServidor.registrar(sesion.id_usuario, "LOGOUT", "El usuario #{sesion.nombre_usuario} cerró sesión")
-      UsuariosServidor.cerrar_sesion()
-      IO.puts("Sesión cerrada correctamente.")
-      nil
-    else
-      IO.puts("No hay ninguna sesión activa.")
-      nil
+    case Autenticacion.cerrar_sesion(sesion) do
+      {:error, motivo} -> IO.puts("Error al cerrar sesión: #{formatear_error(motivo)}")
+      _ok -> IO.puts("Sesión cerrada correctamente.")
     end
+
+    nil
   end
 
   # ============================================================================
   # 3. TERRITORIO
   # ============================================================================
 
-  defp evaluar_comando(["register_zone", nombre, nivel, personas_str], sesion) do
-    con_permiso(sesion, :crear_zona, fn ->
-      case TerritorioServidor.registrar_zona(nombre, String.to_atom(nivel), String.to_integer(personas_str), sesion.id_usuario) do
-        {:ok, z} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "REGISTRAR_ZONA", "Se registró la zona #{nombre}")
-          IO.puts("Zona registrada [Código: #{z.codigo_zona}, ID: #{z.id}]")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
-      end
-    end)
+  defp evaluar_comando(["register_zone", nombre, nivel, personas], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, nivel} <- a_atomo(nivel),
+             {:ok, personas} <- a_entero(personas) do
+          GestionTerritorio.registrar_zona(sesion, nombre, nivel, personas)
+        end
+      end,
+      fn z -> "Zona registrada [Código: #{z.codigo_zona}, ID: #{z.id}]" end
+    )
   end
 
-  defp evaluar_comando(["register_sector", zona_o_codigo, nombre, nivel, personas_str], sesion) do
-    con_permiso(sesion, :crear_sector, fn ->
-      id_zona = resolver_id_zona(zona_o_codigo)
-      case TerritorioServidor.registrar_sector(id_zona, nombre, String.to_atom(nivel), String.to_integer(personas_str), sesion.id_usuario) do
-        {:ok, s} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "REGISTRAR_SECTOR", "Se registró el sector #{nombre}")
-          IO.puts("Sector registrado [Código: #{s.codigo_sector}, ID: #{s.id}]")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
+  defp evaluar_comando(["register_sector", zona, nombre, nivel, personas], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, nivel} <- a_atomo(nivel),
+             {:ok, personas} <- a_entero(personas) do
+          GestionTerritorio.registrar_sector(sesion, zona, nombre, nivel, personas)
+        end
+      end,
+      fn s -> "Sector registrado [Código: #{s.codigo_sector}, ID: #{s.id}]" end
+    )
+  end
+
+  defp evaluar_comando(["register_center", nombre, direccion, capacidad, zona], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, capacidad} <- a_entero(capacidad) do
+          GestionTerritorio.registrar_centro_acopio(sesion, nombre, direccion, capacidad, zona)
+        end
+      end,
+      fn c ->
+        "Centro de acopio registrado [Código: #{c.codigo_centro_acopio}, ID: #{c.id}]"
       end
-    end)
+    )
   end
 
   defp evaluar_comando(["list_zones"], sesion) do
-    con_permiso(sesion, :consultar_personas, fn ->
-      case TerritorioServidor.listar_zonas() do
-        {:ok, zonas} when zonas != [] ->
-          IO.puts("\n--- Zonas ---")
-          Enum.each(zonas, fn z -> IO.puts("ID: #{z.id} | Código: #{z.codigo_zona} | Nombre: #{z.nombre}") end)
-        _ -> IO.puts("No hay zonas registradas.")
+    ejecutar(
+      sesion,
+      fn -> GestionTerritorio.listar_zonas(sesion) end,
+      fn
+        [] ->
+          "No hay zonas registradas."
+
+        zonas ->
+          lineas =
+            Enum.map_join(zonas, "\n", fn z ->
+              "ID: #{z.id} | Código: #{z.codigo_zona} | Nombre: #{z.nombre}"
+            end)
+
+          "\n--- Zonas ---\n" <> lineas
       end
-    end)
+    )
   end
 
-  defp evaluar_comando(["register_center", nombre, direccion, cap, zona_cod], sesion) do
-    con_permiso(sesion, :crear_zona, fn ->
-      id_zona = resolver_id_zona(zona_cod)
-      case TerritorioServidor.registrar_centro_acopio(nombre, direccion, String.to_integer(cap), id_zona) do
-        {:ok, c} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "REGISTRAR_CENTRO", "Se registró centro #{nombre}")
-          IO.puts("Centro de acopio registrado [Código: #{c.codigo_centro_acopio}, ID: #{c.id}]")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
-      end
-    end)
-  end
+  defp evaluar_comando(["zone_stats", zona], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionTerritorio.estadisticas_zona(sesion, zona) end,
+      fn %{estadisticas: s, sectores: sectores} ->
+        cabecera = """
 
-  defp evaluar_comando(["zone_stats", zona_cod], sesion) do
-    con_permiso(sesion, :consultar_personas, fn ->
-      id_zona = resolver_id_zona(zona_cod)
-      case TerritorioServidor.estadisticas_zona(id_zona) do
-        {:ok, stats} ->
-          IO.puts("\n--- Estadísticas de la Zona ---")
-          IO.puts("Nombre: #{stats.zona}")
-          IO.puts("Nivel General: #{stats.nivel_general}")
-          IO.puts("Personas Estimadas: #{stats.personas_estimadas_zona}")
-          IO.puts("Personas Afectadas en Sectores: #{stats.personas_afectadas_sectores}")
-          IO.puts("Total Sectores: #{stats.cantidad_sectores}")
-          IO.puts("Puntos de Atención: #{stats.cantidad_puntos_atencion}")
+        --- Estadísticas de la Zona ---
+        Nombre: #{s.zona}
+        Nivel General: #{s.nivel_general}
+        Personas Estimadas: #{s.personas_estimadas_zona}
+        Personas Afectadas en Sectores: #{s.personas_afectadas_sectores}
+        Total Sectores: #{s.cantidad_sectores}
+        Puntos de Atención: #{s.cantidad_puntos_atencion}\
+        """
 
-          case TerritorioServidor.listar_sectores(id_zona) do
-            {:ok, sectores} when sectores != [] ->
-              IO.puts("\n--- Sectores Registrados ---")
-              Enum.each(sectores, fn s ->
-                IO.puts("Código: #{s.codigo_sector} | Nombre: #{s.nombre} | Afectados: #{s.personas_afectadas}")
-              end)
-            _ -> IO.puts("No hay sectores registrados en esta zona.")
+        detalle =
+          case sectores do
+            [] ->
+              "\nNo hay sectores registrados en esta zona."
+
+            _ ->
+              "\n\n--- Sectores Registrados ---\n" <>
+                Enum.map_join(sectores, "\n", fn sec ->
+                  "Código: #{sec.codigo_sector} | Nombre: #{sec.nombre} | Afectados: #{sec.personas_afectadas}"
+                end)
           end
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
+
+        cabecera <> detalle
       end
-    end)
+    )
   end
 
   # ============================================================================
   # 4. RECURSOS Y NECESIDADES
   # ============================================================================
 
-  defp evaluar_comando(["register_need", tipo, cantidad, prioridad, zona_o_codigo, desc], sesion) do
-    con_permiso(sesion, :crear_necesidad, fn ->
-      id_zona = resolver_id_zona(zona_o_codigo)
-      case RecursosServidor.registrar_necesidad(String.to_atom(tipo), String.to_integer(cantidad), id_zona, String.to_atom(prioridad), descripcion: desc) do
-        {:ok, n} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "REGISTRAR_NECESIDAD", "Se registró necesidad de tipo #{tipo}")
-          IO.puts("Necesidad registrada [Código: #{n.codigo_necesidad}, ID: #{n.id}]")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
-      end
-    end)
+  defp evaluar_comando(["register_need", tipo, cantidad, prioridad, zona, descripcion], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, tipo} <- a_atomo(tipo),
+             {:ok, cantidad} <- a_entero(cantidad),
+             {:ok, prioridad} <- a_atomo(prioridad) do
+          GestionRecursos.registrar_necesidad(sesion, tipo, cantidad, zona, prioridad,
+            descripcion: descripcion
+          )
+        end
+      end,
+      fn n -> "Necesidad registrada [Código: #{n.codigo_necesidad}, ID: #{n.id}]" end
+    )
   end
 
-  defp evaluar_comando(["register_resource", nombre, cat, unidad], sesion) do
-    con_permiso(sesion, :asignar_recursos, fn ->
-      case RecursosServidor.registrar_recurso(nombre, String.to_atom(cat), unidad) do
-        {:ok, r} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "REGISTRAR_RECURSO", "Se registró el recurso #{nombre}")
-          IO.puts("Recurso registrado [Código: #{r.codigo_recurso}, ID: #{r.id}]")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
-      end
-    end)
+  defp evaluar_comando(["register_resource", nombre, categoria, unidad], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, categoria} <- a_atomo(categoria) do
+          GestionRecursos.registrar_recurso(sesion, nombre, categoria, unidad)
+        end
+      end,
+      fn r -> "Recurso registrado [Código: #{r.codigo_recurso}, ID: #{r.id}]" end
+    )
   end
 
-  defp evaluar_comando(["add_inventory", ub_cod, tipo_ub, rec_cod, cant], sesion) do
-    con_permiso(sesion, :asignar_recursos, fn ->
-      tipo = String.to_atom(tipo_ub)
-      id_ub = resolver_id_ubicacion(ub_cod, tipo)
-      id_rec = resolver_id_recurso(rec_cod)
-      case RecursosServidor.agregar_inventario(id_ub, tipo, id_rec, String.to_integer(cant)) do
-        {:ok, inv} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "AGREGAR_INVENTARIO", "Se agregó inventario del recurso #{rec_cod}")
-          IO.puts("Inventario agregado [ID: #{inv.id}]")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
-      end
-    end)
+  defp evaluar_comando(["add_inventory", ubicacion, tipo_ubicacion, recurso, cantidad], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, tipo} <- a_atomo(tipo_ubicacion),
+             {:ok, cantidad} <- a_entero(cantidad) do
+          GestionRecursos.agregar_inventario(sesion, ubicacion, tipo, recurso, cantidad)
+        end
+      end,
+      fn inv -> "Inventario agregado [ID: #{inv.id}]" end
+    )
   end
 
-  defp evaluar_comando(["assign_resource", nec_cod, inv_id, cant], sesion) do
-    con_permiso(sesion, :asignar_recursos, fn ->
-      id_nec = resolver_id_necesidad(nec_cod)
-      case RecursosServidor.asignar_recurso(id_nec, inv_id, String.to_integer(cant), sesion.id_usuario) do
-        {:ok, asig} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "ASIGNAR_RECURSO", "Se asignó recurso a la necesidad #{nec_cod}")
-          IO.puts("Recurso asignado [ID: #{asig.id}]")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
+  defp evaluar_comando(["assign_resource", necesidad, inventario, cantidad], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, cantidad} <- a_entero(cantidad) do
+          GestionRecursos.asignar_recurso(sesion, necesidad, inventario, cantidad)
+        end
+      end,
+      fn asig -> "Recurso asignado [ID: #{asig.id}]" end
+    )
+  end
+
+  defp evaluar_comando(["transfer_resource", recurso, origen, destino, cantidad], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, cantidad} <- a_entero(cantidad) do
+          GestionRecursos.transferir_recurso(sesion, recurso, origen, destino, cantidad)
+        end
+      end,
+      fn mov ->
+        "¡Transferencia exitosa! Se movieron las unidades al destino [Movimiento ID: #{mov.id}]"
       end
-    end)
+    )
+  end
+
+  defp evaluar_comando(["egreso", recurso, origen, cantidad], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, cantidad} <- a_entero(cantidad) do
+          GestionRecursos.registrar_egreso(sesion, recurso, origen, cantidad)
+        end
+      end,
+      fn mov -> "Egreso registrado exitosamente [Movimiento ID: #{mov.id}]" end
+    )
   end
 
   defp evaluar_comando(["list_resources"], sesion) do
-    con_permiso(sesion, :consultar_recursos, fn ->
-      case GestorDatos.cargar_coleccion("recursos.json", Emergencia.Recurso, :id) do
-        {:ok, recs} when recs != %{} ->
-          IO.puts("\n--- Recursos ---")
-          Enum.each(recs, fn {_, r} -> IO.puts("ID: #{r.id} | Código: #{r.codigo_recurso} | Nombre: #{r.nombre} | Cat: #{r.categoria}") end)
-        _ -> IO.puts("Sin recursos.")
-      end
-    end)
-  end
+    ejecutar(
+      sesion,
+      fn -> GestionRecursos.listar_recursos(sesion) end,
+      fn
+        [] ->
+          "Sin recursos."
 
-  defp evaluar_comando(["list_needs" | filtros], sesion) do
-    con_permiso(sesion, :consultar_necesidades, fn ->
-      case GestorDatos.cargar_coleccion("necesidades.json", Emergencia.Necesidad, :id) do
-        {:ok, necs} when necs != %{} ->
-          filtradas = Enum.filter(Map.values(necs), fn n ->
-            Enum.all?(filtros, fn f ->
-              case String.split(f, "=", parts: 2) do
-                ["zona", val] -> n.id_zona == val or n.id_zona == resolver_id_zona(val)
-                ["prioridad", val] -> to_string(n.prioridad) == val
-                ["estado", val] -> to_string(n.estado) == val
-                _ -> true
-              end
+        recursos ->
+          "\n--- Recursos ---\n" <>
+            Enum.map_join(recursos, "\n", fn r ->
+              "ID: #{r.id} | Código: #{r.codigo_recurso} | Nombre: #{r.nombre} | Cat: #{r.categoria}"
             end)
-          end)
-          IO.puts("\n--- Necesidades ---")
-          Enum.each(filtradas, fn n -> IO.puts("Código: #{n.codigo_necesidad} | Tipo: #{n.tipo} | Cant: #{n.cantidad_requerida} | Estado: #{n.estado}") end)
-        _ -> IO.puts("Sin necesidades.")
       end
-    end)
+    )
   end
 
-  defp evaluar_comando(["pending_needs"], sesion) do
-    evaluar_comando(["list_needs", "estado=pendiente"], sesion)
+  defp evaluar_comando(["list_needs" | filtros], sesion), do: listar_necesidades(filtros, sesion)
+
+  defp evaluar_comando(["pending_needs"], sesion),
+    do: listar_necesidades(["estado=pendiente"], sesion)
+
+  defp evaluar_comando(["list_ordered_needs"], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionRecursos.listar_necesidades_ordenadas(sesion) end,
+      fn
+        [] ->
+          "Sin necesidades."
+
+        necesidades ->
+          "\n--- Necesidades Ordenadas por Prioridad ---\n" <>
+            Enum.map_join(necesidades, "\n", fn n ->
+              "[#{n.prioridad}] Código: #{n.codigo_necesidad} | Tipo: #{n.tipo} | Pendiente: #{n.cantidad_pendiente}"
+            end)
+      end
+    )
+  end
+
+  defp evaluar_comando(["check_stock", recurso], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionRecursos.calcular_stock_global(sesion, recurso) end,
+      fn total -> "\nStock global acumulado para el recurso [#{recurso}]: #{total} unidades." end
+    )
   end
 
   defp evaluar_comando(["critical_resources"], sesion) do
-    con_permiso(sesion, :consultar_recursos, fn ->
-      IO.puts("\n--- Stock Crítico ---")
-      case GestorDatos.cargar_coleccion("inventarios.json", Emergencia.InventarioUbicacion, :id) do
-        {:ok, invs} ->
-          Enum.each(invs, fn {_, i} -> if i.cantidad_disponible < 10, do: IO.puts("Inventario ID: #{i.id} | Disp: #{i.cantidad_disponible}") end)
-        _ -> :ok
+    ejecutar(
+      sesion,
+      fn -> GestionResumen.recursos_criticos(sesion) end,
+      fn
+        [] ->
+          "\n--- Stock Crítico ---\nNo hay inventarios en nivel crítico."
+
+        inventarios ->
+          "\n--- Stock Crítico ---\n" <>
+            Enum.map_join(inventarios, "\n", fn i ->
+              "Inventario ID: #{i.id} | Disp: #{i.cantidad_disponible}"
+            end)
       end
-    end)
-  end
-
-  defp evaluar_comando(["transfer_resource", recurso_cod, origen_cod, destino_cod, cant], sesion) do
-    con_permiso(sesion, :transferir_recursos, fn ->
-      cantidad = String.to_integer(cant)
-      id_recurso = resolver_id_recurso(recurso_cod)
-
-      {id_origen, _tipo_origen} = resolver_ubicacion_transferencia(origen_cod)
-      {id_destino, tipo_destino} = resolver_ubicacion_transferencia(destino_cod)
-
-      case RecursosServidor.transferir_recurso(id_recurso, id_origen, id_destino, tipo_destino, cantidad) do
-        {:ok, mov} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "TRANSFERIR_RECURSO", "Se transfirieron #{cantidad} unidades del recurso #{recurso_cod}")
-          IO.puts("¡Transferencia exitosa! Se movieron #{cantidad} unidades al destino [Movimiento ID: #{mov.id}]")
-        {:error, motivo} ->
-          IO.puts("Error en la transferencia: #{inspect(motivo)}")
-      end
-    end)
-  end
-
-  defp evaluar_comando(["egreso", recurso_cod, origen_cod, cant], sesion) do
-    con_permiso(sesion, :asignar_recursos, fn ->
-      cantidad = String.to_integer(cant)
-      id_recurso = resolver_id_recurso(recurso_cod)
-      {id_origen, _tipo_origen} = resolver_ubicacion_transferencia(origen_cod)
-
-      case RecursosServidor.registrar_egreso(id_recurso, id_origen, cantidad) do
-        {:ok, mov} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "EGRESO_RECURSO", "Se registró egreso de #{cantidad} unidades del recurso #{recurso_cod}")
-          IO.puts("Egreso registrado exitosamente [Movimiento ID: #{mov.id}]")
-        {:error, motivo} ->
-          IO.puts("Error en el egreso: #{inspect(motivo)}")
-      end
-    end)
+    )
   end
 
   # ============================================================================
   # 5. POBLACIÓN Y ALBERGUES
   # ============================================================================
 
-  defp evaluar_comando(["report_person", doc, nombre, zona_cod, estado], sesion) do
-    con_permiso(sesion, :registrar_persona, fn ->
-      id_zona = resolver_id_zona(zona_cod)
-      case PoblacionServidor.registrar_persona(nombre, doc, id_zona, String.to_atom(estado)) do
-        {:ok, p} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "REPORTAR_PERSONA", "Se registró a la persona #{nombre}")
-          IO.puts("Persona registrada [Código: #{p.codigo_persona}]")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
-      end
-    end)
+  defp evaluar_comando(["report_person", documento, nombre, zona, estado], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, estado} <- a_atomo(estado) do
+          GestionPersonas.registrar_persona(sesion, nombre, documento, zona, estado)
+        end
+      end,
+      fn p -> "Persona registrada [Código: #{p.codigo_persona}]" end
+    )
   end
 
-  defp evaluar_comando(["find_person", doc_o_id], sesion) do
-    con_permiso(sesion, :consultar_personas, fn ->
-      case PoblacionServidor.consultar_historial_persona(doc_o_id) do
-        {:ok, info} ->
-          IO.puts("\n--- Persona ---")
-          IO.puts("Nombre: #{info.nombre} | Estado: #{info.estado}")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
+  defp evaluar_comando(["find_person", documento], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionPersonas.consultar_historial(sesion, documento) end,
+      fn info ->
+        base = "\n--- Persona ---\nNombre: #{info.nombre} | Estado: #{info.estado}"
+
+        case Map.get(info, :historial_estados, []) do
+          [] ->
+            base
+
+          historial ->
+            base <>
+              "\nHistorial de estados:\n" <>
+              Enum.map_join(historial, "\n", fn
+                {estado, fecha} -> "  - #{estado} (#{fecha})"
+                otro -> "  - #{inspect(otro)}"
+              end)
+        end
       end
-    end)
+    )
   end
 
-  defp evaluar_comando(["register_shelter", _cod, nombre, zona_cod, cap], sesion) do
-    con_permiso(sesion, :registrar_albergue, fn ->
-      id_zona = resolver_id_zona(zona_cod)
-      # Nota: el servicio puro usa (nombre, id_zona, capacidad_maxima) y autogenera el código
-      case PoblacionServidor.registrar_albergue(nombre, id_zona, String.to_integer(cap)) do
-        {:ok, a} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "REGISTRAR_ALBERGUE", "Se registró el albergue #{nombre}")
-          IO.puts("Albergue registrado [Código: #{a.codigo}, ID: #{a.id}]")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
-      end
-    end)
+  defp evaluar_comando(["register_shelter", _codigo, nombre, zona, capacidad], sesion) do
+    # El código del albergue lo genera el sistema; el argumento se conserva
+    # solo por compatibilidad con el comando de referencia.
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, capacidad} <- a_entero(capacidad) do
+          GestionAlbergues.registrar_albergue(sesion, nombre, zona, capacidad)
+        end
+      end,
+      fn a -> "Albergue registrado [Código: #{a.codigo}, ID: #{a.id}]" end
+    )
   end
 
-  defp evaluar_comando(["check_shelter", alb_cod], sesion) do
-    con_permiso(sesion, :consultar_albergues, fn ->
-      id_alb = resolver_id_albergue(alb_cod)
-      case PoblacionServidor.consultar_ocupacion(id_alb) do
-        {:ok, info} ->
-          IO.puts("\n--- Albergue ---")
-          IO.puts("Capacidad: #{info.capacidad_maxima} | Ocupación: #{info.ocupacion_actual} | Disponibles: #{info.cupos_disponibles}")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
+  defp evaluar_comando(["check_shelter", albergue], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionAlbergues.consultar_ocupacion(sesion, albergue) end,
+      fn info ->
+        "\n--- Albergue ---\nCapacidad: #{info.capacidad_maxima} | Ocupación: #{info.ocupacion_actual} | Disponibles: #{info.cupos_disponibles}"
       end
-    end)
+    )
   end
 
-  defp evaluar_comando(["register_entry", alb_cod, doc_o_id], sesion) do
-    con_permiso(sesion, :ingreso_albergue, fn ->
-      id_pers = resolver_id_persona(doc_o_id)
-      id_alb = resolver_id_albergue(alb_cod)
-      case PoblacionServidor.ingresar_persona(id_pers, id_alb) do
-        {:ok, _} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "INGRESO_ALBERGUE", "Se registró ingreso de persona al albergue #{alb_cod}")
-          IO.puts("Ingreso registrado correctamente.")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
+  defp evaluar_comando(["shelter_report"], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionAlbergues.reporte_ocupacion(sesion) end,
+      fn
+        [] ->
+          "No hay albergues registrados."
+
+        reporte ->
+          "\n--- Albergues por nivel de ocupación ---\n" <>
+            Enum.map_join(reporte, "\n", fn a ->
+              "#{a.codigo} | #{a.nombre} | #{a.ocupacion_actual}/#{a.capacidad_maxima} (#{a.porcentaje_ocupacion}%)"
+            end)
       end
-    end)
+    )
   end
 
-  defp evaluar_comando(["register_exit", _alb_cod, doc_o_id], sesion) do
-    con_permiso(sesion, :salida_albergue, fn ->
-      id_pers = resolver_id_persona(doc_o_id)
-      case PoblacionServidor.registrar_salida(id_pers) do
-        {:ok, _} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "SALIDA_ALBERGUE", "Se registró salida de albergue de la persona")
-          IO.puts("Salida registrada correctamente.")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
-      end
-    end)
+  defp evaluar_comando(["register_entry", albergue, documento], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionAlbergues.ingresar_persona(sesion, documento, albergue) end,
+      fn _registro -> "Ingreso registrado correctamente." end
+    )
+  end
+
+  defp evaluar_comando(["register_exit", _albergue, documento], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionAlbergues.registrar_salida(sesion, documento) end,
+      fn _registro -> "Salida registrada correctamente." end
+    )
   end
 
   # ============================================================================
   # 6. COMUNICACIONES Y MASCOTAS
   # ============================================================================
 
-  defp evaluar_comando(["send_family_message", doc_id_o_familia, contenido], sesion) do
-    con_permiso(sesion, :enviar_mensaje, fn ->
-      # Consultar si el identificador es de una familia
-      ids_personas =
-        case PoblacionServidor.consultar_integrantes(doc_id_o_familia) do
-          {:ok, integrantes} when integrantes != [] ->
-            # Es una familia, extraer los IDs de todos los integrantes
-            Enum.map(integrantes, & &1.id)
-          _ ->
-            # No es familia o está vacía, lo trata como una persona individual
-            [resolver_id_persona(doc_id_o_familia)]
+  defp evaluar_comando(["send_family_message", destinatario, contenido], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionMensajes.enviar_mensaje(sesion, destinatario, contenido) end,
+      fn _resultado -> "¡Mensaje enviado y enrutado con éxito!" end
+    )
+  end
+
+  defp evaluar_comando(["list_family_messages", documento], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionMensajes.obtener_mensajes_persona(sesion, documento) end,
+      fn
+        [] ->
+          "No hay mensajes."
+
+        mensajes ->
+          "\n--- Mensajes ---\n" <>
+            Enum.map_join(mensajes, "\n", fn m ->
+              "[#{m.id_registro}] Estado: #{m.estado_entrega} | Texto: #{m.mensaje.contenido}"
+            end)
+      end
+    )
+  end
+
+  defp evaluar_comando(["confirm_delivery", id_registro], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionMensajes.confirmar_entrega(sesion, id_registro) end,
+      fn _resultado -> "¡Entrega confirmada exitosamente!" end
+    )
+  end
+
+  defp evaluar_comando(
+         ["report_pet", tipo, especie, nombre, color, tamano, zona, contacto],
+         sesion
+       ) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, tipo} <- a_tipo_reporte(tipo),
+             {:ok, tamano} <- a_atomo(tamano) do
+          GestionMascotas.registrar_reporte(sesion, tipo, especie, color, tamano, zona, contacto,
+            nombre: nombre
+          )
         end
-
-      case MensajesServidor.enviar_mensaje(sesion.id_usuario, contenido, ids_personas, []) do
-        {:ok, _} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "ENVIAR_MENSAJE", "Se envió un mensaje familiar")
-          IO.puts("¡Mensaje enviado y enrutado con éxito a #{length(ids_personas)} destinatario(s)!")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
-      end
-    end)
-  end
-
-  defp evaluar_comando(["list_family_messages", doc], sesion) do
-    con_permiso(sesion, :consultar_mensajes, fn ->
-      id_pers = resolver_id_persona(doc)
-      case MensajesServidor.obtener_mensajes_persona(id_pers) do
-        {:ok, msgs} when msgs != [] ->
-          IO.puts("\n--- Mensajes ---")
-          Enum.each(msgs, fn m -> IO.puts("Estado: #{m.estado_entrega} | Texto: #{m.mensaje.contenido}") end)
-        _ -> IO.puts("No hay mensajes.")
-      end
-    end)
-  end
-
-  defp evaluar_comando(["report_pet", tipo, especie, nombre, color, tamano, zona_cod, contacto], sesion) do
-    con_permiso(sesion, :crear_reporte_mascota, fn ->
-      id_zona = resolver_id_zona(zona_cod)
-      case MascotasServidor.registrar_reporte(String.to_atom(tipo), especie, color, String.to_atom(tamano), id_zona, contacto, nombre: nombre) do
-        {:ok, r} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "REPORTAR_MASCOTA", "Se registró reporte de mascota #{tipo}")
-          IO.puts("Reporte de mascota registrado [ID: #{r.id}]")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
-      end
-    end)
+      end,
+      fn r -> "Reporte de mascota registrado [ID: #{r.id}]" end
+    )
   end
 
   defp evaluar_comando(["match_pets"], sesion) do
-    con_permiso(sesion, :consultar_reportes, fn ->
-      IO.puts("Búsqueda de coincidencias de mascotas iniciada en background.")
-    end)
-  end
+    ejecutar(
+      sesion,
+      fn -> buscar_coincidencias_mascotas(sesion) end,
+      fn
+        [] ->
+          "No hay reportes de mascotas perdidas activas."
 
-  defp evaluar_comando(["check_stock", rec_cod], sesion) do
-    con_permiso(sesion, :consultar_recursos, fn ->
-      id_rec = resolver_id_recurso(rec_cod)
-      case Emergencia.RecursosServidor.calcular_stock_global(id_rec) do
-        {:ok, total} ->
-          IO.puts("\nStock global acumulado para el recurso [#{rec_cod}]: #{total} unidades.")
-        {:error, m} ->
-          IO.puts("Error: #{inspect(m)}")
-      end
-    end)
-  end
+        resultados ->
+          "\n--- Posibles coincidencias ---\n" <>
+            Enum.map_join(resultados, "\n", fn {perdida, candidatas} ->
+              encabezado = "Perdida [#{perdida.id}] #{perdida.especie} #{perdida.color}"
 
-  defp evaluar_comando(["list_ordered_needs"], sesion) do
-    con_permiso(sesion, :consultar_necesidades, fn ->
-      case Emergencia.RecursosServidor.listar_necesidades_ordenadas() do
-        {:ok, necs} when necs != [] ->
-          IO.puts("\n--- Necesidades Ordenadas por Prioridad ---")
-          Enum.each(necs, fn n ->
-            IO.puts("[#{n.prioridad}] Código: #{n.codigo_necesidad} | Tipo: #{n.tipo} | Pendiente: #{n.cantidad_pendiente}")
-          end)
-        _ -> IO.puts("Sin necesidades.")
-      end
-    end)
-  end
+              case candidatas do
+                [] ->
+                  encabezado <> " -> sin coincidencias"
 
-  defp evaluar_comando(["confirm_delivery", id_dest], sesion) do
-    con_permiso(sesion, :consultar_mensajes, fn ->
-      case MensajesServidor.confirmar_entrega(id_dest) do
-        {:ok, _} ->
-          ActividadesServidor.registrar(sesion.id_usuario, "CONFIRMAR_ENTREGA", "Se confirmó entrega de mensaje a destinatario")
-          IO.puts("¡Entrega confirmada exitosamente!")
-        {:error, m} -> IO.puts("Error: #{inspect(m)}")
+                _ ->
+                  encabezado <>
+                    " ->\n" <>
+                    Enum.map_join(candidatas, "\n", fn c ->
+                      "    Encontrada [#{c.id}] #{c.especie} #{c.color} (#{c.tamano})"
+                    end)
+              end
+            end)
       end
-    end)
+    )
   end
 
   # ============================================================================
@@ -557,133 +616,168 @@ defmodule Emergencia.Consola.CLI do
   # ============================================================================
 
   defp evaluar_comando(["summary"], sesion) do
-    con_permiso(sesion, :consultar_personas, fn ->
-      IO.puts("\n================ RESUMEN GLOBAL DEL SISTEMA ================")
+    ejecutar(
+      sesion,
+      fn -> GestionResumen.resumen_global(sesion) end,
+      fn r ->
+        """
 
-      zonas = case TerritorioServidor.listar_zonas() do {:ok, z} -> length(z); _ -> 0 end
-      necesidades = case RecursosServidor.listar_necesidades() do {:ok, n} -> length(n); _ -> 0 end
-      albergues = case PoblacionServidor.listar_albergues() do {:ok, a} -> length(a); _ -> 0 end
-
-      IO.puts(" - Zonas registradas: #{zonas}")
-      IO.puts(" - Necesidades totales: #{necesidades}")
-      IO.puts(" - Albergues operativos: #{albergues}")
-      IO.puts("============================================================")
-    end)
+        ================ RESUMEN GLOBAL DEL SISTEMA ================
+         - Zonas registradas: #{r.zonas}
+         - Necesidades totales: #{r.necesidades_totales} (pendientes: #{r.necesidades_pendientes})
+         - Albergues operativos: #{r.albergues}
+         - Personas registradas: #{r.personas_registradas} (localizadas: #{r.personas_localizadas})
+         - Mensajes: #{r.mensajes}
+         - Reportes de mascotas: #{r.reportes_mascotas} (activos: #{r.reportes_mascotas_activos})
+         - Unidades de recursos disponibles: #{r.unidades_disponibles}
+        ============================================================\
+        """
+      end
+    )
   end
 
-  defp evaluar_comando([cmd | _], sesion) do
-    IO.puts("Comando desconocido: '#{cmd}'. Escribe 'help'.")
+  defp evaluar_comando([comando | _], sesion) do
+    IO.puts("Comando desconocido o con argumentos incorrectos: '#{comando}'. Escribe 'help'.")
     sesion
   end
 
   # ============================================================================
-  # AUTORIZACIÓN POR ROL (misma lógica que los menús)
+  # AUXILIARES DE FLUJO
   # ============================================================================
 
-  # Sin sesión: pide iniciar sesión.
-  defp con_permiso(nil, _operacion, _fun) do
+  # Registra (si hace falta) e inicia sesión usando solo la capa de Aplicación.
+  defp conectar(usuario, contrasena, tipo) do
+    case GestionUsuarios.registrar_usuario(usuario, contrasena, usuario, tipo) do
+      {:ok, _usuario} -> IO.puts("Cuenta creada exitosamente.")
+      {:ok, _usuario, _advertencia} -> IO.puts("Cuenta creada exitosamente.")
+      # Usuario ya existente o rol que no permite autoregistro: se intenta el login.
+      {:error, _motivo} -> :ok
+    end
+
+    case Autenticacion.iniciar_sesion(usuario, contrasena) do
+      {:ok, sesion} ->
+        IO.puts("Conectado exitosamente como #{sesion.nombre_completo}.")
+        sesion
+
+      {:ok, sesion, _advertencia} ->
+        IO.puts("Conectado exitosamente como #{sesion.nombre_completo}.")
+        sesion
+
+      {:error, motivo} ->
+        IO.puts("Error de autenticación: #{formatear_error(motivo)}")
+        nil
+    end
+  end
+
+  defp listar_necesidades(filtros, sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, criterios} <- parsear_filtros(filtros) do
+          GestionRecursos.listar_necesidades(sesion, criterios)
+        end
+      end,
+      fn
+        [] ->
+          "Sin necesidades."
+
+        necesidades ->
+          "\n--- Necesidades ---\n" <>
+            Enum.map_join(necesidades, "\n", fn n ->
+              "Código: #{n.codigo_necesidad} | Tipo: #{n.tipo} | Prioridad: #{n.prioridad} | Cant: #{n.cantidad_requerida} | Estado: #{n.estado}"
+            end)
+      end
+    )
+  end
+
+  # Para cada reporte de mascota perdida y activa, pide a la capa de
+  # Aplicación los reportes de mascotas encontradas que se le parecen.
+  defp buscar_coincidencias_mascotas(sesion) do
+    with {:ok, reportes} <- GestionMascotas.listar_reportes(sesion) do
+      reportes
+      |> Enum.filter(&(&1.tipo == :perdida and &1.estado == :activa))
+      |> Enum.reduce_while({:ok, []}, fn perdida, {:ok, acumulado} ->
+        case GestionMascotas.buscar_coincidencias(sesion, perdida.id) do
+          {:ok, candidatas} -> {:cont, {:ok, [{perdida, candidatas} | acumulado]}}
+          {:error, _} = error -> {:halt, error}
+        end
+      end)
+      |> case do
+        {:ok, resultados} -> {:ok, Enum.reverse(resultados)}
+        error -> error
+      end
+    end
+  end
+
+  # Ejecuta una acción que requiere sesión y muestra el resultado.
+  # `accion` devuelve el resultado de la capa de Aplicación;
+  # `formato` convierte el valor de éxito en el texto a mostrar.
+  defp ejecutar(nil, _accion, _formato) do
     IO.puts("Inicia sesión primero.")
     nil
   end
 
-  # Con sesión: valida el rol; si tiene permiso ejecuta fun, si no muestra el error.
-  # Siempre devuelve la sesión para que el bucle principal la conserve.
-  defp con_permiso(sesion, operacion, fun) do
-    case Autenticacion.autorizar(sesion, operacion) do
-      :ok ->
-        fun.()
-
-      {:error, motivo} ->
-        IO.puts("Error: #{if is_binary(motivo), do: motivo, else: inspect(motivo)}")
-    end
-
+  defp ejecutar(sesion, accion, formato) do
+    accion.() |> responder(formato)
     sesion
   end
 
+  defp responder({:ok, valor}, formato), do: IO.puts(formato.(valor))
+
+  defp responder({:ok, valor, {:advertencia, advertencia}}, formato) do
+    IO.puts(formato.(valor))
+    IO.puts("Advertencia: #{formatear_error(advertencia)}")
+  end
+
+  defp responder({:error, motivo}, _formato), do: IO.puts("Error: #{formatear_error(motivo)}")
+  defp responder(otro, _formato), do: IO.puts("Respuesta inesperada: #{inspect(otro)}")
+
+  defp formatear_error(motivo) when is_binary(motivo), do: motivo
+  defp formatear_error(motivo), do: inspect(motivo)
+
   # ============================================================================
-  # RESOLVIDORES DE IDs Y CÓDIGOS
+  # CONVERSIÓN Y VALIDACIÓN DE ENTRADA (responsabilidad de la presentación)
   # ============================================================================
 
-  defp resolver_id_zona(entrada) do
-    case TerritorioServidor.listar_zonas() do
-      {:ok, zonas} -> find_by_code_or_id(zonas, entrada, & &1.codigo_zona)
-      _ -> entrada
+  defp a_entero(texto) do
+    case Integer.parse(texto) do
+      {numero, ""} -> {:ok, numero}
+      _ -> {:error, "'#{texto}' no es un número entero válido"}
     end
   end
 
-  defp resolver_id_recurso(entrada) do
-    case RecursosServidor.listar_recursos() do
-      {:ok, recs} -> find_by_code_or_id(recs, entrada, & &1.codigo_recurso)
-      _ -> entrada
+  # Convierte texto a átomo solo si tiene forma de identificador simple,
+  # evitando crear átomos arbitrarios a partir de la entrada del usuario.
+  defp a_atomo(texto) do
+    normalizado =
+      texto
+      |> String.trim()
+      |> String.downcase()
+      |> String.replace("ñ", "n")
+      |> String.replace(~r/[\s-]+/, "_")
+
+    if Regex.match?(~r/^[a-z_]{1,40}$/, normalizado) do
+      {:ok, String.to_atom(normalizado)}
+    else
+      {:error, "Valor no válido: '#{texto}'"}
     end
   end
 
-  defp resolver_id_necesidad(entrada) do
-    case RecursosServidor.listar_necesidades() do
-      {:ok, necs} -> find_by_code_or_id(necs, entrada, & &1.codigo_necesidad)
-      _ -> entrada
+  defp a_tipo_reporte(texto) do
+    case Map.fetch(@tipos_reporte, String.downcase(texto)) do
+      {:ok, tipo} -> {:ok, tipo}
+      :error -> {:error, "Tipo de reporte no válido: '#{texto}' (usa lost o found)"}
     end
   end
 
-  defp resolver_id_albergue(entrada) do
-    case PoblacionServidor.listar_albergues() do
-      {:ok, albs} -> find_by_code_or_id(albs, entrada, & &1.codigo)
-      _ -> entrada
-    end
-  end
-
-  defp resolver_id_persona(entrada) do
-    # Usamos buscar_personas([]) que devuelve todos los registros
-    case PoblacionServidor.buscar_personas([]) do
-      {:ok, personas} ->
-        encontrada = Enum.find(personas, fn p -> p.id == entrada or p.codigo_persona == entrada or p.documento == entrada end)
-        if encontrada, do: encontrada.id, else: entrada
-      _ -> entrada
-    end
-  end
-
-  defp resolver_id_ubicacion(entrada, tipo) do
-    case tipo do
-      :centro_acopio ->
-        case TerritorioServidor.listar_centros_acopio() do
-          {:ok, centros} -> find_by_code_or_id(centros, entrada, & &1.codigo_centro_acopio)
-          _ -> entrada
-        end
-      :albergue -> resolver_id_albergue(entrada)
-      _ -> resolver_id_zona(entrada)
-    end
-  end
-
-  defp resolver_ubicacion_transferencia(entrada) do
-    centros = case TerritorioServidor.listar_centros_acopio() do
-      {:ok, lista} -> lista
-      _ -> []
-    end
-
-    albergues = case PoblacionServidor.listar_albergues() do
-      {:ok, lista} -> lista
-      _ -> []
-    end
-
-    centro = Enum.find(centros, fn c -> c.id == entrada or c.codigo_centro_acopio == entrada end)
-    albergue = Enum.find(albergues, fn a -> a.id == entrada or a.codigo == entrada end)
-
-    cond do
-      centro -> {centro.id, :centro_acopio}
-      albergue -> {albergue.id, :albergue}
-      true ->
-        # Si no es centro ni albergue explícito, buscamos si es una zona
-        id_zona = resolver_id_zona(entrada)
-        if id_zona != entrada do
-          {id_zona, :centro_acopio}
-        else
-          {entrada, :albergue} # Fallback por defecto
-        end
-    end
-  end
-
-  defp find_by_code_or_id(lista, entrada, code_fun) when is_list(lista) do
-    match = Enum.find(lista, fn ent -> ent.id == entrada or code_fun.(ent) == entrada end)
-    if match, do: match.id, else: entrada
+  defp parsear_filtros(filtros) do
+    Enum.reduce_while(filtros, {:ok, []}, fn filtro, {:ok, acumulado} ->
+      with [clave, valor] <- String.split(filtro, "=", parts: 2),
+           {:ok, clave_atomo} <- Map.fetch(@filtros_necesidades, clave) do
+        {:cont, {:ok, [{clave_atomo, valor} | acumulado]}}
+      else
+        _ -> {:halt, {:error, "Filtro no válido: '#{filtro}' (usa zona=, tipo=, prioridad= o estado=)"}}
+      end
+    end)
   end
 end

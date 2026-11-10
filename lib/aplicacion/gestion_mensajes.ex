@@ -5,6 +5,7 @@ defmodule Emergencia.Aplicacion.GestionMensajes do
 
   alias Emergencia.Cliente.Sesion
   alias Emergencia.Aplicacion.Autenticacion
+  alias Emergencia.Aplicacion.Resolutor
   alias Emergencia.MensajesServidor
   alias Emergencia.PoblacionServidor
   alias Emergencia.ActividadesServidor
@@ -53,14 +54,25 @@ defmodule Emergencia.Aplicacion.GestionMensajes do
 
   def obtener_mensajes_persona(_, _), do: {:error, :sesion_invalida}
 
-  defp resolver_id_persona(entrada) do
-    case PoblacionServidor.buscar_personas([]) do
-      {:ok, personas} ->
-        encontrada = Enum.find(personas, fn p -> p.id == entrada or p.codigo_persona == entrada or p.documento == entrada end)
-        if encontrada, do: encontrada.id, else: entrada
-      _ -> entrada
+  @doc """
+  Marca como entregado el mensaje dirigido a un destinatario
+  (id del registro de destinatario, no de la persona).
+  """
+  def confirmar_entrega(%Sesion{} = sesion, id_registro_destinatario) do
+    with :ok <- Autenticacion.autorizar(sesion, :enviar_mensaje),
+         {:ok, resultado} <- MensajesServidor.confirmar_entrega(id_registro_destinatario) do
+      registrar_con_advertencia(
+        resultado,
+        sesion.id_usuario,
+        :confirmar_entrega,
+        "El usuario #{sesion.nombre_usuario} confirmó la entrega de un mensaje"
+      )
     end
   end
+
+  def confirmar_entrega(_, _), do: {:error, :sesion_invalida}
+
+  defp resolver_id_persona(entrada), do: Resolutor.persona(entrada)
 
   defp registrar_con_advertencia(resultado, id_responsable, accion, descripcion) do
     case ActividadesServidor.registrar(id_responsable, accion, descripcion) do

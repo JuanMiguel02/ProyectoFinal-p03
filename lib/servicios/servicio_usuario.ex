@@ -113,7 +113,8 @@ end
     :crear_reporte_mascota,
     :consultar_reportes,
     :crear_necesidad,
-    :enviar_mensaje
+    :enviar_mensaje,
+    :consultar_zonas
   ]
 
   @permisos_voluntario @permisos_ciudadano ++
@@ -285,3 +286,4 @@ end
     end
   end
 end
+

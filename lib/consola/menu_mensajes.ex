@@ -1,7 +1,6 @@
 defmodule Emergencia.Consola.MenuMensajes do
   alias Emergencia.Aplicacion.Autenticacion
-  alias Emergencia.Aplicacion.GestionPersonas
-  alias Emergencia.MensajesServidor
+  alias Emergencia.Aplicacion.GestionMensajes
 
   def iniciar(sesion) do
     Util.mostrar("\n--- GESTIÓN DE MENSAJES ---", :mensaje)
@@ -12,7 +11,7 @@ defmodule Emergencia.Consola.MenuMensajes do
     case Util.ingresar("Seleccione una opción: ", :texto) do
       "1" ->
         with :ok <- Autenticacion.autorizar(sesion, :consultar_mensajes),
-             {:ok, mensajes} <- MensajesServidor.listar() do
+             {:ok, mensajes} <- GestionMensajes.listar_mensajes(sesion) do
           Enum.each(mensajes, fn m ->
             Util.mostrar(" [#{m.fecha}] De: #{m.id_remitente} -> #{m.contenido}", :mensaje)
           end)
@@ -26,14 +25,9 @@ defmodule Emergencia.Consola.MenuMensajes do
         documento = Util.ingresar("Documento de la persona destinataria: ", :texto)
         contenido = Util.ingresar("Contenido del mensaje: ", :texto)
 
-        with :ok <- Autenticacion.autorizar(sesion, :enviar_mensaje),
-             {:ok, [persona]} <- GestionPersonas.buscar_personas(sesion, documento: documento),
-             {:ok, _} <-
-               MensajesServidor.enviar_mensaje(sesion.id_usuario, contenido, [persona.id]) do
-          Util.mostrar("Mensaje enviado con éxito.", :mensaje)
-        else
-          {:ok, _} -> Util.mostrar("No se encontró una única persona con ese documento.", :error)
+        case GestionMensajes.enviar_mensaje(sesion, documento, contenido) do
           {:error, motivo} -> Util.mostrar("Error: #{inspect(motivo)}", :error)
+          _ok -> Util.mostrar("Mensaje enviado con éxito.", :mensaje)
         end
 
         iniciar(sesion)
@@ -47,3 +41,4 @@ defmodule Emergencia.Consola.MenuMensajes do
     end
   end
 end
+

@@ -6,6 +6,7 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
 
   alias Emergencia.Cliente.Sesion
   alias Emergencia.Aplicacion.Autenticacion
+  alias Emergencia.Aplicacion.Resolutor
   alias Emergencia.PoblacionServidor
   alias Emergencia.ActividadesServidor
   alias Emergencia.TerritorioServidor
@@ -34,7 +35,7 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
   """
   def ingresar_persona(%Sesion{} = sesion, id_persona, id_albergue) do
     with :ok <- Autenticacion.autorizar(sesion, :ingreso_albergue),
-         {:ok, registro} <- PoblacionServidor.ingresar_persona( id_persona, id_albergue) do
+         {:ok, registro} <- PoblacionServidor.ingresar_persona(Resolutor.persona(id_persona), Resolutor.albergue(id_albergue)) do
 
       registrar_con_advertencia(
         registro,
@@ -54,7 +55,7 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
 
   def registrar_salida(%Sesion{} = sesion, id_persona, nuevo_estado_persona) do
     with :ok <- Autenticacion.autorizar(sesion, :salida_albergue),
-         {:ok, registro} <- PoblacionServidor.registrar_salida(id_persona, nuevo_estado_persona) do
+         {:ok, registro} <- PoblacionServidor.registrar_salida(Resolutor.persona(id_persona), nuevo_estado_persona) do
 
        registrar_con_advertencia(
         registro,
@@ -72,7 +73,7 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
   """
   def consultar_cupos(%Sesion{} = sesion, id_albergue) do
     with :ok <- Autenticacion.autorizar(sesion, :consultar_albergues) do
-      PoblacionServidor.consultar_cupos(id_albergue)
+      PoblacionServidor.consultar_cupos(Resolutor.albergue(id_albergue))
     end
   end
 
@@ -83,7 +84,7 @@ defmodule Emergencia.Aplicacion.GestionAlbergues do
   """
   def consultar_ocupacion(%Sesion{} = sesion, id_albergue) do
     with :ok <- Autenticacion.autorizar(sesion, :consultar_albergues) do
-      PoblacionServidor.consultar_ocupacion(id_albergue)
+      PoblacionServidor.consultar_ocupacion(Resolutor.albergue(id_albergue))
     end
   end
 
