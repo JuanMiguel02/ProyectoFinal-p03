@@ -36,6 +36,12 @@ defmodule Emergencia.MascotasServidor do
     GenServer.call(__MODULE__, {:confirmar_coincidencia, id_coincidencia, id_usuario})
   end
 
+  def listar_reportes, do: GenServer.call(__MODULE__, :listar_reportes)
+
+  def listar_coincidencias, do: GenServer.call(__MODULE__, :listar_coincidencias)
+
+  def buscar_reportes(criterios), do: GenServer.call(__MODULE__, {:buscar_reportes, criterios})
+
   # ============================================================================
   # Callbacks de GenServer
   # ============================================================================
@@ -105,6 +111,21 @@ defmodule Emergencia.MascotasServidor do
       {:error, motivo} ->
         {:reply, {:error, motivo}, estado}
     end
+  end
+
+  @impl true
+  def handle_call(:listar_reportes, _from, estado) do
+    {:reply, {:ok, Map.values(estado.reportes_mascotas)}, estado}
+  end
+
+  @impl true
+  def handle_call(:listar_coincidencias, _from, estado) do
+    {:reply, {:ok, Map.values(estado.coincidencias_mascotas)}, estado}
+  end
+
+  @impl true
+  def handle_call({:buscar_reportes, criterios}, _from, estado) do
+    {:reply, ServicioMascotas.buscar_reportes(estado, criterios), estado}
   end
 
   # ============================================================================

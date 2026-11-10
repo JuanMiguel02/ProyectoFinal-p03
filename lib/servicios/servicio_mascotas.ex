@@ -39,13 +39,15 @@ defmodule Emergencia.Servicios.ServicioMascotas do
   end
 
   def confirmar_coincidencia(estado, id_coincidencia, _id_usuario \\ "SISTEMA") do
-    with {:ok, coincidencia} <- Map.fetch(estado.coincidencias_mascotas, id_coincidencia),
+   with {:ok, coincidencia} <- Map.fetch(estado.coincidencias_mascotas, id_coincidencia),
          {:ok, rep_perdida} <- obtener_reporte(estado.reportes_mascotas, coincidencia.id_reporte_perdida),
-         {:ok, rep_encontrada} <- obtener_reporte(estado.reportes_mascotas, coincidencia.id_reporte_encontrada) do
+         {:ok, rep_encontrada} <- obtener_reporte(estado.reportes_mascotas, coincidencia.id_reporte_encontrada),
+
+         # Delegamos el cambio a la entidad para que valide si es legal pasar a :resuelta
+         {:ok, rep_perdida_act} <- Emergencia.ReporteMascota.cambiar_estado(rep_perdida, :resuelta),
+         {:ok, rep_encontrada_act} <- Emergencia.ReporteMascota.cambiar_estado(rep_encontrada, :resuelta) do
 
        coincidencia_act = %{coincidencia | estado: :confirmada}
-       rep_perdida_act = %{rep_perdida | estado: :resuelta}
-       rep_encontrada_act = %{rep_encontrada | estado: :resuelta}
 
        nuevos_reportes =
          estado.reportes_mascotas
@@ -54,11 +56,16 @@ defmodule Emergencia.Servicios.ServicioMascotas do
 
        nuevas_coincidencias = Map.put(estado.coincidencias_mascotas, id_coincidencia, coincidencia_act)
 
-       estado_actualizado = %{estado | reportes_mascotas: nuevos_reportes, coincidencias_mascotas: nuevas_coincidencias}
+       estado_actualizado = %{estado |
+         reportes_mascotas: nuevos_reportes,
+         coincidencias_mascotas: nuevas_coincidencias
+       }
 
        {:ok, coincidencia_act, estado_actualizado}
     else
       :error -> {:error, "Coincidencia no encontrada"}
+      # Si la máquina de estados devuelve un error (ej. la mascota ya estaba resuelta),
+      # el bloque 'with' lo atrapará automáticamente aquí y lo devolverá intacto.
       error -> error
     end
   end
@@ -98,6 +105,25 @@ defmodule Emergencia.Servicios.ServicioMascotas do
       estado_actualizado = %{estado | reportes_mascotas: nuevos_reportes}
       {:ok, reporte_actualizado, estado_actualizado}
     end
+  end
+
+  @doc """
+  Filtra reportes de mascotas usando múltiples criterios opcionales.
+  Ej: buscar_reportes(estado, estado: :activa, especie: "perro")
+  """
+  def buscar_reportes(estado, criterios) do
+    reportes =
+      estado.reportes_mascotas
+      |> Map.values()
+      |> Enum.filter(fn r ->
+        Enum.all?(criterios, fn
+          {:especie, val} -> r.especie == String.downcase(val)
+          {:id_zona, val} -> r.id_zona == val
+          {:estado, val} -> r.estado == val
+          _ -> true
+        end)
+      end)
+    {:ok, reportes}
   end
 
   defp obtener_reporte(reportes, id) do

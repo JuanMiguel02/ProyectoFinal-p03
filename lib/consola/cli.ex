@@ -421,14 +421,23 @@ if sesion do
   # 6. COMUNICACIONES Y MASCOTAS
   # ============================================================================
 
-  defp evaluar_comando(["send_family_message", doc, contenido], sesion) do
-    if sesion do
-      id_pers = resolver_id_persona(doc)
-      # Usamos sesion.id_usuario que acabamos de estandarizar arriba
-      case MensajesServidor.enviar_mensaje(sesion.id_usuario, contenido, [id_pers], []) do
+  defp evaluar_comando(["send_family_message", doc_id_o_familia, contenido], sesion) do
+   if sesion do
+      # Consultar si el identificador es de una familia
+      ids_personas =
+        case PoblacionServidor.consultar_integrantes(doc_id_o_familia) do
+          {:ok, integrantes} when integrantes != [] ->
+            # Es una familia, extraer los IDs de todos los integrantes
+            Enum.map(integrantes, & &1.id)
+          _ ->
+            # No es familia o está vacía, lo trata como una persona individual
+            [resolver_id_persona(doc_id_o_familia)]
+        end
+
+      case MensajesServidor.enviar_mensaje(sesion.id_usuario, contenido, ids_personas, []) do
         {:ok, _} ->
           ActividadesServidor.registrar(sesion.id_usuario, "ENVIAR_MENSAJE", "Se envió un mensaje familiar")
-          IO.puts("Mensaje enviado con éxito.")
+          IO.puts("¡Mensaje enviado y enrutado con éxito a #{length(ids_personas)} destinatario(s)!")
         {:error, m} -> IO.puts("Error: #{inspect(m)}")
       end
     else
@@ -465,6 +474,29 @@ if sesion do
 
   defp evaluar_comando(["match_pets"], sesion) do
     IO.puts("Búsqueda de coincidencias de mascotas iniciada en background.")
+    sesion
+  end
+
+  defp evaluar_comando(["check_stock", rec_cod], sesion) do
+    id_rec = resolver_id_recurso(rec_cod)
+    case Emergencia.RecursosServidor.calcular_stock_global(id_rec) do
+      {:ok, total} ->
+        IO.puts("\nStock global acumulado para el recurso [#{rec_cod}]: #{total} unidades.")
+      {:error, m} ->
+        IO.puts("Error: #{inspect(m)}")
+    end
+    sesion
+  end
+
+  defp evaluar_comando(["list_ordered_needs"], sesion) do
+    case Emergencia.RecursosServidor.listar_necesidades_ordenadas() do
+      {:ok, necs} when necs != [] ->
+        IO.puts("\n--- Necesidades Ordenadas por Prioridad ---")
+        Enum.each(neceseps, fn n ->
+          IO.puts("[#{n.prioridad}] Código: #{n.codigo_necesidad} | Tipo: #{n.tipo} | Pendiente: #{n.cantidad_pendiente}")
+        end)
+      _ -> IO.puts("Sin necesidades.")
+    end
     sesion
   end
 

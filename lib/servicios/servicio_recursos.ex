@@ -120,6 +120,20 @@ defmodule Emergencia.Servicios.ServicioRecursos do
     end
   end
 
+  @doc """
+  Devuelve las necesidades ordenadas por prioridad (Crítica > Alta > Media > Baja).
+  """
+  def listar_necesidades_ordenadas(estado) do
+    jerarquia = %{critica: 4, alta: 3, media: 2, baja: 1}
+
+    necesidades =
+      estado.necesidades
+      |> Map.values()
+      |> Enum.sort_by(& Map.get(jerarquia, &1.prioridad, 0), :desc)
+
+    {:ok, necesidades}
+  end
+
   defp sumar_stock_recursivo([], _id_recurso, total_acumulado), do: total_acumulado
   defp sumar_stock_recursivo([inventario | resto], id_recurso, total_acumulado) do
     if inventario.id_recurso == id_recurso do

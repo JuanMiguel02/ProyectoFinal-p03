@@ -43,6 +43,9 @@ defmodule Emergencia.RecursosServidor do
     GenServer.call(__MODULE__, {:transferir_recurso, id_recurso, id_origen, id_destino, tipo_destino, cantidad})
   end
 
+  def listar_necesidades_ordenadas, do: GenServer.call(__MODULE__, :listar_necesidades_ordenadas)
+
+  def calcular_stock_global(id_recurso), do: GenServer.call(__MODULE__, {:calcular_stock_global, id_recurso})
 
   # ============================================================================
   # Callbacks de GenServer
@@ -111,6 +114,16 @@ defmodule Emergencia.RecursosServidor do
   def handle_call(:listar_necesidades, _from, estado), do: {:reply, {:ok, Map.values(estado.necesidades)}, estado}
   def handle_call(:listar_inventarios, _from, estado), do: {:reply, {:ok, Map.values(estado.inventarios)}, estado}
   def handle_call(:listar_centros_acopio, _from, estado), do: {:reply, {:ok, Map.values(estado.centros_acopio)}, estado}
+
+  @impl true
+  def handle_call(:listar_necesidades_ordenadas, _from, estado) do
+    {:reply, ServicioRecursos.listar_necesidades_ordenadas(estado), estado}
+  end
+
+  @impl true
+  def handle_call({:calcular_stock_global, id_recurso}, _from, estado) do
+    {:reply, ServicioRecursos.calcular_stock_global(estado, id_recurso), estado}
+  end
 
   # ============================================================================
   # Persistencia

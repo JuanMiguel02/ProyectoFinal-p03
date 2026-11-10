@@ -74,26 +74,29 @@ defmodule Emergencia.Persona do
   end
 
   def cambiar_estado(%__MODULE__{} = persona, nuevo_estado) do
-  if nuevo_estado in @estados_permitidos do
-    if persona.estado == nuevo_estado do
-      {:error, "La persona ya tiene ese estado"}
-    else
-      historial = [
-        {nuevo_estado, DateTime.utc_now()}
-        | persona.historial_estados
-      ]
+    # Matriz de transiciones lógicas de la emergencia
+      transiciones_validas = %{
+        sin_informacion: [:reportada, :localizada],
+        reportada: [:localizada, :trasladada, :en_albergue, :reunificada],
+        localizada: [:trasladada, :en_albergue, :reunificada],
+        trasladada: [:en_albergue, :reunificada, :localizada],
+        en_albergue: [:reunificada, :localizada, :trasladada],
+        reunificada: [] # Estado final, no debería volver atrás
+      }
 
-      {:ok,
-       %{
-         persona
-         | estado: nuevo_estado,
-           historial_estados: historial
-       }}
-    end
-  else
-    {:error, "Estado de persona inválido"}
+      if nuevo_estado in @estados_permitidos do
+        permitidas = Map.get(transiciones_validas, persona.estado, [])
+
+        if nuevo_estado in permitidas do
+          historial = [{nuevo_estado, DateTime.utc_now()} | persona.historial_estados]
+          {:ok, %{persona | estado: nuevo_estado, historial_estados: historial}}
+        else
+          {:error, "Transición no permitida: No se puede pasar de '#{persona.estado}' a '#{nuevo_estado}'"}
+        end
+      else
+        {:error, "Estado de persona inválido"}
+      end
   end
-end
 
   def a_map(%__MODULE__{} = persona) do
     persona

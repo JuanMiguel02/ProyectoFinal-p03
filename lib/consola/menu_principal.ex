@@ -24,7 +24,7 @@ defmodule Emergencia.Consola.MenuPrincipal do
 
     opcion = Util.ingresar("\nSeleccione una opción: ", :texto)
 
-    case opcion do
+   case opcion do
       "1" ->
         MenuPersonas.iniciar(sesion)
         iniciar(sesion)
@@ -37,20 +37,28 @@ defmodule Emergencia.Consola.MenuPrincipal do
         MenuAlbergues.iniciar(sesion)
         iniciar(sesion)
 
-      "4" ->
-        mostrar_modulo_no_disponible("Recursos")
+     "4" ->
+        Emergencia.Consola.MenuRecursos.iniciar(sesion)
         iniciar(sesion)
 
       "5" ->
-        mostrar_modulo_no_disponible("Mensajes")
+        Emergencia.Consola.MenuMensajes.iniciar(sesion)
         iniciar(sesion)
 
       "6" ->
-        mostrar_modulo_no_disponible("Mascotas")
+        Emergencia.Consola.MenuMascotas.iniciar(sesion)
         iniciar(sesion)
 
       "7" ->
-        mostrar_modulo_no_disponible("Actividades")
+        # Llama directamente al servidor de actividades
+        case Emergencia.ActividadesServidor.listar() do
+          {:ok, actividades} ->
+            Util.mostrar("\n--- ACTIVIDADES RECIENTES ---", :mensaje)
+            Enum.take(actividades, 10) |> Enum.each(fn a ->
+              Util.mostrar("[#{a.fecha}] #{a.descripcion}", :mensaje)
+            end)
+          _ -> Util.mostrar("No hay actividades.", :error)
+        end
         iniciar(sesion)
 
       "8" ->
@@ -59,7 +67,7 @@ defmodule Emergencia.Consola.MenuPrincipal do
       _ ->
         Util.mostrar("\nOpción no válida.", :error)
         iniciar(sesion)
-    end
+   end
   end
 
   defp mostrar_opciones(:administrador) do
