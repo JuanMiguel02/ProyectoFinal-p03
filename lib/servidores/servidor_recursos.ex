@@ -47,6 +47,10 @@ defmodule Emergencia.RecursosServidor do
 
   def calcular_stock_global(id_recurso), do: GenServer.call(__MODULE__, {:calcular_stock_global, id_recurso})
 
+  def registrar_egreso(id_recurso, id_origen, cantidad) do
+    GenServer.call(__MODULE__, {:registrar_egreso, id_recurso, id_origen, cantidad})
+  end
+
   # ============================================================================
   # Callbacks de GenServer
   # ============================================================================
@@ -123,6 +127,14 @@ defmodule Emergencia.RecursosServidor do
   @impl true
   def handle_call({:calcular_stock_global, id_recurso}, _from, estado) do
     {:reply, ServicioRecursos.calcular_stock_global(estado, id_recurso), estado}
+  end
+
+  @impl true
+  def handle_call({:registrar_egreso, id_recurso, id_origen, cantidad}, _from, estado) do
+    case ServicioRecursos.registrar_egreso(estado, id_recurso, id_origen, cantidad) do
+      {:ok, resultado, nuevo_estado} -> procesar_persistencia(resultado, nuevo_estado, estado)
+      {:error, motivo} -> {:reply, {:error, motivo}, estado}
+    end
   end
 
   # ============================================================================
