@@ -1,0 +1,19 @@
+[
+  {
+    "codigo_zona": "ZON-0001",
+    "id": "d467bde6-fe02-499a-9015-2b93377cebc1",
+    "nivel_afectacion": "alto",
+    "nombre": "Norte",
+    "personas_estimadas": 100,
+    "sectores": [
+      {
+        "codigo_sector": "SEC-0001",
+        "id": "5ea2a169-c229-4d9e-a9b1-1b49038d598d",
+        "nivel_afectacion": "alto",
+        "nombre": "Sector1",
+        "personas_afectadas": 50,
+        "puntos_atencion": []
+      }
+    ]
+  }
+]
