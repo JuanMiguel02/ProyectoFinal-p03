@@ -1,5 +1,6 @@
 defmodule Emergencia.Persona do
   alias Emergencia.GeneradorID
+  alias Emergencia.Reloj
 
   @estados_permitidos [
     :sin_informacion,
@@ -55,7 +56,7 @@ defmodule Emergencia.Persona do
         {:error, "La edad debe ser un número entero no negativo"}
 
       true ->
-        historial_inicial = [{estado, DateTime.utc_now()}]
+        historial_inicial = [{estado, Reloj.ahora_local()}]
 
         {:ok,
          %__MODULE__{
@@ -89,7 +90,7 @@ defmodule Emergencia.Persona do
       permitidas = Map.get(transiciones_validas, persona.estado, [])
 
       if nuevo_estado in permitidas do
-        historial = [{nuevo_estado, DateTime.utc_now()} | persona.historial_estados]
+        historial = [{nuevo_estado, Reloj.ahora_local()} | persona.historial_estados]
         {:ok, %{persona | estado: nuevo_estado, historial_estados: historial}}
       else
         {:error,

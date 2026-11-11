@@ -10,15 +10,16 @@ defmodule Emergencia.Consola.MenuPrincipal do
   alias Emergencia.Consola.MenuRecursos
   alias Emergencia.Consola.MenuMensajes
   alias Emergencia.Consola.MenuMascotas
+  alias Emergencia.Consola.MenuTerritorio
   alias Emergencia.Consola.MenuAutenticacion
   alias Util
 
   # Opciones que cada rol puede ejecutar (debe coincidir con lo que se muestra)
   @opciones_por_rol %{
-    ciudadano: ["1", "2", "5", "6", "8"],
-    voluntario: ["1", "2", "3", "5", "6", "8"],
-    coordinador: ["1", "2", "3", "4", "5", "6", "7", "8"],
-    administrador: ["1", "2", "3", "4", "5", "6", "7", "8"]
+    ciudadano: ["1", "2", "4", "5", "6", "9", "10", "8"],
+    voluntario: ["1", "2", "3", "4", "5", "6", "9", "10", "8"],
+    coordinador: ["1", "2", "3", "4", "5", "6", "7", "9", "10", "8"],
+    administrador: ["1", "2", "3", "4", "5", "6", "7", "9", "10", "8"]
   }
 
   def iniciar(sesion) do
@@ -93,6 +94,16 @@ defmodule Emergencia.Consola.MenuPrincipal do
 
   defp ejecutar("8", sesion), do: cerrar_sesion(sesion)
 
+  defp ejecutar("9", sesion) do
+    MenuTerritorio.iniciar(sesion)
+    iniciar(sesion)
+  end
+
+  defp ejecutar("10", sesion) do
+    mostrar_resumen(sesion)
+    iniciar(sesion)
+  end
+
   # ============================================================
   # OPCIONES VISIBLES SEGÚN ROL
   # ============================================================
@@ -105,8 +116,11 @@ defmodule Emergencia.Consola.MenuPrincipal do
     Util.mostrar("1. Gestión de personas", :mensaje)
     Util.mostrar("2. Gestión de familias", :mensaje)
     Util.mostrar("3. Gestión de albergues", :mensaje)
+    Util.mostrar("4. Gestión de recursos y necesidades", :mensaje)
     Util.mostrar("5. Gestión de mensajes", :mensaje)
     Util.mostrar("6. Gestión de mascotas", :mensaje)
+    Util.mostrar("9. Gestión del territorio", :mensaje)
+    Util.mostrar("10. Resumen general", :mensaje)
     Util.mostrar("8. Cerrar sesión", :mensaje)
   end
 
@@ -114,8 +128,11 @@ defmodule Emergencia.Consola.MenuPrincipal do
     Util.mostrar("\n========== MÓDULOS DISPONIBLES ==========", :mensaje)
     Util.mostrar("1. Consultar y reportar personas", :mensaje)
     Util.mostrar("2. Consultar familias", :mensaje)
+    Util.mostrar("4. Gestión de recursos y necesidades", :mensaje)
     Util.mostrar("5. Enviar mensajes", :mensaje)
     Util.mostrar("6. Reportar mascotas", :mensaje)
+    Util.mostrar("9. Gestión del territorio", :mensaje)
+    Util.mostrar("10. Resumen general", :mensaje)
     Util.mostrar("8. Cerrar sesión", :mensaje)
   end
 
@@ -128,7 +145,23 @@ defmodule Emergencia.Consola.MenuPrincipal do
     Util.mostrar("5. Gestión de mensajes", :mensaje)
     Util.mostrar("6. Gestión de mascotas", :mensaje)
     Util.mostrar("7. Consulta de actividades", :mensaje)
+    Util.mostrar("9. Gestión del territorio", :mensaje)
+    Util.mostrar("10. Resumen general", :mensaje)
     Util.mostrar("8. Cerrar sesión", :mensaje)
+  end
+
+  defp mostrar_resumen(sesion) do
+    case Emergencia.Aplicacion.GestionResumen.resumen_global(sesion) do
+      {:ok, resumen} ->
+        Util.mostrar("\n========== RESUMEN GENERAL ==========", :mensaje)
+
+        Enum.each(resumen, fn {campo, valor} ->
+          Util.mostrar("#{campo}: #{valor}", :mensaje)
+        end)
+
+      {:error, motivo} ->
+        Util.mostrar("No se pudo consultar el resumen: #{inspect(motivo)}", :error)
+    end
   end
 
   defp cerrar_sesion(sesion) do

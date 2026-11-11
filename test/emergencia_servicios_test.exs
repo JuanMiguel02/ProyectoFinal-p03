@@ -11,6 +11,7 @@ defmodule EmergenciaServiciosTest do
   alias Emergencia.MensajeDestinatario
   alias Emergencia.Necesidad
   alias Emergencia.Persona
+  alias Emergencia.Reloj
 
   alias Emergencia.Servicios.{
     ServicioTerritorio,
@@ -123,6 +124,17 @@ defmodule EmergenciaServiciosTest do
       assert {:ok, persona_actualizada} = Persona.cambiar_estado(persona, :en_albergue)
       assert persona_actualizada.estado == :en_albergue
       assert [{:en_albergue, %DateTime{}} | _] = persona_actualizada.historial_estados
+    end
+  end
+
+  describe "Reloj" do
+    test "genera una fecha con la hora local de la máquina" do
+      fecha = Reloj.ahora_local()
+
+      assert %DateTime{time_zone: "Etc/Local", zone_abbr: "LOCAL"} = fecha
+
+      assert {{fecha.year, fecha.month, fecha.day}, {fecha.hour, fecha.minute, fecha.second}} ==
+               :calendar.system_time_to_local_time(DateTime.to_unix(fecha), :second)
     end
   end
 

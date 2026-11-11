@@ -230,7 +230,9 @@ defmodule Emergencia.Consola.CLI do
           GestionTerritorio.registrar_zona(sesion, nombre, nivel, personas)
         end
       end,
-      fn z -> "Zona '#{z.nombre}' registrada exitosamente [Código: #{z.codigo_zona}] | Nivel de afectación: #{z.nivel_afectacion} | Personas estimadas: #{z.personas_estimadas}" end
+      fn z ->
+        "Zona '#{z.nombre}' registrada exitosamente [Código: #{z.codigo_zona}] | Nivel de afectación: #{z.nivel_afectacion} | Personas estimadas: #{z.personas_estimadas}"
+      end
     )
   end
 
@@ -243,7 +245,9 @@ defmodule Emergencia.Consola.CLI do
           GestionTerritorio.registrar_sector(sesion, zona, nombre, nivel, personas)
         end
       end,
-      fn s -> "Sector '#{s.nombre}' registrado exitosamente [Código: #{s.codigo_sector}] | Nivel de afectación: #{s.nivel_afectacion} | Personas afectadas: #{s.personas_afectadas}" end
+      fn s ->
+        "Sector '#{s.nombre}' registrado exitosamente [Código: #{s.codigo_sector}] | Nivel de afectación: #{s.nivel_afectacion} | Personas afectadas: #{s.personas_afectadas}"
+      end
     )
   end
 
@@ -352,7 +356,9 @@ defmodule Emergencia.Consola.CLI do
           )
         end
       end,
-      fn n -> "Necesidad de tipo '#{n.tipo}' registrada [Código: #{n.codigo_necesidad}] | Prioridad: #{n.prioridad} | Cantidad requerida: #{n.cantidad_requerida} | Estado inicial: #{n.estado}" end
+      fn n ->
+        "Necesidad de tipo '#{n.tipo}' registrada [Código: #{n.codigo_necesidad}] | Prioridad: #{n.prioridad} | Cantidad requerida: #{n.cantidad_requerida} | Estado inicial: #{n.estado}"
+      end
     )
   end
 
@@ -385,7 +391,11 @@ defmodule Emergencia.Consola.CLI do
         end
       end,
       fn asignaciones ->
-        resumen = Enum.map_join(asignaciones, ", ", fn a -> "#{a.cantidad_asignada} unidades asignadas en ubicación #{a.ubicacion}" end)
+        resumen =
+          Enum.map_join(asignaciones, ", ", fn a ->
+            "#{a.cantidad_asignada} unidades asignadas en ubicación #{a.ubicacion}"
+          end)
+
         "Recurso asignado exitosamente: #{resumen}"
       end
     )
@@ -565,7 +575,9 @@ defmodule Emergencia.Consola.CLI do
           GestionAlbergues.registrar_albergue(sesion, nombre, zona, capacidad)
         end
       end,
-      fn a -> "Albergue '#{a.nombre}' registrado exitosamente [Código: #{a.codigo}] con capacidad máxima de #{a.capacidad_maxima} personas." end
+      fn a ->
+        "Albergue '#{a.nombre}' registrado exitosamente [Código: #{a.codigo}] con capacidad máxima de #{a.capacidad_maxima} personas."
+      end
     )
   end
 
@@ -694,7 +706,9 @@ defmodule Emergencia.Consola.CLI do
           )
         end
       end,
-      fn r -> "Reporte de mascota (#{r.tipo}) registrado exitosamente [ID: #{r.id}] | Especie: #{r.especie} | Nombre: #{r.nombre || "Desconocido"} | Color: #{r.color} | Tamaño: #{r.tamano} | Zona ID: #{r.id_zona}" end
+      fn r ->
+        "Reporte de mascota (#{r.tipo}) registrado exitosamente [ID: #{r.id}] | Especie: #{r.especie} | Nombre: #{r.nombre || "Desconocido"} | Color: #{r.color} | Tamaño: #{r.tamano} | Zona ID: #{r.id_zona}"
+      end
     )
   end
 
@@ -709,7 +723,8 @@ defmodule Emergencia.Consola.CLI do
         {resultados, codigos_zona} ->
           "\n--- Posibles coincidencias de mascotas ---\n" <>
             Enum.map_join(resultados, "\n", fn {perdida, candidatas} ->
-              encabezado = "Mascota Perdida -> Especie: #{perdida.especie} | Nombre: #{perdida.nombre || "No especificado"} | Color: #{perdida.color} | Tamaño: #{perdida.tamano} | #{formatear_zona(perdida.id_zona, codigos_zona)}"
+              encabezado =
+                "Mascota Perdida -> Especie: #{perdida.especie} | Nombre: #{perdida.nombre || "No especificado"} | Color: #{perdida.color} | Tamaño: #{perdida.tamano} | #{formatear_zona(perdida.id_zona, codigos_zona)}"
 
               case candidatas do
                 [] ->
@@ -737,6 +752,7 @@ defmodule Emergencia.Consola.CLI do
       end,
       fn r ->
         codigo = Map.get(r, :codigo_reporte) || r.id
+
         "Reporte #{codigo} (#{r.especie}, #{r.nombre || "sin nombre"}) marcado como resuelto. Ya no puede volver a procesarse."
       end
     )
@@ -817,19 +833,34 @@ defmodule Emergencia.Consola.CLI do
   # Registra (si hace falta) e inicia sesión usando solo la capa de Aplicación.
   defp conectar(usuario, contrasena, tipo) do
     case GestionUsuarios.registrar_usuario(usuario, contrasena, usuario, tipo) do
-      {:ok, u} -> IO.puts("¡Cuenta creada exitosamente para '#{u.nombre_completo}' (#{u.codigo_usuario}) con rol #{u.tipo_usuario}!")
-      {:ok, u, _advertencia} -> IO.puts("¡Cuenta creada exitosamente para '#{u.nombre_completo}' (#{u.codigo_usuario}) con rol #{u.tipo_usuario}!")
+      {:ok, u} ->
+        IO.puts(
+          "¡Cuenta creada exitosamente para '#{u.nombre_completo}' (#{u.codigo_usuario}) con rol #{u.tipo_usuario}!"
+        )
+
+      {:ok, u, _advertencia} ->
+        IO.puts(
+          "¡Cuenta creada exitosamente para '#{u.nombre_completo}' (#{u.codigo_usuario}) con rol #{u.tipo_usuario}!"
+        )
+
       # Usuario ya existente o rol que no permite autoregistro: se intenta el login.
-      {:error, _motivo} -> :ok
+      {:error, _motivo} ->
+        :ok
     end
 
     case Autenticacion.iniciar_sesion(usuario, contrasena) do
       {:ok, sesion} ->
-        IO.puts("¡Bienvenido/a al sistema, #{sesion.nombre_completo}! Sesión iniciada con éxito como #{sesion.tipo_usuario}.")
+        IO.puts(
+          "¡Bienvenido/a al sistema, #{sesion.nombre_completo}! Sesión iniciada con éxito como #{sesion.tipo_usuario}."
+        )
+
         sesion
 
       {:ok, sesion, _advertencia} ->
-        IO.puts("¡Bienvenido/a al sistema, #{sesion.nombre_completo}! Sesión iniciada con éxito como #{sesion.tipo_usuario}.")
+        IO.puts(
+          "¡Bienvenido/a al sistema, #{sesion.nombre_completo}! Sesión iniciada con éxito como #{sesion.tipo_usuario}."
+        )
+
         sesion
 
       {:error, motivo} ->
@@ -871,9 +902,14 @@ defmodule Emergencia.Consola.CLI do
           end)
 
         case coincidencias do
-          [persona] -> {:ok, persona}
-          [] -> {:error, "No se encontró ninguna persona con '#{identificador}'"}
-          _varias -> {:error, "Hay varias personas con '#{identificador}'. Use el código PER-####."}
+          [persona] ->
+            {:ok, persona}
+
+          [] ->
+            {:error, "No se encontró ninguna persona con '#{identificador}'"}
+
+          _varias ->
+            {:error, "Hay varias personas con '#{identificador}'. Use el código PER-####."}
         end
 
       {:error, _motivo} = error ->

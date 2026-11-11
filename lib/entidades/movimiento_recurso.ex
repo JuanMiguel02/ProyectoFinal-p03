@@ -1,5 +1,6 @@
 defmodule Emergencia.MovimientoRecurso do
   alias Emergencia.GeneradorID
+  alias Emergencia.Reloj
 
   @moduledoc """
   Registra la trazabilidad de ingresos, transferencias y asignaciones de recursos.
@@ -30,7 +31,7 @@ defmodule Emergencia.MovimientoRecurso do
         }
 
   def nuevo(cantidad, tipo_movimiento, opciones \\ []) do
-    fecha = Keyword.get(opciones, :fecha, DateTime.utc_now())
+    fecha = Keyword.get(opciones, :fecha, Reloj.ahora_local())
     ubicacion_origen = Keyword.get(opciones, :ubicacion_origen)
     ubicacion_destino = Keyword.get(opciones, :ubicacion_destino)
 

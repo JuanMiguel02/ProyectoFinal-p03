@@ -1,5 +1,6 @@
 defmodule Emergencia.ReporteMascota do
   alias Emergencia.GeneradorID
+  alias Emergencia.Reloj
 
   @moduledoc """
   Registra los reportes de mascotas extraviadas o encontradas en una zona afectada,
@@ -47,7 +48,7 @@ defmodule Emergencia.ReporteMascota do
   """
   def nueva(tipo, especie, color, tamano, id_zona, id_contacto, opciones \\ []) do
     estado = Keyword.get(opciones, :estado, :activa)
-    fecha = Keyword.get(opciones, :fecha_reporte, DateTime.utc_now())
+    fecha = Keyword.get(opciones, :fecha_reporte, Reloj.ahora_local())
 
     with :ok <- validar_obligatorios(especie, color, id_zona, id_contacto),
          :ok <- validar_enum(:tipo, tipo, @tipos_permitidos),

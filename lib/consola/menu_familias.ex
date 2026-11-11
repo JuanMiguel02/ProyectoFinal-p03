@@ -88,7 +88,7 @@ defmodule Emergencia.Consola.MenuFamilias do
 
   defp asignar_persona(sesion) do
     Util.mostrar("\n========== ASIGNAR PERSONA A FAMILIA ==========", :mensaje)
-    id_persona = Util.ingresar("UUID de la persona: ", :texto)
+    id_persona = Util.ingresar("Código o documento de la persona: ", :texto)
     id_familia = Util.ingresar("Código o UUID de la familia: ", :texto)
 
     sesion

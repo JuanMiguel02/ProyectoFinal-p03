@@ -1,0 +1,234 @@
+defmodule Emergencia.Consola.MenuTerritorio do
+  @moduledoc """
+  Gestiona las operaciones de consulta y registro del territorio.
+  """
+
+  alias Emergencia.Aplicacion.GestionTerritorio
+  alias Util
+
+  @niveles %{
+    "1" => :bajo,
+    "2" => :medio,
+    "3" => :alto,
+    "4" => :critico
+  }
+
+  @tipos_punto %{
+    "1" => :medico,
+    "2" => :logistico,
+    "3" => :distribucion
+  }
+
+  def iniciar(sesion) do
+    Util.mostrar("\n========== GESTIÓN DEL TERRITORIO ==========", :mensaje)
+    Util.mostrar("1. Registrar zona", :mensaje)
+    Util.mostrar("2. Registrar sector", :mensaje)
+    Util.mostrar("3. Registrar centro de acopio", :mensaje)
+    Util.mostrar("4. Registrar punto de atención", :mensaje)
+    Util.mostrar("5. Listar zonas", :mensaje)
+    Util.mostrar("6. Consultar estadísticas de zona", :mensaje)
+    Util.mostrar("7. Listar centros de acopio", :mensaje)
+    Util.mostrar("8. Volver", :mensaje)
+
+    case Util.ingresar("Seleccione una opción: ", :texto) do
+      "1" ->
+        registrar_zona(sesion)
+
+      "2" ->
+        registrar_sector(sesion)
+
+      "3" ->
+        registrar_centro(sesion)
+
+      "4" ->
+        registrar_punto(sesion)
+
+      "5" ->
+        listar_zonas(sesion)
+
+      "6" ->
+        consultar_estadisticas(sesion)
+
+      "7" ->
+        listar_centros(sesion)
+
+      "8" ->
+        :ok
+
+      _ ->
+        Util.mostrar("Opción no válida.", :error)
+        iniciar(sesion)
+    end
+  end
+
+  defp registrar_zona(sesion) do
+    nombre = Util.ingresar("Nombre de la zona: ", :texto)
+    nivel = seleccionar_nivel()
+    personas = Util.ingresar("Personas estimadas: ", :entero)
+
+    case nivel do
+      {:ok, nivel} ->
+        sesion
+        |> GestionTerritorio.registrar_zona(nombre, nivel, personas)
+        |> mostrar_resultado("Zona registrada:")
+
+      {:error, motivo} ->
+        Util.mostrar(motivo, :error)
+    end
+
+    iniciar(sesion)
+  end
+
+  defp registrar_sector(sesion) do
+    zona = Util.ingresar("Código o ID de la zona: ", :texto)
+    nombre = Util.ingresar("Nombre del sector: ", :texto)
+    nivel = seleccionar_nivel()
+    personas = Util.ingresar("Personas afectadas: ", :entero)
+
+    case nivel do
+      {:ok, nivel} ->
+        sesion
+        |> GestionTerritorio.registrar_sector(zona, nombre, nivel, personas)
+        |> mostrar_resultado("Sector registrado:")
+
+      {:error, motivo} ->
+        Util.mostrar(motivo, :error)
+    end
+
+    iniciar(sesion)
+  end
+
+  defp registrar_centro(sesion) do
+    nombre = Util.ingresar("Nombre del centro de acopio: ", :texto)
+    direccion = Util.ingresar("Dirección: ", :texto)
+    capacidad = Util.ingresar("Capacidad: ", :entero)
+    zona = Util.ingresar("Código o ID de la zona: ", :texto)
+
+    sesion
+    |> GestionTerritorio.registrar_centro_acopio(nombre, direccion, capacidad, zona)
+    |> mostrar_resultado("Centro de acopio registrado:")
+
+    iniciar(sesion)
+  end
+
+  defp registrar_punto(sesion) do
+    sector = Util.ingresar("Código o ID del sector: ", :texto)
+    nombre = Util.ingresar("Nombre del punto de atención: ", :texto)
+
+    Util.mostrar("Tipo de punto: 1. Médico  2. Logístico  3. Distribución", :mensaje)
+    tipo = obtener_opcion(@tipos_punto, Util.ingresar("Seleccione el tipo: ", :texto))
+
+    ubicacion = Util.ingresar("Ubicación: ", :texto)
+    descripcion = Util.ingresar("Descripción (opcional): ", :texto)
+
+    case tipo do
+      {:ok, tipo} ->
+        sesion
+        |> GestionTerritorio.registrar_punto_atencion(
+          sector,
+          nombre,
+          tipo,
+          ubicacion,
+          opcional(descripcion)
+        )
+        |> mostrar_resultado("Punto de atención registrado:")
+
+      {:error, motivo} ->
+        Util.mostrar(motivo, :error)
+    end
+
+    iniciar(sesion)
+  end
+
+  defp listar_zonas(sesion) do
+    case GestionTerritorio.listar_zonas(sesion) do
+      {:ok, []} ->
+        Util.mostrar("No hay zonas registradas.", :mensaje)
+
+      {:ok, zonas} ->
+        Enum.each(zonas, fn zona ->
+          Util.mostrar(
+            "#{zona.codigo_zona} | #{zona.nombre} | Nivel: #{zona.nivel_afectacion} | " <>
+              "Sectores: #{length(zona.sectores)}",
+            :mensaje
+          )
+        end)
+
+      {:error, motivo} ->
+        Util.mostrar(inspect(motivo), :error)
+    end
+
+    iniciar(sesion)
+  end
+
+  defp consultar_estadisticas(sesion) do
+    zona = Util.ingresar("Código o ID de la zona: ", :texto)
+
+    case GestionTerritorio.estadisticas_zona(sesion, zona) do
+      {:ok, %{estadisticas: estadisticas, sectores: sectores}} ->
+        Util.mostrar(inspect(estadisticas, pretty: true), :mensaje)
+
+        Enum.each(sectores, fn sector ->
+          Util.mostrar(
+            "#{sector.codigo_sector} | #{sector.nombre} | Afectados: #{sector.personas_afectadas}",
+            :mensaje
+          )
+        end)
+
+      {:error, motivo} ->
+        Util.mostrar(inspect(motivo), :error)
+    end
+
+    iniciar(sesion)
+  end
+
+  defp listar_centros(sesion) do
+    case GestionTerritorio.listar_centros_acopio(sesion) do
+      {:ok, []} ->
+        Util.mostrar("No hay centros de acopio registrados.", :mensaje)
+
+      {:ok, centros} ->
+        Enum.each(centros, fn centro ->
+          Util.mostrar(
+            "#{centro.codigo_centro_acopio} | #{centro.nombre} | #{centro.direccion} | " <>
+              "Capacidad: #{centro.capacidad}",
+            :mensaje
+          )
+        end)
+
+      {:error, motivo} ->
+        Util.mostrar(inspect(motivo), :error)
+    end
+
+    iniciar(sesion)
+  end
+
+  defp seleccionar_nivel do
+    Util.mostrar("Nivel: 1. Bajo  2. Medio  3. Alto  4. Crítico", :mensaje)
+    obtener_opcion(@niveles, Util.ingresar("Seleccione el nivel: ", :texto))
+  end
+
+  defp obtener_opcion(opciones, opcion) do
+    case Map.fetch(opciones, opcion) do
+      {:ok, valor} -> {:ok, valor}
+      :error -> {:error, "Opción no válida."}
+    end
+  end
+
+  defp opcional(""), do: nil
+  defp opcional(valor), do: valor
+
+  defp mostrar_resultado({:ok, resultado}, mensaje) do
+    Util.mostrar(mensaje, :mensaje)
+    Util.mostrar(inspect(resultado, pretty: true), :mensaje)
+  end
+
+  defp mostrar_resultado({:ok, resultado, {:advertencia, motivo}}, mensaje) do
+    mostrar_resultado({:ok, resultado}, mensaje)
+    Util.mostrar("Advertencia: #{inspect(motivo)}", :error)
+  end
+
+  defp mostrar_resultado({:error, motivo}, _mensaje) do
+    Util.mostrar("No se pudo completar la operación: #{inspect(motivo)}", :error)
+  end
+end

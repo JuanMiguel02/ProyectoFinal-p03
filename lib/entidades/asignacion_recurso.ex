@@ -1,5 +1,6 @@
 defmodule Emergencia.AsignacionRecurso do
   alias Emergencia.GeneradorID
+  alias Emergencia.Reloj
 
   @estados_permitidos [:asignado, :entregado, :cancelado]
 
@@ -26,7 +27,7 @@ defmodule Emergencia.AsignacionRecurso do
         }
 
   def nueva_directa(id_necesidad, id_recurso, ubicacion, cantidad, opciones \\ []) do
-    fecha = Keyword.get(opciones, :fecha_asignada, DateTime.utc_now())
+    fecha = Keyword.get(opciones, :fecha_asignada, Reloj.ahora_local())
     estado = Keyword.get(opciones, :estado, :asignado)
 
     cond do

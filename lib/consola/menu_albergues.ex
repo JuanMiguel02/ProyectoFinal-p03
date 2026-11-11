@@ -307,12 +307,13 @@ defmodule Emergencia.Consola.MenuAlbergues do
 
         codigo =
           Util.ingresar(
-            "\nIngrese el código del albergue: ",
+            "\nIngrese el código o ID del albergue: ",
             :texto
           )
 
         case Enum.find(albergues, fn albergue ->
-               String.downcase(albergue.codigo) == String.downcase(codigo)
+               albergue.id == codigo or
+                 String.downcase(albergue.codigo) == String.downcase(codigo)
              end) do
           nil ->
             {:error, "No existe un albergue con ese código."}

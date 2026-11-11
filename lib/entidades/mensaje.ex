@@ -1,5 +1,6 @@
 defmodule Emergencia.Mensaje do
   alias Emergencia.GeneradorID
+  alias Emergencia.Reloj
 
   @enforce_keys [:id_envio, :id_remitente, :fecha, :contenido]
   defstruct [:id_envio, :id_remitente, :fecha, :contenido]
@@ -16,7 +17,7 @@ defmodule Emergencia.Mensaje do
   """
   def nuevo(id_remitente, contenido, opciones \\ []) do
     # Extraemos la fecha de las opciones o asignamos el momento actual por defecto
-    fecha = Keyword.get(opciones, :fecha, DateTime.utc_now())
+    fecha = Keyword.get(opciones, :fecha, Reloj.ahora_local())
 
     cond do
       is_nil(id_remitente) or is_nil(contenido) ->
