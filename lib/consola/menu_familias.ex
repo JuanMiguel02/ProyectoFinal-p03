@@ -5,16 +5,23 @@ defmodule Emergencia.Consola.MenuFamilias do
   """
 
   alias Emergencia.Aplicacion.GestionFamilias
+  alias Emergencia.Consola.FormatoConsola
+  alias Emergencia.Consola.PermisosMenu
+  alias Emergencia.Familia
+  alias Emergencia.Persona
   alias Util
 
   def iniciar(sesion) do
     Util.mostrar("\n========== GESTIÓN DE FAMILIAS ==========", :mensaje)
-    Util.mostrar("1. Registrar familia", :mensaje)
-    Util.mostrar("2. Buscar familia", :mensaje)
-    Util.mostrar("3. Listar familias", :mensaje)
-    Util.mostrar("4. Consultar integrantes", :mensaje)
-    Util.mostrar("5. Asignar persona a familia", :mensaje)
-    Util.mostrar("6. Volver", :mensaje)
+
+    PermisosMenu.mostrar_opciones(sesion, [
+      {"1", "Registrar familia", :registrar_familia},
+      {"2", "Buscar familia", :consultar_familias},
+      {"3", "Listar familias", :consultar_familias},
+      {"4", "Consultar integrantes", :consultar_familias},
+      {"5", "Asignar persona a familia", :asignar_familia},
+      {"6", "Volver", nil}
+    ])
 
     opcion = Util.ingresar("Seleccione una opción: ", :texto)
 
@@ -100,23 +107,51 @@ defmodule Emergencia.Consola.MenuFamilias do
 
   defp mostrar_resultado({:ok, resultado}, mensaje) do
     Util.mostrar("\n#{mensaje}", :mensaje)
-    Util.mostrar(inspect(resultado, pretty: true, limit: :infinity), :mensaje)
+
+    if resultado == [] do
+      texto =
+        if mensaje == "Integrantes de la familia:",
+          do: "La familia no tiene integrantes registrados.",
+          else: "No hay familias registradas."
+
+      Util.mostrar(texto, :mensaje)
+    else
+      mostrar_detalle(resultado)
+    end
   end
 
   defp mostrar_resultado({:ok, resultado, {:advertencia, motivo}}, mensaje) do
     Util.mostrar("\n#{mensaje}", :mensaje)
-    Util.mostrar(inspect(resultado, pretty: true, limit: :infinity), :mensaje)
-    Util.mostrar("\nAdvertencia:", :error)
-    Util.mostrar(inspect(motivo, pretty: true), :error)
+    mostrar_detalle(resultado)
+    Util.mostrar("Advertencia de auditoría: #{inspect(motivo)}", :error)
   end
 
   defp mostrar_resultado({:error, motivo}, _mensaje) do
-    Util.mostrar("\nNo se pudo completar la operación:", :error)
-    Util.mostrar(inspect(motivo, pretty: true), :error)
+    Util.mostrar("\nNo se pudo completar la operación: #{inspect(motivo)}", :error)
   end
 
-  defp mostrar_resultado(otro, _mensaje) do
-    Util.mostrar("\nResultado:", :mensaje)
-    Util.mostrar(inspect(otro, pretty: true, limit: :infinity), :mensaje)
+  defp mostrar_detalle(%Familia{} = familia) do
+    Util.mostrar("Código: #{familia.codigo_familia}", :mensaje)
+    Util.mostrar("Nombre: #{familia.nombre}", :mensaje)
+  end
+
+  defp mostrar_detalle(%Persona{} = persona) do
+    Util.mostrar("Nombre: #{persona.nombre}", :mensaje)
+    Util.mostrar("Código: #{persona.codigo_persona}", :mensaje)
+    Util.mostrar("Documento: #{persona.documento}", :mensaje)
+    Util.mostrar("Estado: #{FormatoConsola.estado(persona.estado)}", :mensaje)
+  end
+
+  defp mostrar_detalle(personas) when is_list(personas) do
+    case personas do
+      [] ->
+        Util.mostrar("No hay integrantes registrados.", :mensaje)
+
+      _ ->
+        Enum.each(personas, fn persona ->
+          Util.mostrar("\n---------- INTEGRANTE ----------", :mensaje)
+          mostrar_detalle(persona)
+        end)
+    end
   end
 end

@@ -23,7 +23,8 @@ defmodule Emergencia.Servicios.ServicioMascotas do
   end
 
   def buscar_coincidencias(estado, id_reporte) do
-    with {:ok, reporte_origen} <- obtener_reporte(estado.reportes_mascotas, id_reporte) do
+    with {:ok, reporte_origen} <- obtener_reporte(estado.reportes_mascotas, id_reporte),
+         :ok <- validar_reporte_activo(reporte_origen) do
       tipo_buscado = if reporte_origen.tipo == :perdida, do: :encontrada, else: :perdida
 
       coincidencias =
@@ -52,6 +53,7 @@ defmodule Emergencia.Servicios.ServicioMascotas do
 
   def confirmar_coincidencia(estado, id_coincidencia, _id_usuario \\ "SISTEMA") do
     with {:ok, coincidencia} <- Map.fetch(estado.coincidencias_mascotas, id_coincidencia),
+         :ok <- validar_coincidencia_pendiente(coincidencia),
          {:ok, rep_perdida} <-
            obtener_reporte(estado.reportes_mascotas, coincidencia.id_reporte_perdida),
          {:ok, rep_encontrada} <-
@@ -87,27 +89,48 @@ defmodule Emergencia.Servicios.ServicioMascotas do
     end
   end
 
+  def registrar_y_confirmar_coincidencia(
+        estado,
+        id_perdida,
+        id_encontrada,
+        id_usuario \\ "SISTEMA"
+      ) do
+    with {:ok, coincidencia, estado_actualizado} <-
+           registrar_coincidencia(estado, id_perdida, id_encontrada, id_usuario),
+         {:ok, coincidencia_confirmada, estado_final} <-
+           confirmar_coincidencia(estado_actualizado, coincidencia.id, id_usuario) do
+      {:ok, coincidencia_confirmada, estado_final}
+    end
+  end
+
   def registrar_coincidencia(estado, id_perdida, id_encontrada, _id_usuario \\ "SISTEMA") do
     with {:ok, rep_perdida} <- obtener_reporte(estado.reportes_mascotas, id_perdida),
          {:ok, rep_encontrada} <- obtener_reporte(estado.reportes_mascotas, id_encontrada),
+         :ok <- validar_tipos_coincidencia(rep_perdida, rep_encontrada),
+         :ok <- validar_reporte_activo(rep_perdida),
+         :ok <- validar_reporte_activo(rep_encontrada),
+         :ok <- validar_coincidencia_no_registrada(estado, id_perdida, id_encontrada),
          {:ok, coincidencia} <- CoincidenciaMascota.nueva(id_perdida, id_encontrada) do
-      rep_perdida_act = %{rep_perdida | estado: :posible_coincidencia}
-      rep_encontrada_act = %{rep_encontrada | estado: :posible_coincidencia}
+      with {:ok, rep_perdida_act} <-
+             ReporteMascota.cambiar_estado(rep_perdida, :posible_coincidencia),
+           {:ok, rep_encontrada_act} <-
+             ReporteMascota.cambiar_estado(rep_encontrada, :posible_coincidencia) do
+        nuevos_reportes =
+          estado.reportes_mascotas
+          |> Map.put(id_perdida, rep_perdida_act)
+          |> Map.put(id_encontrada, rep_encontrada_act)
 
-      nuevos_reportes =
-        estado.reportes_mascotas
-        |> Map.put(id_perdida, rep_perdida_act)
-        |> Map.put(id_encontrada, rep_encontrada_act)
+        nuevas_coincidencias =
+          Map.put(estado.coincidencias_mascotas, coincidencia.id, coincidencia)
 
-      nuevas_coincidencias = Map.put(estado.coincidencias_mascotas, coincidencia.id, coincidencia)
+        estado_actualizado = %{
+          estado
+          | reportes_mascotas: nuevos_reportes,
+            coincidencias_mascotas: nuevas_coincidencias
+        }
 
-      estado_actualizado = %{
-        estado
-        | reportes_mascotas: nuevos_reportes,
-          coincidencias_mascotas: nuevas_coincidencias
-      }
-
-      {:ok, coincidencia, estado_actualizado}
+        {:ok, coincidencia, estado_actualizado}
+      end
     end
   end
 
@@ -132,10 +155,10 @@ defmodule Emergencia.Servicios.ServicioMascotas do
       |> Map.values()
       |> Enum.filter(fn r ->
         Enum.all?(criterios, fn
-          {:especie, val} -> r.especie == String.downcase(val)
+          {:especie, val} -> r.especie == normalizar_especie(val)
           {:id_zona, val} -> r.id_zona == val
           {:estado, val} -> r.estado == val
-          _ -> true
+          _ -> false
         end)
       end)
 
@@ -154,6 +177,44 @@ defmodule Emergencia.Servicios.ServicioMascotas do
   end
 
   defp validar_no_resuelto(_), do: :ok
+
+  defp validar_reporte_activo(%ReporteMascota{estado: :activa}), do: :ok
+
+  defp validar_reporte_activo(%ReporteMascota{estado: estado}) do
+    {:error, "Solo se pueden procesar reportes activos; el estado actual es #{estado}."}
+  end
+
+  defp validar_tipos_coincidencia(
+         %ReporteMascota{tipo: :perdida},
+         %ReporteMascota{tipo: :encontrada}
+       ),
+       do: :ok
+
+  defp validar_tipos_coincidencia(_, _) do
+    {:error, "La coincidencia requiere primero un reporte perdido y luego uno encontrado."}
+  end
+
+  defp validar_coincidencia_pendiente(%CoincidenciaMascota{estado: :pendiente}), do: :ok
+
+  defp validar_coincidencia_pendiente(%CoincidenciaMascota{estado: estado}) do
+    {:error, "La coincidencia ya fue procesada (estado: #{estado})."}
+  end
+
+  defp validar_coincidencia_no_registrada(estado, id_perdida, id_encontrada) do
+    existe =
+      Enum.any?(Map.values(estado.coincidencias_mascotas), fn coincidencia ->
+        coincidencia.id_reporte_perdida == id_perdida and
+          coincidencia.id_reporte_encontrada == id_encontrada
+      end)
+
+    if existe, do: {:error, "Ya existe una coincidencia para estos reportes."}, else: :ok
+  end
+
+  defp normalizar_especie(especie) when is_binary(especie),
+    do: especie |> String.trim() |> String.downcase()
+
+  defp normalizar_especie(especie) when is_atom(especie), do: Atom.to_string(especie)
+  defp normalizar_especie(_), do: nil
 
   @doc """
   Función ejecutada en segundo plano por el Task para procesar emparejamientos.

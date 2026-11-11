@@ -15,9 +15,23 @@
       "cantidad": 0,
       "codigo_recurso": "REC-0002",
       "ubicacion": "PAT-0001"
+    },
+    {
+      "cantidad": 20,
+      "codigo_recurso": "REC-0003",
+      "ubicacion": "CAC-0001"
     }
   ],
   "movimientos": [
+    {
+      "cantidad": 20,
+      "fecha": "2026-11-10T20:48:59.956000-05:00",
+      "id": "2b1f742b-21d5-4a00-9e10-2d7299609bb5",
+      "id_recurso": "3e1c5044-0b72-4655-8bf9-10f2e633bceb",
+      "tipo_movimiento": "ingreso",
+      "ubicacion_destino": "CAC-0001",
+      "ubicacion_origen": null
+    },
     {
       "cantidad": 10,
       "fecha": "2026-11-10T19:12:13.261000Z",
@@ -104,6 +118,13 @@
       "id": "2605f2ff-a6db-430b-8922-f8077155ab77",
       "nombre": "Atun",
       "unidad_medida": "latas"
+    },
+    {
+      "categoria": "otro",
+      "codigo": "REC-0003",
+      "id": "3e1c5044-0b72-4655-8bf9-10f2e633bceb",
+      "nombre": "Papel",
+      "unidad_medida": "Paquetes"
     }
   ]
 }

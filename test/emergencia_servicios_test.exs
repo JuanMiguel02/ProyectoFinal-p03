@@ -429,5 +429,122 @@ defmodule EmergenciaServiciosTest do
       assert {:error, motivo} = ServicioMascotas.resolver_reporte(est2, reporte.id)
       assert motivo =~ "ya ha sido resuelto"
     end
+
+    test "registra la posible coincidencia y resuelve ambos reportes al confirmarla" do
+      {:ok, perdida, estado} =
+        ServicioMascotas.registrar_reporte(
+          %EstadoMascotas{},
+          :perdida,
+          "gato",
+          "blanco",
+          :pequeno,
+          "zona_1",
+          "usr_1"
+        )
+
+      {:ok, encontrada, estado} =
+        ServicioMascotas.registrar_reporte(
+          estado,
+          :encontrada,
+          "gato",
+          "blanco",
+          :pequeno,
+          "zona_1",
+          "usr_2"
+        )
+
+      assert {:ok, coincidencia, estado} =
+               ServicioMascotas.registrar_coincidencia(estado, perdida.id, encontrada.id)
+
+      assert coincidencia.estado == :pendiente
+      assert estado.reportes_mascotas[perdida.id].estado == :posible_coincidencia
+      assert estado.reportes_mascotas[encontrada.id].estado == :posible_coincidencia
+
+      assert {:ok, coincidencia_confirmada, estado} =
+               ServicioMascotas.confirmar_coincidencia(estado, coincidencia.id)
+
+      assert coincidencia_confirmada.estado == :confirmada
+      assert estado.reportes_mascotas[perdida.id].estado == :resuelta
+      assert estado.reportes_mascotas[encontrada.id].estado == :resuelta
+
+      assert {:ok, reportes} =
+               ServicioMascotas.buscar_reportes(
+                 estado,
+                 especie: " GATO ",
+                 estado: :resuelta,
+                 id_zona: "zona_1"
+               )
+
+      assert Enum.map(reportes, & &1.id) |> Enum.sort() ==
+               Enum.sort([perdida.id, encontrada.id])
+    end
+
+    test "solo permite registrar una posible coincidencia entre pérdida y hallazgo activos" do
+      {:ok, encontrada, estado} =
+        ServicioMascotas.registrar_reporte(
+          %EstadoMascotas{},
+          :encontrada,
+          "perro",
+          "café",
+          :mediano,
+          "zona_1",
+          "usr_1"
+        )
+
+      {:ok, otra_encontrada, estado} =
+        ServicioMascotas.registrar_reporte(
+          estado,
+          :encontrada,
+          "perro",
+          "café",
+          :mediano,
+          "zona_1",
+          "usr_2"
+        )
+
+      assert {:error, motivo} =
+               ServicioMascotas.registrar_coincidencia(
+                 estado,
+                 encontrada.id,
+                 otra_encontrada.id
+               )
+
+      assert motivo =~ "reporte perdido"
+    end
+
+    test "confirma la coincidencia y cierra ambos reportes en una sola operación" do
+      {:ok, perdida, estado} =
+        ServicioMascotas.registrar_reporte(
+          %EstadoMascotas{},
+          :perdida,
+          "conejo",
+          "blanco",
+          :pequeno,
+          "zona_2",
+          "usr_1"
+        )
+
+      {:ok, encontrada, estado} =
+        ServicioMascotas.registrar_reporte(
+          estado,
+          :encontrada,
+          "conejo",
+          "blanco",
+          :pequeno,
+          "zona_2",
+          "usr_2"
+        )
+
+      assert {:ok, coincidencia, estado} =
+               ServicioMascotas.registrar_y_confirmar_coincidencia(
+                 estado,
+                 perdida.id,
+                 encontrada.id
+               )
+
+      assert coincidencia.estado == :confirmada
+      assert estado.reportes_mascotas[perdida.id].estado == :resuelta
+      assert estado.reportes_mascotas[encontrada.id].estado == :resuelta
+    end
   end
 end

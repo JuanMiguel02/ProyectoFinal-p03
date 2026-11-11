@@ -20,8 +20,7 @@ defmodule Emergencia.Usuario do
     :contrasena,
     :nombre_completo,
     :tipo_usuario,
-    :zona_principal_id,
-    conectado: false
+    :zona_principal_id
   ]
 
   @type tipo_usuario :: :ciudadano | :voluntario | :coordinador | :administrador
@@ -33,13 +32,11 @@ defmodule Emergencia.Usuario do
           contrasena: String.t(),
           nombre_completo: String.t(),
           tipo_usuario: tipo_usuario(),
-          zona_principal_id: String.t() | nil,
-          conectado: boolean()
+          zona_principal_id: String.t() | nil
         }
 
   @doc """
-  Función segura: Retorna {:ok, usuario} o {:error, motivo}.
-  Por defecto, el usuario se crea desconectado.
+  Función segura: Retorna `{:ok, usuario}` o `{:error, motivo}`.
   """
   def nuevo(nombre_usuario, contrasena, nombre_completo, tipo, codigo, zona_id \\ nil) do
     if tipo in @tipos_permitidos do
@@ -51,8 +48,7 @@ defmodule Emergencia.Usuario do
          contrasena: contrasena,
          nombre_completo: nombre_completo,
          tipo_usuario: tipo,
-         zona_principal_id: zona_id,
-         conectado: false
+         zona_principal_id: zona_id
        }}
     else
       {:error, "Tipo de usuario no válido"}
@@ -90,8 +86,7 @@ defmodule Emergencia.Usuario do
          contrasena: obtener(mapa, "contrasena"),
          nombre_completo: obtener(mapa, "nombre_completo"),
          tipo_usuario: tipo_usuario,
-         zona_principal_id: obtener(mapa, "zona_principal_id"),
-         conectado: false
+         zona_principal_id: obtener(mapa, "zona_principal_id")
        }}
     end
   end

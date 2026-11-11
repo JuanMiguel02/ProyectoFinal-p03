@@ -147,23 +147,9 @@ defmodule Emergencia.UsuariosServidor do
            sesion.pid == pid_cliente
          end) do
       {id_usuario, sesion} ->
-        case ServicioUsuario.desconectar(estado, id_usuario) do
-          {:ok, _usuario, estado_actualizado} ->
-            Process.demonitor(sesion.monitor, [:flush])
-
-            sesiones =
-              Map.delete(estado_actualizado.sesiones, id_usuario)
-
-            nuevo_estado = %{
-              estado_actualizado
-              | sesiones: sesiones
-            }
-
-            {:reply, :ok, nuevo_estado}
-
-          {:error, motivo} ->
-            {:reply, {:error, motivo}, estado}
-        end
+        Process.demonitor(sesion.monitor, [:flush])
+        sesiones = Map.delete(estado.sesiones, id_usuario)
+        {:reply, :ok, %{estado | sesiones: sesiones}}
 
       nil ->
         {:reply, {:error, :sesion_no_encontrada}, estado}
@@ -204,21 +190,7 @@ defmodule Emergencia.UsuariosServidor do
            sesion.monitor == monitor
          end) do
       {id_usuario, _sesion} ->
-        case ServicioUsuario.desconectar(estado, id_usuario) do
-          {:ok, _usuario, estado_actualizado} ->
-            sesiones =
-              Map.delete(estado_actualizado.sesiones, id_usuario)
-
-            nuevo_estado = %{
-              estado_actualizado
-              | sesiones: sesiones
-            }
-
-            {:noreply, nuevo_estado}
-
-          {:error, _motivo} ->
-            {:noreply, estado}
-        end
+        {:noreply, %{estado | sesiones: Map.delete(estado.sesiones, id_usuario)}}
 
       nil ->
         {:noreply, estado}

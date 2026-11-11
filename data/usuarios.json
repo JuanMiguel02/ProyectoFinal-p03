@@ -1,42 +1,38 @@
 [
   {
     "codigo_usuario": "USR-0004",
-    "conectado": false,
     "contrasena": "1234",
     "id": "3db02d33-6f68-46d9-b553-0799f3f8067c",
     "nombre_completo": "vol",
     "nombre_usuario": "vol",
     "tipo_usuario": "voluntario",
-    "zona_principal_id": null
+    "zona_principal_id": "d467bde6-fe02-499a-9015-2b93377cebc1"
   },
   {
     "codigo_usuario": "USR-0003",
-    "conectado": false,
     "contrasena": "1234",
     "id": "88d0a24c-2705-4452-a946-124077dd68e8",
     "nombre_completo": "pepe",
     "nombre_usuario": "pepe",
     "tipo_usuario": "ciudadano",
-    "zona_principal_id": null
+    "zona_principal_id": "40ac0453-2de0-4836-951d-c3be2c65afd5"
   },
   {
     "codigo_usuario": "USR-0001",
-    "conectado": false,
     "contrasena": "1234",
     "id": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "nombre_completo": "Administrador",
     "nombre_usuario": "admin",
     "tipo_usuario": "administrador",
-    "zona_principal_id": null
+    "zona_principal_id": "d467bde6-fe02-499a-9015-2b93377cebc1"
   },
   {
     "codigo_usuario": "USR-0002",
-    "conectado": false,
     "contrasena": "1234",
     "id": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
     "nombre_completo": "Coordinador",
     "nombre_usuario": "coord",
     "tipo_usuario": "coordinador",
-    "zona_principal_id": null
+    "zona_principal_id": "6b12672f-4249-47f8-9c78-5f24fe239607"
   }
 ]

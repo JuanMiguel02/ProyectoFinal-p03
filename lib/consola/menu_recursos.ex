@@ -5,6 +5,12 @@ defmodule Emergencia.Consola.MenuRecursos do
 
   alias Emergencia.Aplicacion.GestionRecursos
   alias Emergencia.Aplicacion.GestionResumen
+  alias Emergencia.AsignacionRecurso
+  alias Emergencia.Consola.FormatoConsola
+  alias Emergencia.Consola.PermisosMenu
+  alias Emergencia.MovimientoRecurso
+  alias Emergencia.Necesidad
+  alias Emergencia.Recurso
   alias Util
 
   @tipos_necesidad %{
@@ -30,18 +36,21 @@ defmodule Emergencia.Consola.MenuRecursos do
 
   def iniciar(sesion) do
     Util.mostrar("\n========== GESTIÓN DE RECURSOS ==========", :mensaje)
-    Util.mostrar("1. Registrar necesidad", :mensaje)
-    Util.mostrar("2. Registrar recurso e inventario", :mensaje)
-    Util.mostrar("3. Asignar recurso a una necesidad", :mensaje)
-    Util.mostrar("4. Transferir recurso", :mensaje)
-    Util.mostrar("5. Listar existencias por ubicación", :mensaje)
-    Util.mostrar("6. Listar todos los recursos y ubicaciones", :mensaje)
-    Util.mostrar("7. Listar necesidades con filtros", :mensaje)
-    Util.mostrar("8. Consultar necesidades pendientes", :mensaje)
-    Util.mostrar("9. Listar necesidades ordenadas por prioridad", :mensaje)
-    Util.mostrar("10. Consultar stock global", :mensaje)
-    Util.mostrar("11. Consultar recursos críticos", :mensaje)
-    Util.mostrar("12. Volver al menú principal", :mensaje)
+
+    PermisosMenu.mostrar_opciones(sesion, [
+      {"1", "Registrar necesidad", :crear_necesidad},
+      {"2", "Registrar recurso e inventario", :asignar_recursos},
+      {"3", "Asignar recurso a una necesidad", :asignar_recursos},
+      {"4", "Transferir recurso", :transferir_recursos},
+      {"5", "Listar existencias por ubicación", :consultar_recursos},
+      {"6", "Listar todos los recursos y ubicaciones", :consultar_recursos},
+      {"7", "Listar necesidades con filtros", :consultar_necesidades},
+      {"8", "Consultar necesidades pendientes", :consultar_necesidades},
+      {"9", "Listar necesidades ordenadas por prioridad", :consultar_necesidades},
+      {"10", "Consultar stock global", :consultar_recursos},
+      {"11", "Consultar recursos críticos", :consultar_recursos},
+      {"12", "Volver al menú principal", nil}
+    ])
 
     case Util.ingresar("Seleccione una opción: ", :texto) do
       "1" ->
@@ -152,7 +161,7 @@ defmodule Emergencia.Consola.MenuRecursos do
 
     sesion
     |> GestionRecursos.transferir_recurso(recurso, origen, destino, cantidad)
-    |> mostrar_resultado("Transferencia realizada:")
+    |> mostrar_transferencia(recurso, origen, destino)
 
     iniciar(sesion)
   end
@@ -263,9 +272,10 @@ defmodule Emergencia.Consola.MenuRecursos do
   defp mostrar_necesidades(necesidades) do
     Enum.each(necesidades, fn necesidad ->
       Util.mostrar(
-        "#{necesidad.codigo_necesidad} | #{necesidad.tipo} | " <>
-          "Prioridad: #{necesidad.prioridad} | Pendiente: #{necesidad.cantidad_pendiente} | " <>
-          "Estado: #{necesidad.estado}",
+        "#{necesidad.codigo_necesidad} | #{FormatoConsola.estado(necesidad.tipo)} | " <>
+          "Prioridad: #{FormatoConsola.estado(necesidad.prioridad)} | " <>
+          "Pendiente: #{necesidad.cantidad_pendiente} | " <>
+          "Estado: #{FormatoConsola.estado(necesidad.estado)}",
         :mensaje
       )
     end)
@@ -307,7 +317,7 @@ defmodule Emergencia.Consola.MenuRecursos do
 
   defp mostrar_resultado({:ok, resultado}, mensaje) do
     Util.mostrar(mensaje, :mensaje)
-    Util.mostrar(inspect(resultado, pretty: true), :mensaje)
+    mostrar_detalle(resultado)
   end
 
   defp mostrar_resultado({:ok, resultado, {:advertencia, motivo}}, mensaje) do
@@ -317,5 +327,60 @@ defmodule Emergencia.Consola.MenuRecursos do
 
   defp mostrar_resultado({:error, motivo}, _mensaje) do
     Util.mostrar("No se pudo completar la operación: #{inspect(motivo)}", :error)
+  end
+
+  defp mostrar_transferencia({:ok, %MovimientoRecurso{} = movimiento}, recurso, origen, destino) do
+    Util.mostrar("Transferencia realizada correctamente.", :mensaje)
+    Util.mostrar("Recurso: #{recurso}", :mensaje)
+    Util.mostrar("Origen: #{origen}", :mensaje)
+    Util.mostrar("Destino: #{destino}", :mensaje)
+    Util.mostrar("Cantidad: #{movimiento.cantidad}", :mensaje)
+    Util.mostrar("Fecha y hora: #{FormatoConsola.fecha_hora(movimiento.fecha)}", :mensaje)
+  end
+
+  defp mostrar_transferencia(
+         {:ok, %MovimientoRecurso{} = movimiento, {:advertencia, motivo}},
+         recurso,
+         origen,
+         destino
+       ) do
+    mostrar_transferencia({:ok, movimiento}, recurso, origen, destino)
+    Util.mostrar("Advertencia de auditoría: #{inspect(motivo)}", :error)
+  end
+
+  defp mostrar_transferencia({:error, motivo}, _recurso, _origen, _destino) do
+    Util.mostrar("No se pudo completar la transferencia: #{inspect(motivo)}", :error)
+  end
+
+  defp mostrar_detalle(%Necesidad{} = necesidad) do
+    Util.mostrar("Código: #{necesidad.codigo_necesidad}", :mensaje)
+    Util.mostrar("Tipo: #{FormatoConsola.estado(necesidad.tipo)}", :mensaje)
+    Util.mostrar("Cantidad requerida: #{necesidad.cantidad_requerida}", :mensaje)
+    Util.mostrar("Prioridad: #{FormatoConsola.estado(necesidad.prioridad)}", :mensaje)
+    Util.mostrar("Estado: #{FormatoConsola.estado(necesidad.estado)}", :mensaje)
+  end
+
+  defp mostrar_detalle(%Recurso{} = recurso) do
+    Util.mostrar("Código: #{recurso.codigo}", :mensaje)
+    Util.mostrar("Nombre: #{recurso.nombre}", :mensaje)
+    Util.mostrar("Unidad de medida: #{recurso.unidad_medida}", :mensaje)
+  end
+
+  defp mostrar_detalle(%MovimientoRecurso{} = movimiento) do
+    Util.mostrar("Cantidad: #{movimiento.cantidad}", :mensaje)
+    Util.mostrar("Fecha y hora: #{FormatoConsola.fecha_hora(movimiento.fecha)}", :mensaje)
+  end
+
+  defp mostrar_detalle(asignaciones) when is_list(asignaciones) do
+    Enum.each(asignaciones, fn
+      %AsignacionRecurso{} = asignacion ->
+        Util.mostrar("Cantidad asignada: #{asignacion.cantidad_asignada}", :mensaje)
+        Util.mostrar("Estado: #{FormatoConsola.estado(asignacion.estado)}", :mensaje)
+
+        Util.mostrar(
+          "Fecha: #{FormatoConsola.fecha_hora(asignacion.fecha_asignada)}",
+          :mensaje
+        )
+    end)
   end
 end

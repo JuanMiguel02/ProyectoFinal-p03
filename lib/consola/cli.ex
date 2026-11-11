@@ -52,6 +52,15 @@ defmodule Emergencia.Consola.CLI do
     "estado" => :estado
   }
 
+  @filtros_mascotas %{
+    "especie" => :especie,
+    "species" => :especie,
+    "zona" => :id_zona,
+    "zone" => :id_zona,
+    "estado" => :estado,
+    "state" => :estado
+  }
+
   # ============================================================================
   # BUCLE PRINCIPAL
   # ============================================================================
@@ -166,7 +175,12 @@ defmodule Emergencia.Consola.CLI do
           confirm_delivery <codigo_destinatario>
           complete_message <codigo_destinatario> (marca entrega completada)
           report_pet <lost|found> <especie> <nombre> <color> <tamano> <zona> <contacto>
+          list_pet_reports [especie=..] [zona=..] [estado=activa|posible_coincidencia|resuelta]
+          list_pet_matches
           match_pets
+          register_pet_match <id_reporte_perdida> <id_reporte_encontrada>
+          confirm_pet_match <id_coincidencia>
+          confirm_pet_match_reports <id_reporte_perdida> <id_reporte_encontrada>
           complete_pet <id_o_codigo_reporte>
 
         General:
@@ -707,7 +721,43 @@ defmodule Emergencia.Consola.CLI do
         end
       end,
       fn r ->
-        "Reporte de mascota (#{r.tipo}) registrado exitosamente [ID: #{r.id}] | Especie: #{r.especie} | Nombre: #{r.nombre || "Desconocido"} | Color: #{r.color} | Tamaño: #{r.tamano} | Zona ID: #{r.id_zona}"
+        "Reporte de mascota (#{r.tipo}) registrado exitosamente [ID: #{r.id}] | Especie: #{r.especie} | Nombre: #{r.nombre || "Desconocido"} | Color: #{r.color} | Tamaño: #{r.tamano} | Zona: #{zona}"
+      end
+    )
+  end
+
+  defp evaluar_comando(["list_pet_reports" | filtros], sesion) do
+    listar_reportes_mascotas(filtros, sesion)
+  end
+
+  defp evaluar_comando(["list_pet_matches"], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionMascotas.listar_coincidencias(sesion) end,
+      fn
+        [] ->
+          "No hay coincidencias registradas."
+
+        coincidencias ->
+          "\n--- Coincidencias de mascotas ---\n" <>
+            Enum.map_join(coincidencias, "\n", fn coincidencia ->
+              "[#{coincidencia.id}] Pérdida: #{coincidencia.id_reporte_perdida} | " <>
+                "Encontrada: #{coincidencia.id_reporte_encontrada} | " <>
+                "Estado: #{coincidencia.estado}"
+            end)
+      end
+    )
+  end
+
+  defp evaluar_comando(["register_pet_match", id_perdida, id_encontrada], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        GestionMascotas.registrar_coincidencia_reportes(sesion, id_perdida, id_encontrada)
+      end,
+      fn coincidencia ->
+        "Posible coincidencia registrada [#{coincidencia.id}]. " <>
+          "Use confirm_pet_match #{coincidencia.id} para resolver ambos reportes."
       end
     )
   end
@@ -724,7 +774,7 @@ defmodule Emergencia.Consola.CLI do
           "\n--- Posibles coincidencias de mascotas ---\n" <>
             Enum.map_join(resultados, "\n", fn {perdida, candidatas} ->
               encabezado =
-                "Mascota Perdida -> Especie: #{perdida.especie} | Nombre: #{perdida.nombre || "No especificado"} | Color: #{perdida.color} | Tamaño: #{perdida.tamano} | #{formatear_zona(perdida.id_zona, codigos_zona)}"
+                "Mascota Perdida [#{perdida.id}] -> Especie: #{perdida.especie} | Nombre: #{perdida.nombre || "No especificado"} | Color: #{perdida.color} | Tamaño: #{perdida.tamano} | #{formatear_zona(perdida.id_zona, codigos_zona)}"
 
               case candidatas do
                 [] ->
@@ -734,10 +784,32 @@ defmodule Emergencia.Consola.CLI do
                   encabezado <>
                     "\n    -> Coincidencias encontradas:\n" <>
                     Enum.map_join(candidatas, "\n", fn c ->
-                      "       * Encontrada -> Especie: #{c.especie} | Nombre: #{c.nombre || "No especificado"} | Color: #{c.color} | Tamaño: #{c.tamano} | #{formatear_zona(c.id_zona, codigos_zona)}"
+                      "       * Encontrada [#{c.id}] -> Especie: #{c.especie} | Nombre: #{c.nombre || "No especificado"} | Color: #{c.color} | Tamaño: #{c.tamano} | #{formatear_zona(c.id_zona, codigos_zona)}"
                     end)
               end
             end)
+      end
+    )
+  end
+
+  defp evaluar_comando(["confirm_pet_match", id_coincidencia], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionMascotas.confirmar_coincidencia(sesion, id_coincidencia) end,
+      fn coincidencia ->
+        "Coincidencia #{coincidencia.id} confirmada. Ambos reportes relacionados quedaron resueltos."
+      end
+    )
+  end
+
+  defp evaluar_comando(["confirm_pet_match_reports", id_perdida, id_encontrada], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        GestionMascotas.confirmar_coincidencia_reportes(sesion, id_perdida, id_encontrada)
+      end,
+      fn coincidencia ->
+        "Coincidencia #{coincidencia.id} confirmada. Ambos reportes relacionados quedaron resueltos."
       end
     )
   end
@@ -932,6 +1004,7 @@ defmodule Emergencia.Consola.CLI do
         case coincidencias do
           [reporte] -> {:ok, reporte}
           [] -> {:error, "No existe un reporte de mascota con identificador '#{identificador}'"}
+          _ -> {:error, "Hay varios reportes coincidentes. Use el ID exacto del reporte."}
         end
 
       {:error, _motivo} = error ->
@@ -962,8 +1035,47 @@ defmodule Emergencia.Consola.CLI do
   end
 
   defp formatear_zona(id_zona, codigos_zona) do
-    codigo = Map.get(codigos_zona, id_zona, "no encontrado")
-    "Zona ID: #{id_zona} | Código: #{codigo}"
+    "Zona: #{Map.get(codigos_zona, id_zona, "desconocida")}"
+  end
+
+  defp listar_reportes_mascotas(filtros, sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, criterios} <- parsear_filtros_mascotas(filtros),
+             {:ok, reportes} <- GestionMascotas.listar_reportes(sesion, criterios),
+             {:ok, zonas} <- GestionTerritorio.listar_zonas(sesion) do
+          {:ok, {reportes, Map.new(zonas, &{&1.id, &1.codigo_zona})}}
+        end
+      end,
+      fn
+        {[], _codigos_zona} ->
+          "No hay reportes de mascotas que coincidan con los filtros."
+
+        {reportes, codigos_zona} ->
+          "\n--- Reportes de mascotas ---\n" <>
+            Enum.map_join(reportes, "\n", fn reporte ->
+              codigo_zona = Map.get(codigos_zona, reporte.id_zona, "desconocida")
+
+              "[#{reporte.id}] #{reporte.tipo} | Especie: #{reporte.especie} | " <>
+                "Color: #{reporte.color} | Tamaño: #{reporte.tamano} | " <>
+                "Zona: #{codigo_zona} | Estado: #{reporte.estado}"
+            end)
+      end
+    )
+  end
+
+  defp parsear_filtros_mascotas(filtros) do
+    Enum.reduce_while(filtros, {:ok, []}, fn filtro, {:ok, acumulados} ->
+      with [clave, valor] <- String.split(filtro, "=", parts: 2),
+           {:ok, clave_atomo} <- Map.fetch(@filtros_mascotas, String.downcase(clave)),
+           true <- String.trim(valor) != "" do
+        {:cont, {:ok, [{clave_atomo, valor} | acumulados]}}
+      else
+        _ ->
+          {:halt, {:error, "Filtro no válido: '#{filtro}' (usa especie=, zona= o estado=)."}}
+      end
+    end)
   end
 
   # Ejecuta una acción que requiere sesión y muestra el resultado.

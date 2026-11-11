@@ -1,15 +1,20 @@
 defmodule Emergencia.Consola.MenuMensajes do
   alias Emergencia.Aplicacion.Autenticacion
   alias Emergencia.Aplicacion.GestionMensajes
+  alias Emergencia.Consola.FormatoConsola
+  alias Emergencia.Consola.PermisosMenu
   alias Util
 
   def iniciar(sesion) do
     Util.mostrar("\n--- GESTIÓN DE MENSAJES ---", :mensaje)
-    Util.mostrar("1. Ver historial de mensajes", :mensaje)
-    Util.mostrar("2. Enviar mensaje a una persona o familia", :mensaje)
-    Util.mostrar("3. Ver mensajes de una persona", :mensaje)
-    Util.mostrar("4. Confirmar entrega por código", :mensaje)
-    Util.mostrar("5. Volver al menú principal", :mensaje)
+
+    PermisosMenu.mostrar_opciones(sesion, [
+      {"1", "Ver historial de mensajes", :consultar_mensajes},
+      {"2", "Enviar mensaje a una persona o familia", :enviar_mensaje},
+      {"3", "Ver mensajes de una persona", :consultar_mensajes},
+      {"4", "Confirmar entrega por código", :enviar_mensaje},
+      {"5", "Volver al menú principal", nil}
+    ])
 
     case Util.ingresar("Seleccione una opción: ", :texto) do
       "1" ->
@@ -46,8 +51,16 @@ defmodule Emergencia.Consola.MenuMensajes do
 
         mensajes ->
           Enum.each(mensajes, fn mensaje ->
+            remitente =
+              if mensaje.id_remitente == sesion.id_usuario do
+                sesion.nombre_completo
+              else
+                "Otro usuario"
+              end
+
             Util.mostrar(
-              "[#{mensaje.fecha}] De: #{mensaje.id_remitente} -> #{mensaje.contenido}",
+              "Fecha: #{FormatoConsola.fecha_hora(mensaje.fecha)} | " <>
+                "De: #{remitente}\nMensaje: #{mensaje.contenido}",
               :mensaje
             )
           end)
@@ -89,8 +102,10 @@ defmodule Emergencia.Consola.MenuMensajes do
       {:ok, mensajes} ->
         Enum.each(mensajes, fn mensaje ->
           Util.mostrar(
-            "[#{mensaje.codigo_registro}] #{mensaje.estado_entrega} | " <>
-              "#{mensaje.mensaje.contenido}",
+            "Código: #{mensaje.codigo_registro} | " <>
+              "Estado: #{FormatoConsola.estado(mensaje.estado_entrega)} | " <>
+              "Fecha: #{FormatoConsola.fecha_hora(mensaje.mensaje.fecha)}\n" <>
+              "Mensaje: #{mensaje.mensaje.contenido}",
             :mensaje
           )
         end)

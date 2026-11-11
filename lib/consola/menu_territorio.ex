@@ -4,6 +4,12 @@ defmodule Emergencia.Consola.MenuTerritorio do
   """
 
   alias Emergencia.Aplicacion.GestionTerritorio
+  alias Emergencia.CentroAcopio
+  alias Emergencia.Consola.FormatoConsola
+  alias Emergencia.Consola.PermisosMenu
+  alias Emergencia.PuntoAtencion
+  alias Emergencia.Sector
+  alias Emergencia.Zona
   alias Util
 
   @niveles %{
@@ -21,14 +27,17 @@ defmodule Emergencia.Consola.MenuTerritorio do
 
   def iniciar(sesion) do
     Util.mostrar("\n========== GESTIÓN DEL TERRITORIO ==========", :mensaje)
-    Util.mostrar("1. Registrar zona", :mensaje)
-    Util.mostrar("2. Registrar sector", :mensaje)
-    Util.mostrar("3. Registrar centro de acopio", :mensaje)
-    Util.mostrar("4. Registrar punto de atención", :mensaje)
-    Util.mostrar("5. Listar zonas", :mensaje)
-    Util.mostrar("6. Consultar estadísticas de zona", :mensaje)
-    Util.mostrar("7. Listar centros de acopio", :mensaje)
-    Util.mostrar("8. Volver", :mensaje)
+
+    PermisosMenu.mostrar_opciones(sesion, [
+      {"1", "Registrar zona", :crear_zona},
+      {"2", "Registrar sector", :crear_sector},
+      {"3", "Registrar centro de acopio", :crear_zona},
+      {"4", "Registrar punto de atención", :crear_sector},
+      {"5", "Listar zonas", :consultar_zonas},
+      {"6", "Consultar estadísticas de zona", :consultar_zonas},
+      {"7", "Listar centros de acopio", :consultar_zonas},
+      {"8", "Volver", nil}
+    ])
 
     case Util.ingresar("Seleccione una opción: ", :texto) do
       "1" ->
@@ -166,11 +175,28 @@ defmodule Emergencia.Consola.MenuTerritorio do
 
     case GestionTerritorio.estadisticas_zona(sesion, zona) do
       {:ok, %{estadisticas: estadisticas, sectores: sectores}} ->
-        Util.mostrar(inspect(estadisticas, pretty: true), :mensaje)
+        Util.mostrar("\nZona: #{estadisticas.zona}", :mensaje)
+
+        Util.mostrar(
+          "Nivel general: #{FormatoConsola.estado(estadisticas.nivel_general)}",
+          :mensaje
+        )
+
+        Util.mostrar("Personas estimadas: #{estadisticas.personas_estimadas_zona}", :mensaje)
+
+        Util.mostrar(
+          "Personas afectadas en sectores: #{estadisticas.personas_afectadas_sectores}",
+          :mensaje
+        )
+
+        Util.mostrar("Sectores registrados: #{estadisticas.cantidad_sectores}", :mensaje)
+        Util.mostrar("Puntos de atención: #{estadisticas.cantidad_puntos_atencion}", :mensaje)
 
         Enum.each(sectores, fn sector ->
           Util.mostrar(
-            "#{sector.codigo_sector} | #{sector.nombre} | Afectados: #{sector.personas_afectadas}",
+            "#{sector.codigo_sector} - #{sector.nombre} | " <>
+              "Nivel: #{FormatoConsola.estado(sector.nivel_afectacion)} | " <>
+              "Personas afectadas: #{sector.personas_afectadas}",
             :mensaje
           )
         end)
@@ -220,7 +246,7 @@ defmodule Emergencia.Consola.MenuTerritorio do
 
   defp mostrar_resultado({:ok, resultado}, mensaje) do
     Util.mostrar(mensaje, :mensaje)
-    Util.mostrar(inspect(resultado, pretty: true), :mensaje)
+    mostrar_detalle(resultado)
   end
 
   defp mostrar_resultado({:ok, resultado, {:advertencia, motivo}}, mensaje) do
@@ -230,5 +256,39 @@ defmodule Emergencia.Consola.MenuTerritorio do
 
   defp mostrar_resultado({:error, motivo}, _mensaje) do
     Util.mostrar("No se pudo completar la operación: #{inspect(motivo)}", :error)
+  end
+
+  defp mostrar_detalle(%Zona{} = zona) do
+    Util.mostrar("Código: #{zona.codigo_zona}", :mensaje)
+    Util.mostrar("Nombre: #{zona.nombre}", :mensaje)
+    Util.mostrar("Nivel de afectación: #{FormatoConsola.estado(zona.nivel_afectacion)}", :mensaje)
+    Util.mostrar("Personas estimadas: #{zona.personas_estimadas}", :mensaje)
+  end
+
+  defp mostrar_detalle(%Sector{} = sector) do
+    Util.mostrar("Código: #{sector.codigo_sector}", :mensaje)
+    Util.mostrar("Nombre: #{sector.nombre}", :mensaje)
+
+    Util.mostrar(
+      "Nivel de afectación: #{FormatoConsola.estado(sector.nivel_afectacion)}",
+      :mensaje
+    )
+
+    Util.mostrar("Personas afectadas: #{sector.personas_afectadas}", :mensaje)
+  end
+
+  defp mostrar_detalle(%CentroAcopio{} = centro) do
+    Util.mostrar("Código: #{centro.codigo_centro_acopio}", :mensaje)
+    Util.mostrar("Nombre: #{centro.nombre}", :mensaje)
+    Util.mostrar("Dirección: #{centro.direccion}", :mensaje)
+    Util.mostrar("Capacidad: #{centro.capacidad}", :mensaje)
+  end
+
+  defp mostrar_detalle(%PuntoAtencion{} = punto) do
+    Util.mostrar("Código: #{punto.codigo_punto_atencion}", :mensaje)
+    Util.mostrar("Nombre: #{punto.nombre}", :mensaje)
+    Util.mostrar("Tipo: #{FormatoConsola.estado(punto.tipo)}", :mensaje)
+    Util.mostrar("Ubicación: #{punto.ubicacion}", :mensaje)
+    Util.mostrar("Descripción: #{punto.descripcion || "No especificada"}", :mensaje)
   end
 end

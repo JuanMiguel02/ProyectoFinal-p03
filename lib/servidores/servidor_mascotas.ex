@@ -35,6 +35,13 @@ defmodule Emergencia.MascotasServidor do
     )
   end
 
+  def registrar_y_confirmar_coincidencia(id_perdida, id_encontrada, id_usuario \\ "SISTEMA") do
+    NodoServidor.llamar(
+      __MODULE__,
+      {:registrar_y_confirmar_coincidencia, id_perdida, id_encontrada, id_usuario}
+    )
+  end
+
   def resolver_reporte(id_reporte, id_usuario \\ "SISTEMA") do
     NodoServidor.llamar(__MODULE__, {:resolver_reporte, id_reporte, id_usuario})
   end
@@ -114,6 +121,22 @@ defmodule Emergencia.MascotasServidor do
   @impl true
   def handle_call({:registrar_coincidencia, id_perdida, id_encontrada, id_usuario}, _from, estado) do
     case ServicioMascotas.registrar_coincidencia(estado, id_perdida, id_encontrada, id_usuario) do
+      {:ok, resultado, nuevo_estado} -> procesar_persistencia(resultado, nuevo_estado, estado)
+      {:error, motivo} -> {:reply, {:error, motivo}, estado}
+    end
+  end
+
+  def handle_call(
+        {:registrar_y_confirmar_coincidencia, id_perdida, id_encontrada, id_usuario},
+        _from,
+        estado
+      ) do
+    case ServicioMascotas.registrar_y_confirmar_coincidencia(
+           estado,
+           id_perdida,
+           id_encontrada,
+           id_usuario
+         ) do
       {:ok, resultado, nuevo_estado} -> procesar_persistencia(resultado, nuevo_estado, estado)
       {:error, motivo} -> {:reply, {:error, motivo}, estado}
     end

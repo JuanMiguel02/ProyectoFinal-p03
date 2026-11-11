@@ -1,6 +1,8 @@
 defmodule Emergencia.Consola.MenuMascotas do
   alias Emergencia.Aplicacion.GestionMascotas
   alias Emergencia.Aplicacion.GestionTerritorio
+  alias Emergencia.Consola.FormatoConsola
+  alias Emergencia.Consola.PermisosMenu
   alias Util
 
   @tipos %{"1" => :perdida, "2" => :encontrada}
@@ -8,12 +10,17 @@ defmodule Emergencia.Consola.MenuMascotas do
 
   def iniciar(sesion) do
     Util.mostrar("\n--- GESTIÓN DE MASCOTAS ---", :mensaje)
-    Util.mostrar("1. Ver reportes", :mensaje)
-    Util.mostrar("2. Buscar coincidencias sugeridas", :mensaje)
-    Util.mostrar("3. Confirmar una coincidencia", :mensaje)
-    Util.mostrar("4. Registrar reporte de mascota", :mensaje)
-    Util.mostrar("5. Marcar reporte como resuelto", :mensaje)
-    Util.mostrar("6. Volver al menú principal", :mensaje)
+
+    PermisosMenu.mostrar_opciones(sesion, [
+      {"1", "Ver todos los reportes", :consultar_reportes},
+      {"2", "Filtrar reportes por especie, zona o estado", :consultar_reportes},
+      {"3", "Buscar coincidencias sugeridas", :consultar_reportes},
+      {"4", "Registrar posible coincidencia entre reportes", :confirmar_coincidencia},
+      {"5", "Confirmar una coincidencia pendiente", :confirmar_coincidencia},
+      {"6", "Registrar reporte de mascota", :crear_reporte_mascota},
+      {"7", "Marcar reporte como resuelto", :gestionar_coincidencias},
+      {"8", "Volver al menú principal", nil}
+    ])
 
     case Util.ingresar("Seleccione una opción: ", :texto) do
       "1" ->
@@ -21,22 +28,30 @@ defmodule Emergencia.Consola.MenuMascotas do
         iniciar(sesion)
 
       "2" ->
-        buscar_coincidencias(sesion)
+        filtrar_reportes(sesion)
         iniciar(sesion)
 
       "3" ->
-        confirmar_coincidencia(sesion)
+        buscar_coincidencias(sesion)
         iniciar(sesion)
 
       "4" ->
-        registrar_reporte(sesion)
+        registrar_coincidencia(sesion)
         iniciar(sesion)
 
       "5" ->
-        resolver_reporte(sesion)
+        confirmar_coincidencia(sesion)
         iniciar(sesion)
 
       "6" ->
+        registrar_reporte(sesion)
+        iniciar(sesion)
+
+      "7" ->
+        resolver_reporte(sesion)
+        iniciar(sesion)
+
+      "8" ->
         :ok
 
       _ ->
@@ -51,16 +66,58 @@ defmodule Emergencia.Consola.MenuMascotas do
         Util.mostrar("No hay reportes de mascotas.", :mensaje)
 
       {:ok, reportes} ->
+        mostrar_reportes(sesion, reportes)
+
+      {:error, motivo} ->
+        Util.mostrar("No se pudieron consultar reportes: #{inspect(motivo)}", :error)
+    end
+  end
+
+  defp filtrar_reportes(sesion) do
+    especie = Util.ingresar("Especie (vacío para omitir): ", :texto)
+    zona = Util.ingresar("Código de zona (vacío para omitir): ", :texto)
+
+    estado =
+      Util.ingresar(
+        "Estado activa, posible_coincidencia o resuelta (vacío para omitir): ",
+        :texto
+      )
+
+    criterios =
+      []
+      |> agregar_filtro(:especie, especie)
+      |> agregar_filtro(:id_zona, zona)
+      |> agregar_filtro(:estado, estado)
+
+    case GestionMascotas.listar_reportes(sesion, criterios) do
+      {:ok, []} ->
+        Util.mostrar("No hay reportes que coincidan con esos filtros.", :mensaje)
+
+      {:ok, reportes} ->
+        mostrar_reportes(sesion, reportes)
+
+      {:error, motivo} ->
+        Util.mostrar("No se pudieron consultar reportes: #{inspect(motivo)}", :error)
+    end
+  end
+
+  defp mostrar_reportes(sesion, reportes) do
+    case GestionTerritorio.listar_zonas(sesion) do
+      {:ok, zonas} ->
+        codigos_zona = Map.new(zonas, &{&1.id, &1.codigo_zona})
+
         Enum.each(reportes, fn reporte ->
           Util.mostrar(
-            "[#{reporte.id}] #{reporte.tipo} | #{reporte.especie} | " <>
-              "Color: #{reporte.color} | Estado: #{reporte.estado}",
+            "[#{reporte.id}] #{FormatoConsola.estado(reporte.tipo)} | " <>
+              "#{reporte.especie} | Color: #{reporte.color} | " <>
+              "Zona: #{Map.get(codigos_zona, reporte.id_zona, "desconocida")} | " <>
+              "Estado: #{FormatoConsola.estado(reporte.estado)}",
             :mensaje
           )
         end)
 
       {:error, motivo} ->
-        Util.mostrar("No se pudieron consultar reportes: #{inspect(motivo)}", :error)
+        Util.mostrar("No se pudieron resolver los códigos de zona: #{inspect(motivo)}", :error)
     end
   end
 
@@ -78,7 +135,8 @@ defmodule Emergencia.Consola.MenuMascotas do
           case GestionMascotas.buscar_coincidencias(sesion, perdida.id) do
             {:ok, candidatas} ->
               Util.mostrar(
-                "\nPerdida: #{perdida.especie}, #{perdida.color}, #{perdida.tamano} " <>
+                "\nPerdida [#{perdida.id}]: #{perdida.especie}, " <>
+                  "#{perdida.color}, #{perdida.tamano} " <>
                   "| Zona: #{Map.get(codigos_zona, perdida.id_zona, "desconocida")}",
                 :mensaje
               )
@@ -112,25 +170,34 @@ defmodule Emergencia.Consola.MenuMascotas do
     with {:ok, coincidencias} <- GestionMascotas.listar_coincidencias(sesion),
          true <- coincidencias != [] do
       Enum.each(coincidencias, fn coincidencia ->
-        Util.mostrar(
-          "[#{coincidencia.id}] Pérdida: #{coincidencia.id_reporte_perdida} | " <>
-            "Encontrada: #{coincidencia.id_reporte_encontrada} | Estado: #{coincidencia.estado}",
-          :mensaje
-        )
+        if coincidencia.estado == :pendiente do
+          Util.mostrar(
+            "[#{coincidencia.id}] Pérdida: #{coincidencia.id_reporte_perdida} | " <>
+              "Encontrada: #{coincidencia.id_reporte_encontrada} | " <>
+              "Estado: #{FormatoConsola.estado(coincidencia.estado)}",
+            :mensaje
+          )
+        end
       end)
 
-      identificador = Util.ingresar("ID de la coincidencia a confirmar: ", :texto)
+      pendientes = Enum.filter(coincidencias, &(&1.estado == :pendiente))
 
-      case GestionMascotas.confirmar_coincidencia(sesion, identificador) do
-        {:ok, _coincidencia} ->
-          Util.mostrar("Coincidencia confirmada; los reportes fueron cerrados.", :mensaje)
+      if pendientes == [] do
+        Util.mostrar("No hay coincidencias pendientes por confirmar.", :mensaje)
+      else
+        identificador = Util.ingresar("ID de la coincidencia a confirmar: ", :texto)
 
-        {:ok, _coincidencia, {:advertencia, motivo}} ->
-          Util.mostrar("Coincidencia confirmada.", :mensaje)
-          Util.mostrar("Advertencia de auditoría: #{inspect(motivo)}", :error)
+        case GestionMascotas.confirmar_coincidencia(sesion, identificador) do
+          {:ok, _coincidencia} ->
+            Util.mostrar("Coincidencia confirmada; ambos reportes quedaron resueltos.", :mensaje)
 
-        {:error, motivo} ->
-          Util.mostrar("No se pudo confirmar la coincidencia: #{inspect(motivo)}", :error)
+          {:ok, _coincidencia, {:advertencia, motivo}} ->
+            Util.mostrar("Coincidencia confirmada; ambos reportes quedaron resueltos.", :mensaje)
+            Util.mostrar("Advertencia de auditoría: #{inspect(motivo)}", :error)
+
+          {:error, motivo} ->
+            Util.mostrar("No se pudo confirmar la coincidencia: #{inspect(motivo)}", :error)
+        end
       end
     else
       false ->
@@ -138,6 +205,32 @@ defmodule Emergencia.Consola.MenuMascotas do
 
       {:error, motivo} ->
         Util.mostrar("No se pudieron consultar coincidencias: #{inspect(motivo)}", :error)
+    end
+  end
+
+  defp registrar_coincidencia(sesion) do
+    id_perdida = Util.ingresar("ID/código del reporte de mascota perdida: ", :texto)
+    id_encontrada = Util.ingresar("ID/código del reporte de mascota encontrada: ", :texto)
+
+    case GestionMascotas.registrar_coincidencia_reportes(sesion, id_perdida, id_encontrada) do
+      {:ok, coincidencia} ->
+        Util.mostrar(
+          "Posible coincidencia registrada [#{coincidencia.id}]. " <>
+            "Confírmela para resolver ambos reportes.",
+          :mensaje
+        )
+
+      {:ok, coincidencia, {:advertencia, motivo}} ->
+        Util.mostrar(
+          "Posible coincidencia registrada [#{coincidencia.id}]. " <>
+            "Confírmela para resolver ambos reportes.",
+          :mensaje
+        )
+
+        Util.mostrar("Advertencia de auditoría: #{inspect(motivo)}", :error)
+
+      {:error, motivo} ->
+        Util.mostrar("No se pudo confirmar la coincidencia: #{inspect(motivo)}", :error)
     end
   end
 
@@ -229,4 +322,6 @@ defmodule Emergencia.Consola.MenuMascotas do
 
   defp agregar_opcion(opciones, _campo, ""), do: opciones
   defp agregar_opcion(opciones, campo, valor), do: Keyword.put(opciones, campo, valor)
+  defp agregar_filtro(filtros, _campo, ""), do: filtros
+  defp agregar_filtro(filtros, campo, valor), do: Keyword.put(filtros, campo, valor)
 end

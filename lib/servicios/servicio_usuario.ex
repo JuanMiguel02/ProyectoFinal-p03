@@ -1,7 +1,7 @@
 defmodule Emergencia.Servicios.ServicioUsuario do
   @moduledoc """
   Servicio para la gestión de usuarios, autenticación,
-  control de conexión, autorización y auditoría.
+  autorización y auditoría.
   """
 
   alias Emergencia.Usuario
@@ -50,46 +50,18 @@ defmodule Emergencia.Servicios.ServicioUsuario do
   # ============================================================
 
   @doc """
-  Autentica un usuario y actualiza su estado de conexión.
+  Autentica un usuario sin mutar los datos del usuario.
   """
   def autenticar(estado, nombre_usuario, contrasena) do
     with {:ok, usuario} <-
            buscar_por_nombre_usuario(estado.usuarios, nombre_usuario),
          :ok <- verificar_contrasena(usuario, contrasena) do
-      usuario_conectado = %{usuario | conectado: true}
-
-      nuevos_usuarios =
-        Map.put(estado.usuarios, usuario.id, usuario_conectado)
-
-      nuevo_estado = %{estado | usuarios: nuevos_usuarios}
-
-      {:ok, usuario_conectado, nuevo_estado}
+      {:ok, usuario, estado}
     end
   end
 
   # ============================================================
-  # 3. DESCONEXIÓN
-  # ============================================================
-
-  @doc """
-  Desconecta un usuario activo.
-  """
-  def desconectar(estado_global, id_usuario) do
-    case Map.fetch(estado_global.usuarios, id_usuario) do
-      {:ok, usuario} ->
-        usuario_desconectado = %{usuario | conectado: false}
-        nuevos_usuarios = Map.put(estado_global.usuarios, id_usuario, usuario_desconectado)
-        estado_actualizado = %{estado_global | usuarios: nuevos_usuarios}
-
-        {:ok, usuario_desconectado, estado_actualizado}
-
-      :error ->
-        {:error, "El usuario con ID '#{id_usuario}' no existe"}
-    end
-  end
-
-  # ============================================================
-  # 4. AUTORIZACIÓN
+  # 3. AUTORIZACIÓN
   # ============================================================
 
   @doc """
