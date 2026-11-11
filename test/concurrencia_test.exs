@@ -9,6 +9,7 @@ defmodule Emergencia.ConcurrenciaTest do
       ServicioRecursos.registrar_recurso(
         %EstadoRecursos{},
         "Agua",
+        :agua,
         50,
         "litros",
         "centro_acopio_1"
@@ -70,6 +71,7 @@ defmodule Emergencia.ConcurrenciaTest do
       ServicioRecursos.registrar_recurso(
         estado,
         "Agua",
+        :agua,
         50,
         "litros",
         "centro_1"

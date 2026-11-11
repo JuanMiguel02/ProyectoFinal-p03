@@ -183,6 +183,7 @@ defmodule EmergenciaServiciosTest do
                ServicioRecursos.registrar_recurso(
                  estado,
                  "Agua",
+                 :agua,
                  100,
                  "litros",
                  "centro_1"
@@ -217,6 +218,7 @@ defmodule EmergenciaServiciosTest do
         ServicioRecursos.registrar_recurso(
           estado,
           "Agua",
+          :agua,
           30,
           "litros",
           "centro_1"
@@ -246,6 +248,7 @@ defmodule EmergenciaServiciosTest do
                ServicioRecursos.registrar_recurso(
                  estado,
                  "Agua",
+                 :agua,
                  60,
                  "litros",
                  "centro_acopio_1"
@@ -278,7 +281,7 @@ defmodule EmergenciaServiciosTest do
       estado = %EstadoRecursos{}
 
       {:ok, _recurso, estado} =
-        ServicioRecursos.registrar_recurso(estado, "Agua", 10, "litros", "origen")
+        ServicioRecursos.registrar_recurso(estado, "Agua", :agua, 10, "litros", "origen")
 
       assert {:error, _} =
                ServicioRecursos.transferir_recurso(
@@ -308,6 +311,7 @@ defmodule EmergenciaServiciosTest do
         ServicioRecursos.registrar_recurso(
           estado_logistica,
           "Agua",
+          :agua,
           20,
           "litros",
           "centro_acopio_1"
@@ -345,10 +349,10 @@ defmodule EmergenciaServiciosTest do
       estado = %EstadoRecursos{}
 
       assert {:ok, primero, estado} =
-               ServicioRecursos.registrar_recurso(estado, "Agua", 10, "litros", "CAC-1")
+               ServicioRecursos.registrar_recurso(estado, "Agua", :agua, 10, "litros", "CAC-1")
 
       assert {:ok, segundo, estado} =
-               ServicioRecursos.registrar_recurso(estado, "Cobijas", 5, "unidades", "CAC-2")
+               ServicioRecursos.registrar_recurso(estado, "Cobijas", :otro, 5, "unidades", "CAC-2")
 
       assert primero.codigo == "REC-0001"
       assert segundo.codigo == "REC-0002"
