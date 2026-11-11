@@ -12,6 +12,14 @@ defmodule Emergencia.Servicios.ServicioRecursos do
     Recurso
   }
 
+    @categorias_permitidas [
+    :agua,
+    :alimentos,
+    :medicamentos,
+    :botiquines,
+    :otro
+  ]
+
   def registrar_necesidad(estado, tipo, cantidad, id_zona, prioridad, opciones \\ []) do
     codigo_necesidad = GeneradorID.generar("NEC", estado.necesidades, & &1.codigo_necesidad)
 
@@ -22,14 +30,22 @@ defmodule Emergencia.Servicios.ServicioRecursos do
     end
   end
 
-  def registrar_recurso(%EstadoRecursos{} = estado, nombre, cantidad, unidad, ubicacion) do
+  def registrar_recurso(
+        %EstadoRecursos{} = estado,
+        nombre,
+        categoria,
+        cantidad,
+        unidad,
+        ubicacion
+      ) do
     codigo = GeneradorID.generar("REC", estado.recursos, & &1.codigo)
 
     with :ok <- validar_texto(nombre, "El nombre del recurso"),
+         :ok <- validar_categoria(categoria),
          :ok <- validar_texto(unidad, "La unidad de medida"),
          :ok <- validar_texto(ubicacion, "La ubicación"),
          :ok <- validar_cantidad(cantidad),
-         {:ok, recurso} <- Recurso.nuevo(codigo, nombre, :otro, unidad),
+         {:ok, recurso} <- Recurso.nuevo(codigo, nombre, categoria, unidad),
          {:ok, movimiento} <-
            MovimientoRecurso.nuevo(cantidad, :ingreso,
              id_recurso: recurso.id,
@@ -47,6 +63,15 @@ defmodule Emergencia.Servicios.ServicioRecursos do
       {:ok, recurso, nuevo_estado}
     end
   end
+
+  defp validar_categoria(categoria) do
+    if categoria in @categorias_permitidas do
+      :ok
+    else
+      {:error, "La categoría del recurso no es válida."}
+    end
+  end
+
 
   def listar_recursos(%EstadoRecursos{} = estado, filtros \\ %{}) do
     ubicacion = Map.get(filtros, :ubicacion)

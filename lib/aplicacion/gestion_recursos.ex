@@ -103,30 +103,32 @@ defmodule Emergencia.Aplicacion.GestionRecursos do
   # Recursos y existencias directas por ubicación
   # ------------------------------------------------------------------
 
-  def registrar_recurso(
-        %Sesion{} = sesion,
-        nombre,
-        cantidad,
-        unidad_medida,
-        ubicacion
-      ) do
-    with :ok <- Autenticacion.autorizar(sesion, :asignar_recursos),
-         {:ok, ubicacion} <- Resolutor.ubicacion_recurso(ubicacion),
-         {:ok, recurso} <-
-           RecursosServidor.registrar_recurso(
-             nombre,
-             cantidad,
-             unidad_medida,
-             ubicacion
-           ) do
-      registrar_con_advertencia(
-        recurso,
-        sesion.id_usuario,
-        :registrar_recurso,
-        "El usuario #{sesion.nombre_usuario} registró #{cantidad} unidades de #{recurso.codigo} en #{ubicacion}"
-      )
-    end
+ def registrar_recurso(
+      %Sesion{} = sesion,
+      nombre,
+      categoria,
+      cantidad,
+      unidad_medida,
+      ubicacion
+    ) do
+  with :ok <- Autenticacion.autorizar(sesion, :asignar_recursos),
+       {:ok, ubicacion} <- Resolutor.ubicacion_recurso(ubicacion),
+       {:ok, recurso} <-
+         RecursosServidor.registrar_recurso(
+           nombre,
+           categoria,
+           cantidad,
+           unidad_medida,
+           ubicacion
+         ) do
+    registrar_con_advertencia(
+      recurso,
+      sesion.id_usuario,
+      :registrar_recurso,
+      "El usuario #{sesion.nombre_usuario} registró #{cantidad} unidades de #{recurso.codigo} (categoría: #{recurso.categoria}) en #{ubicacion}"
+    )
   end
+end
 
   def registrar_recurso(_, _, _, _, _), do: {:error, :sesion_invalida}
 

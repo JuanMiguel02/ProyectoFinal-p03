@@ -144,7 +144,7 @@ defmodule Emergencia.Consola.CLI do
             destinatario: código de persona/familia/albergue/punto/centro/zona o documento de persona
             ejemplo: register_need agua 30 critica ZON-0001 PER-0001 "Agua para Andrés"
 
-          register_resource <nombre> <cantidad> <unidad> <ubicacion>
+          register_resource <nombre> <categoria> <cantidad> <unidad> <ubicacion>
           assign_resource <necesidad> <recurso> <cantidad>
           transfer_resource <recurso> <origen> <destino> <cantidad>
           list_needs [zona=..] [tipo=..] [prioridad=..] [estado=..]
@@ -376,46 +376,36 @@ defmodule Emergencia.Consola.CLI do
     )
   end
 
-  defp evaluar_comando(["register_resource", nombre, cantidad, unidad, ubicacion], sesion) do
-    ejecutar(
-      sesion,
-      fn ->
-        with {:ok, cantidad} <- a_entero(cantidad) do
-          GestionRecursos.registrar_recurso(
-            sesion,
-            nombre,
-            cantidad,
-            unidad,
-            ubicacion
-          )
-        end
-      end,
-      fn r ->
-        "Recurso registrado: #{r.nombre} | Código: #{r.codigo} | Stock inicial: #{cantidad} #{r.unidad_medida} en #{ubicacion}"
+defp evaluar_comando(
+       ["register_resource", nombre, categoria, cantidad, unidad, ubicacion],
+       sesion
+     ) do
+  ejecutar(
+    sesion,
+    fn ->
+      with {:ok, categoria} <- obtener_categoria(categoria),
+           {:ok, cantidad} <- a_entero(cantidad) do
+        GestionRecursos.registrar_recurso(
+          sesion,
+          nombre,
+          categoria,
+          cantidad,
+          unidad,
+          ubicacion
+        )
       end
-    )
-  end
+    end,
+    fn recurso ->
+      "Recurso registrado: #{recurso.nombre} | " <>
+        "Código: #{recurso.codigo} | " <>
+        "Categoría: #{nombre_categoria(recurso.categoria)} | " <>
+        "Stock inicial: #{cantidad} #{recurso.unidad_medida} " <>
+        "en #{ubicacion}"
+    end
+  )
+end
 
-  defp evaluar_comando(["assign_resource", necesidad, recurso, cantidad], sesion) do
-    ejecutar(
-      sesion,
-      fn ->
-        with {:ok, cantidad} <- a_entero(cantidad) do
-          GestionRecursos.asignar_recurso(sesion, necesidad, recurso, cantidad)
-        end
-      end,
-      fn asignaciones ->
-        resumen =
-          Enum.map_join(asignaciones, ", ", fn a ->
-            "#{a.cantidad_asignada} unidades asignadas en ubicación #{a.ubicacion}"
-          end)
-
-        "Recurso asignado exitosamente: #{resumen}"
-      end
-    )
-  end
-
-  defp evaluar_comando(["transfer_resource", recurso, origen, destino, cantidad], sesion) do
+defp evaluar_comando(["transfer_resource", recurso, origen, destino, cantidad], sesion) do
     ejecutar(
       sesion,
       fn ->
@@ -1011,6 +1001,30 @@ defmodule Emergencia.Consola.CLI do
         error
     end
   end
+
+   defp obtener_categoria(categoria) do
+    categorias = %{
+      "agua" => :agua,
+      "alimentos" => :alimentos,
+      "medicamentos" => :medicamentos,
+      "botiquines" => :botiquines,
+      "otro" => :otro
+    }
+
+    case Map.fetch(categorias, String.downcase(categoria)) do
+      {:ok, categoria} ->
+        {:ok, categoria}
+
+      :error ->
+        {:error, "Categoría de recurso no válida."}
+    end
+  end
+
+  defp nombre_categoria(:agua), do: "Agua"
+  defp nombre_categoria(:alimentos), do: "Alimentos"
+  defp nombre_categoria(:medicamentos), do: "Medicamentos"
+  defp nombre_categoria(:botiquines), do: "Botiquines"
+  defp nombre_categoria(:otro), do: "Otro"
 
   # Para cada reporte de mascota perdida y activa, pide a la capa de
   # Aplicación los reportes de mascotas encontradas que se le parecen.

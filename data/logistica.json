@@ -20,12 +20,31 @@
       "cantidad": 20,
       "codigo_recurso": "REC-0003",
       "ubicacion": "CAC-0001"
+    },
+    {
+      "cantidad": 20,
+      "codigo_recurso": "REC-0004",
+      "ubicacion": "CAC-0001"
+    },
+    {
+      "cantidad": 10,
+      "codigo_recurso": "REC-0005",
+      "ubicacion": "PAT-0001"
     }
   ],
   "movimientos": [
     {
       "cantidad": 20,
-      "fecha": "2026-11-10T20:48:59.956000-05:00",
+      "fecha": "2026-11-10T21:22:11.107000-05:00",
+      "id": "1bb3ce62-f8b3-4bdc-b21c-11da66bbbef2",
+      "id_recurso": "43499c88-7641-4182-af3f-378ab2587698",
+      "tipo_movimiento": "ingreso",
+      "ubicacion_destino": "CAC-0001",
+      "ubicacion_origen": null
+    },
+    {
+      "cantidad": 20,
+      "fecha": "2026-11-11T01:48:59.956000Z",
       "id": "2b1f742b-21d5-4a00-9e10-2d7299609bb5",
       "id_recurso": "3e1c5044-0b72-4655-8bf9-10f2e633bceb",
       "tipo_movimiento": "ingreso",
@@ -58,6 +77,15 @@
       "tipo_movimiento": "transferencia",
       "ubicacion_destino": "CAC-0001",
       "ubicacion_origen": "PAT-0001"
+    },
+    {
+      "cantidad": 10,
+      "fecha": "2026-11-10T21:24:13.154000-05:00",
+      "id": "9ec07927-3292-40c6-b077-308f0237fa61",
+      "id_recurso": "a692700d-6ced-4fe9-b26b-3f632520bacc",
+      "tipo_movimiento": "ingreso",
+      "ubicacion_destino": "PAT-0001",
+      "ubicacion_origen": null
     }
   ],
   "necesidades": [
@@ -106,14 +134,7 @@
   ],
   "recursos": [
     {
-      "categoria": "alimento",
-      "codigo": "REC-0001",
-      "id": "25707846-3983-4018-8695-8ae94488bd59",
-      "nombre": "Agua",
-      "unidad_medida": "litros"
-    },
-    {
-      "categoria": "otro",
+      "categoria": "alimentos",
       "codigo": "REC-0002",
       "id": "2605f2ff-a6db-430b-8922-f8077155ab77",
       "nombre": "Atun",
@@ -125,6 +146,20 @@
       "id": "3e1c5044-0b72-4655-8bf9-10f2e633bceb",
       "nombre": "Papel",
       "unidad_medida": "Paquetes"
+    },
+    {
+      "categoria": "alimentos",
+      "codigo": "REC-0004",
+      "id": "43499c88-7641-4182-af3f-378ab2587698",
+      "nombre": "Galletas",
+      "unidad_medida": "paquetes"
+    },
+    {
+      "categoria": "medicamentos",
+      "codigo": "REC-0005",
+      "id": "a692700d-6ced-4fe9-b26b-3f632520bacc",
+      "nombre": "acetaminofén",
+      "unidad_medida": "tabletas"
     }
   ]
 }

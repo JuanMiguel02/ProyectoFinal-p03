@@ -129,18 +129,57 @@ defmodule Emergencia.Consola.MenuRecursos do
   end
 
   defp registrar_recurso(sesion) do
-    nombre = Util.ingresar("Nombre del recurso: ", :texto)
+  nombre = Util.ingresar("Nombre del recurso: ", :texto)
+
+  Util.mostrar(
+    "\nCategorías disponibles:",
+    :mensaje
+  )
+
+  Util.mostrar("1. Agua", :mensaje)
+  Util.mostrar("2. Alimentos", :mensaje)
+  Util.mostrar("3. Medicamentos", :mensaje)
+  Util.mostrar("4. Botiquines", :mensaje)
+  Util.mostrar("5. Otro", :mensaje)
+
+  opcion_categoria =
+    Util.ingresar("Seleccione la categoría: ", :entero)
+
+  categoria =
+    case opcion_categoria do
+      1 -> :agua
+      2 -> :alimentos
+      3 -> :medicamentos
+      4 -> :botiquines
+      5 -> :otro
+      _ -> nil
+    end
+
+  if is_nil(categoria) do
+    Util.mostrar("\nLa categoría seleccionada no es válida.", :mensaje)
+  else
     cantidad = Util.ingresar("Cantidad inicial: ", :entero)
     unidad = Util.ingresar("Unidad de medida: ", :texto)
-    ubicacion = Util.ingresar("Código de centro, punto de atención o albergue: ", :texto)
+
+    ubicacion =
+      Util.ingresar(
+        "Código de centro, punto de atención o albergue: ",
+        :texto
+      )
 
     sesion
-    |> GestionRecursos.registrar_recurso(nombre, cantidad, unidad, ubicacion)
+    |> GestionRecursos.registrar_recurso(
+      nombre,
+      categoria,
+      cantidad,
+      unidad,
+      ubicacion
+    )
     |> mostrar_resultado("Recurso registrado:")
-
-    iniciar(sesion)
   end
 
+  iniciar(sesion)
+end
   defp asignar_recurso(sesion) do
     necesidad = Util.ingresar("Código de necesidad: ", :texto)
     recurso = Util.ingresar("Código de recurso: ", :texto)

@@ -35,8 +35,8 @@ defmodule Emergencia.RecursosServidor do
   def listar_necesidades_ordenadas,
     do: NodoServidor.llamar(__MODULE__, :listar_necesidades_ordenadas)
 
-  def registrar_recurso(nombre, cantidad, unidad, ubicacion) do
-    NodoServidor.llamar(__MODULE__, {:registrar_recurso, nombre, cantidad, unidad, ubicacion})
+  def registrar_recurso(nombre, categoria, cantidad, unidad, ubicacion) do
+    NodoServidor.llamar(__MODULE__, {:registrar_recurso, nombre, categoria, cantidad, unidad, ubicacion})
   end
 
   def listar_recursos(filtros \\ %{}),
@@ -86,14 +86,21 @@ defmodule Emergencia.RecursosServidor do
   end
 
   def handle_call(
-        {:registrar_recurso, nombre, cantidad, unidad, ubicacion},
-        _from,
-        estado
-      ) do
+      {:registrar_recurso, nombre, categoria, cantidad, unidad, ubicacion},
+      _from,
+      estado
+    ) do
     ejecutar_y_persistir(estado, fn ->
-      ServicioRecursos.registrar_recurso(estado, nombre, cantidad, unidad, ubicacion)
-    end)
-  end
+      ServicioRecursos.registrar_recurso(
+        estado,
+        nombre,
+        categoria,
+        cantidad,
+        unidad,
+        ubicacion
+      )
+  end)
+end
 
   def handle_call({:listar_recursos, filtros}, _from, estado) do
     {:reply, ServicioRecursos.listar_recursos(estado, filtros), estado}
