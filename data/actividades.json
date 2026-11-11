@@ -43,10 +43,24 @@
   },
   {
     "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-11T00:05:19.550000Z",
+    "id": "227da96a-3ffc-43ae-a488-c6a5b6569081",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
     "fecha": "2026-11-10T22:46:51.311000Z",
     "id": "45423dec-3be1-4bda-a940-3aa1b1b5e0b0",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin registró la zona Zona Centro",
+    "fecha": "2026-11-10T23:53:15.393000Z",
+    "id": "7d87d85b-da92-4f4f-9ee3-b676b63250f2",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_zona"
   },
   {
     "descripcion": "El usuario admin registró la zona ZonaSur",
@@ -68,6 +82,13 @@
     "id": "6860c4c4-6985-447a-91ed-b1c66335f6b0",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "registrar_reporte_mascota"
+  },
+  {
+    "descripcion": "El usuario admin cambió el estado de PER-0001 a localizada",
+    "fecha": "2026-11-10T23:55:09.591000Z",
+    "id": "aa1cd9f3-5905-441a-ad20-a1a38115d8ae",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "cambio_estado_persona"
   },
   {
     "descripcion": "El usuario pepe cerró sesión",
@@ -161,6 +182,13 @@
     "operacion": "registro_familia"
   },
   {
+    "descripcion": "El usuario admin registró reporte de mascota perdida",
+    "fecha": "2026-11-10T23:54:05.747000Z",
+    "id": "3ce09d4d-56fe-4094-b661-2a0b6844039d",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_reporte_mascota"
+  },
+  {
     "descripcion": "El usuario admin registró una necesidad de tipo agua",
     "fecha": "2026-11-10T20:16:02.088000Z",
     "id": "3ea0d91e-6171-41df-8f6e-a75c9378d9f7",
@@ -217,6 +245,13 @@
     "operacion": "REGISTRAR_SECTOR"
   },
   {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T23:52:58.629000Z",
+    "id": "b5ad74ea-8e02-4469-9ecf-bad8bcc88c15",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
     "descripcion": "El usuario coord inició sesión",
     "fecha": "2026-11-10T02:48:50.549000Z",
     "id": "b1132a2e-3297-4d2b-b9f3-d12e4dc526d8",
@@ -234,6 +269,13 @@
     "descripcion": "El usuario admin registró reporte de mascota encontrada",
     "fecha": "2026-11-10T20:57:01.026000Z",
     "id": "77e940fe-6798-44ff-900b-c5edc275bb96",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_reporte_mascota"
+  },
+  {
+    "descripcion": "El usuario admin registró reporte de mascota encontrada",
+    "fecha": "2026-11-10T23:54:21.777000Z",
+    "id": "9cf20308-9b5f-4a6d-802a-89c4421e85d7",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "registrar_reporte_mascota"
   },
@@ -259,11 +301,25 @@
     "operacion": "registro_persona"
   },
   {
+    "descripcion": "El usuario admin registró a la persona PER-0004",
+    "fecha": "2026-11-10T23:53:34.244000Z",
+    "id": "97a5eeb8-629b-44ee-8979-1deae193fbe5",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registro_persona"
+  },
+  {
     "descripcion": "El usuario admin inició sesión",
     "fecha": "2026-11-10T22:49:22.893000Z",
     "id": "a3912e8b-ec0c-4e41-8d41-9c1ad97ceb13",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin registró a la persona PER-0005",
+    "fecha": "2026-11-10T23:53:55.027000Z",
+    "id": "9017bc45-70c4-4036-a009-d32e72478439",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registro_persona"
   },
   {
     "descripcion": "El usuario admin registró reporte de mascota perdida",
@@ -292,6 +348,13 @@
     "id": "3b8511a5-a679-4b7e-8111-bd274e518206",
     "id_usuario": "3db02d33-6f68-46d9-b553-0799f3f8067c",
     "operacion": "registro_usuario"
+  },
+  {
+    "descripcion": "El usuario admin marcó como resuelto el reporte eee4276c-5a7e-49f4-a270-08d42e001106",
+    "fecha": "2026-11-11T00:00:51.323000Z",
+    "id": "d62f8690-478f-4b67-8cb7-54b6231ad053",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "resolver_reporte"
   },
   {
     "descripcion": "El usuario admin inició sesión",

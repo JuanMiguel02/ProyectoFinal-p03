@@ -24,5 +24,31 @@
     "nombre": "coco",
     "tamano": "mediano",
     "tipo": "perdida"
+  },
+  {
+    "caracteristicas": null,
+    "color": "negra",
+    "especie": "perro",
+    "estado": "activa",
+    "fecha_reporte": "2026-11-10T23:54:21.767000Z",
+    "id": "59320629-2605-4a10-bf94-9e3f01c5779c",
+    "id_usuario_contacto": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "id_zona": "d467bde6-fe02-499a-9015-2b93377cebc1",
+    "nombre": "desconocido",
+    "tamano": "mediano",
+    "tipo": "encontrada"
+  },
+  {
+    "caracteristicas": null,
+    "color": "negra",
+    "especie": "perro",
+    "estado": "resuelta",
+    "fecha_reporte": "2026-11-10T23:54:05.736000Z",
+    "id": "eee4276c-5a7e-49f4-a270-08d42e001106",
+    "id_usuario_contacto": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "id_zona": "d467bde6-fe02-499a-9015-2b93377cebc1",
+    "nombre": "Luna",
+    "tamano": "mediano",
+    "tipo": "perdida"
   }
 ]
