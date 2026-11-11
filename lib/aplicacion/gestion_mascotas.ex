@@ -83,6 +83,21 @@ defmodule Emergencia.Aplicacion.GestionMascotas do
 
   def buscar_coincidencias(_, _), do: {:error, :sesion_invalida}
 
+  def resolver_reporte(%Sesion{} = sesion, id_reporte) do
+    with :ok <- Autenticacion.autorizar(sesion, :gestionar_coincidencias),
+         {:ok, reporte} <- MascotasServidor.resolver_reporte(id_reporte, sesion.id_usuario) do
+      registrar_con_advertencia(
+        reporte,
+        sesion.id_usuario,
+        :resolver_reporte,
+        "El usuario #{sesion.nombre_usuario} marcó como resuelto el reporte " <>
+          "#{Map.get(reporte, :codigo_reporte) || reporte.id}"
+      )
+    end
+  end
+
+  def resolver_reporte(_, _), do: {:error, :sesion_invalida}
+
   defp registrar_con_advertencia(resultado, id_responsable, accion, descripcion) do
     case ActividadesServidor.registrar(id_responsable, accion, descripcion) do
       {:ok, _act} -> {:ok, resultado}

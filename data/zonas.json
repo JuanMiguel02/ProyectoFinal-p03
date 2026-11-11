@@ -16,6 +16,14 @@
     "sectores": []
   },
   {
+    "codigo_zona": "ZON-0004",
+    "id": "c701428b-b9b1-4367-9e57-1cd665bd775f",
+    "nivel_afectacion": "critico",
+    "nombre": "Zona Centro",
+    "personas_estimadas": 5000,
+    "sectores": []
+  },
+  {
     "codigo_zona": "ZON-0001",
     "id": "d467bde6-fe02-499a-9015-2b93377cebc1",
     "nivel_afectacion": "alto",

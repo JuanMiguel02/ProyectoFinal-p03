@@ -156,6 +156,8 @@ defmodule Emergencia.Consola.CLI do
           shelter_report
           register_entry <albergue> <documento>
           register_exit <albergue> <documento>
+          change_person_status <documento_o_codigo> <estado>
+            estados: sin_informacion, reportada, localizada, trasladada, en_albergue, reunificada
 
         Comunicaciones y Mascotas:
           send_person_message <documento> <contenido>
@@ -165,6 +167,7 @@ defmodule Emergencia.Consola.CLI do
           complete_message <codigo_destinatario> (marca entrega completada)
           report_pet <lost|found> <especie> <nombre> <color> <tamano> <zona> <contacto>
           match_pets
+          complete_pet <id_o_codigo_reporte>
 
         General:
           summary
@@ -227,7 +230,7 @@ defmodule Emergencia.Consola.CLI do
           GestionTerritorio.registrar_zona(sesion, nombre, nivel, personas)
         end
       end,
-      fn z -> "Zona registrada [Código: #{z.codigo_zona}, ID: #{z.id}]" end
+      fn z -> "Zona '#{z.nombre}' registrada exitosamente [Código: #{z.codigo_zona}] | Nivel de afectación: #{z.nivel_afectacion} | Personas estimadas: #{z.personas_estimadas}" end
     )
   end
 
@@ -240,7 +243,7 @@ defmodule Emergencia.Consola.CLI do
           GestionTerritorio.registrar_sector(sesion, zona, nombre, nivel, personas)
         end
       end,
-      fn s -> "Sector registrado [Código: #{s.codigo_sector}, ID: #{s.id}]" end
+      fn s -> "Sector '#{s.nombre}' registrado exitosamente [Código: #{s.codigo_sector}] | Nivel de afectación: #{s.nivel_afectacion} | Personas afectadas: #{s.personas_afectadas}" end
     )
   end
 
@@ -253,7 +256,7 @@ defmodule Emergencia.Consola.CLI do
         end
       end,
       fn c ->
-        "Centro de acopio registrado [Código: #{c.codigo_centro_acopio}, ID: #{c.id}]"
+        "Centro de acopio '#{c.nombre}' registrado exitosamente [Código: #{c.codigo_centro_acopio}] | Dirección: #{c.direccion} | Capacidad máxima: #{c.capacidad} unidades"
       end
     )
   end
@@ -349,7 +352,7 @@ defmodule Emergencia.Consola.CLI do
           )
         end
       end,
-      fn n -> "Necesidad registrada [Código: #{n.codigo_necesidad}, ID: #{n.id}]" end
+      fn n -> "Necesidad de tipo '#{n.tipo}' registrada [Código: #{n.codigo_necesidad}] | Prioridad: #{n.prioridad} | Cantidad requerida: #{n.cantidad_requerida} | Estado inicial: #{n.estado}" end
     )
   end
 
@@ -382,8 +385,8 @@ defmodule Emergencia.Consola.CLI do
         end
       end,
       fn asignaciones ->
-        ids = Enum.map_join(asignaciones, ", ", & &1.id)
-        "Recurso asignado [IDs: #{ids}]"
+        resumen = Enum.map_join(asignaciones, ", ", fn a -> "#{a.cantidad_asignada} unidades asignadas en ubicación #{a.ubicacion}" end)
+        "Recurso asignado exitosamente: #{resumen}"
       end
     )
   end
@@ -397,7 +400,7 @@ defmodule Emergencia.Consola.CLI do
         end
       end,
       fn mov ->
-        "¡Transferencia exitosa! Se movieron las unidades al destino [Movimiento ID: #{mov.id}]"
+        "¡Transferencia exitosa! Se movieron #{mov.cantidad} unidades del recurso '#{recurso}' desde '#{mov.ubicacion_origen}' hacia '#{mov.ubicacion_destino}'."
       end
     )
   end
@@ -498,9 +501,11 @@ defmodule Emergencia.Consola.CLI do
       end,
       fn p ->
         campos = [
-          "Persona registrada [Código: #{p.codigo_persona}]",
-          "Nombre: #{p.nombre}",
-          "Edad: #{if is_nil(p.edad), do: "No especificada", else: p.edad}",
+          "Persona '#{p.nombre}' registrada exitosamente [Código: #{p.codigo_persona}]",
+          "Documento: #{p.documento}",
+          "Zona / Lugar ID: #{p.id_zona}",
+          "Estado actual: #{p.estado}",
+          "Edad: #{if is_nil(p.edad), do: "No especificada", else: "#{p.edad} años"}",
           "Descripción: #{p.dato_referencia || "No especificada"}"
         ]
 
@@ -537,7 +542,7 @@ defmodule Emergencia.Consola.CLI do
       sesion,
       fn -> GestionFamilias.registrar_familia(sesion, nombre) end,
       fn familia ->
-        "Familia registrada [Código: #{familia.codigo_familia}, ID: #{familia.id}]"
+        "Familia '#{familia.nombre}' registrada correctamente [Código: #{familia.codigo_familia}]"
       end
     )
   end
@@ -547,7 +552,7 @@ defmodule Emergencia.Consola.CLI do
       sesion,
       fn -> GestionFamilias.asignar_persona(sesion, persona, familia) end,
       fn persona_asignada ->
-        "Persona #{persona_asignada.codigo_persona} asignada a la familia correctamente."
+        "Persona '#{persona_asignada.nombre}' (#{persona_asignada.codigo_persona}) asignada a la familia correctamente."
       end
     )
   end
@@ -560,7 +565,7 @@ defmodule Emergencia.Consola.CLI do
           GestionAlbergues.registrar_albergue(sesion, nombre, zona, capacidad)
         end
       end,
-      fn a -> "Albergue registrado [Código: #{a.codigo}, ID: #{a.id}]" end
+      fn a -> "Albergue '#{a.nombre}' registrado exitosamente [Código: #{a.codigo}] con capacidad máxima de #{a.capacidad_maxima} personas." end
     )
   end
 
@@ -604,6 +609,21 @@ defmodule Emergencia.Consola.CLI do
       sesion,
       fn -> GestionAlbergues.registrar_salida(sesion, documento) end,
       fn _registro -> "Salida registrada correctamente." end
+    )
+  end
+
+  defp evaluar_comando(["change_person_status", identificador, estado_texto], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, estado} <- a_atomo(estado_texto),
+             {:ok, persona} <- buscar_persona_unica(sesion, identificador) do
+          GestionPersonas.cambiar_estado(sesion, persona.id, estado)
+        end
+      end,
+      fn p ->
+        "Estado de '#{p.nombre}' (#{p.codigo_persona}) actualizado a #{p.estado}."
+      end
     )
   end
 
@@ -674,7 +694,7 @@ defmodule Emergencia.Consola.CLI do
           )
         end
       end,
-      fn r -> "Reporte de mascota registrado [ID: #{r.id}]" end
+      fn r -> "Reporte de mascota (#{r.tipo}) registrado exitosamente [ID: #{r.id}] | Especie: #{r.especie} | Nombre: #{r.nombre || "Desconocido"} | Color: #{r.color} | Tamaño: #{r.tamano} | Zona ID: #{r.id_zona}" end
     )
   end
 
@@ -683,26 +703,41 @@ defmodule Emergencia.Consola.CLI do
       sesion,
       fn -> buscar_coincidencias_mascotas(sesion) end,
       fn
-        [] ->
+        {[], _codigos_zona} ->
           "No hay reportes de mascotas perdidas activas."
 
-        resultados ->
-          "\n--- Posibles coincidencias ---\n" <>
+        {resultados, codigos_zona} ->
+          "\n--- Posibles coincidencias de mascotas ---\n" <>
             Enum.map_join(resultados, "\n", fn {perdida, candidatas} ->
-              encabezado = "Perdida [#{perdida.id}] #{perdida.especie} #{perdida.color}"
+              encabezado = "Mascota Perdida -> Especie: #{perdida.especie} | Nombre: #{perdida.nombre || "No especificado"} | Color: #{perdida.color} | Tamaño: #{perdida.tamano} | #{formatear_zona(perdida.id_zona, codigos_zona)}"
 
               case candidatas do
                 [] ->
-                  encabezado <> " -> sin coincidencias"
+                  encabezado <> "\n    -> Sin coincidencias encontradas."
 
                 _ ->
                   encabezado <>
-                    " ->\n" <>
+                    "\n    -> Coincidencias encontradas:\n" <>
                     Enum.map_join(candidatas, "\n", fn c ->
-                      "    Encontrada [#{c.id}] #{c.especie} #{c.color} (#{c.tamano})"
+                      "       * Encontrada -> Especie: #{c.especie} | Nombre: #{c.nombre || "No especificado"} | Color: #{c.color} | Tamaño: #{c.tamano} | #{formatear_zona(c.id_zona, codigos_zona)}"
                     end)
               end
             end)
+      end
+    )
+  end
+
+  defp evaluar_comando(["complete_pet", identificador], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, reporte} <- buscar_reporte_unico(sesion, identificador) do
+          GestionMascotas.resolver_reporte(sesion, reporte.id)
+        end
+      end,
+      fn r ->
+        codigo = Map.get(r, :codigo_reporte) || r.id
+        "Reporte #{codigo} (#{r.especie}, #{r.nombre || "sin nombre"}) marcado como resuelto. Ya no puede volver a procesarse."
       end
     )
   end
@@ -782,19 +817,19 @@ defmodule Emergencia.Consola.CLI do
   # Registra (si hace falta) e inicia sesión usando solo la capa de Aplicación.
   defp conectar(usuario, contrasena, tipo) do
     case GestionUsuarios.registrar_usuario(usuario, contrasena, usuario, tipo) do
-      {:ok, _usuario} -> IO.puts("Cuenta creada exitosamente.")
-      {:ok, _usuario, _advertencia} -> IO.puts("Cuenta creada exitosamente.")
+      {:ok, u} -> IO.puts("¡Cuenta creada exitosamente para '#{u.nombre_completo}' (#{u.codigo_usuario}) con rol #{u.tipo_usuario}!")
+      {:ok, u, _advertencia} -> IO.puts("¡Cuenta creada exitosamente para '#{u.nombre_completo}' (#{u.codigo_usuario}) con rol #{u.tipo_usuario}!")
       # Usuario ya existente o rol que no permite autoregistro: se intenta el login.
       {:error, _motivo} -> :ok
     end
 
     case Autenticacion.iniciar_sesion(usuario, contrasena) do
       {:ok, sesion} ->
-        IO.puts("Conectado exitosamente como #{sesion.nombre_completo}.")
+        IO.puts("¡Bienvenido/a al sistema, #{sesion.nombre_completo}! Sesión iniciada con éxito como #{sesion.tipo_usuario}.")
         sesion
 
       {:ok, sesion, _advertencia} ->
-        IO.puts("Conectado exitosamente como #{sesion.nombre_completo}.")
+        IO.puts("¡Bienvenido/a al sistema, #{sesion.nombre_completo}! Sesión iniciada con éxito como #{sesion.tipo_usuario}.")
         sesion
 
       {:error, motivo} ->
@@ -818,16 +853,63 @@ defmodule Emergencia.Consola.CLI do
         necesidades ->
           "\n--- Necesidades ---\n" <>
             Enum.map_join(necesidades, "\n", fn n ->
-              "Código: #{n.codigo_necesidad} | Tipo: #{n.tipo} | Prioridad: #{n.prioridad} | Cant: #{n.cantidad_requerida} | Destinatario: #{n.entidad_asociada} (#{n.id_destinatario}) | Estado: #{n.estado}"
+              "Código: #{n.codigo_necesidad} | Tipo: #{n.tipo} | Prioridad: #{n.prioridad} | Cant: #{n.cantidad_requerida} | Destinatario: #{n.nombre_destinatario} (#{n.codigo_destinatario}) | Estado: #{n.estado}"
             end)
       end
     )
   end
 
+  # Busca una persona por código (PER-####), documento exacto o UUID.
+  defp buscar_persona_unica(sesion, identificador) do
+    case GestionPersonas.buscar_personas(sesion, []) do
+      {:ok, personas} ->
+        codigo = String.upcase(identificador)
+
+        coincidencias =
+          Enum.filter(personas, fn p ->
+            p.id == identificador or p.codigo_persona == codigo or p.documento == identificador
+          end)
+
+        case coincidencias do
+          [persona] -> {:ok, persona}
+          [] -> {:error, "No se encontró ninguna persona con '#{identificador}'"}
+          _varias -> {:error, "Hay varias personas con '#{identificador}'. Use el código PER-####."}
+        end
+
+      {:error, _motivo} = error ->
+        error
+    end
+  end
+
+  # Busca un reporte de mascota por UUID o código (PET-####).
+  defp buscar_reporte_unico(sesion, identificador) do
+    case GestionMascotas.listar_reportes(sesion) do
+      {:ok, reportes} ->
+        codigo = String.upcase(identificador)
+
+        coincidencias =
+          Enum.filter(reportes, fn r ->
+            r.id == identificador or
+              (Map.get(r, :codigo_reporte) != nil and String.upcase(r.codigo_reporte) == codigo)
+          end)
+
+        case coincidencias do
+          [reporte] -> {:ok, reporte}
+          [] -> {:error, "No existe un reporte de mascota con identificador '#{identificador}'"}
+        end
+
+      {:error, _motivo} = error ->
+        error
+    end
+  end
+
   # Para cada reporte de mascota perdida y activa, pide a la capa de
   # Aplicación los reportes de mascotas encontradas que se le parecen.
   defp buscar_coincidencias_mascotas(sesion) do
-    with {:ok, reportes} <- GestionMascotas.listar_reportes(sesion) do
+    with {:ok, reportes} <- GestionMascotas.listar_reportes(sesion),
+         {:ok, zonas} <- GestionTerritorio.listar_zonas(sesion) do
+      codigos_zona = Map.new(zonas, &{&1.id, &1.codigo_zona})
+
       reportes
       |> Enum.filter(&(&1.tipo == :perdida and &1.estado == :activa))
       |> Enum.reduce_while({:ok, []}, fn perdida, {:ok, acumulado} ->
@@ -837,10 +919,15 @@ defmodule Emergencia.Consola.CLI do
         end
       end)
       |> case do
-        {:ok, resultados} -> {:ok, Enum.reverse(resultados)}
+        {:ok, resultados} -> {:ok, {Enum.reverse(resultados), codigos_zona}}
         error -> error
       end
     end
+  end
+
+  defp formatear_zona(id_zona, codigos_zona) do
+    codigo = Map.get(codigos_zona, id_zona, "no encontrado")
+    "Zona ID: #{id_zona} | Código: #{codigo}"
   end
 
   # Ejecuta una acción que requiere sesión y muestra el resultado.
