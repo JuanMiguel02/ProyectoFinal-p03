@@ -1,5 +1,6 @@
 defmodule Emergencia.MensajeDestinatario do
   alias Emergencia.GeneradorID
+  alias Emergencia.Reloj
 
   @estados_permitidos [:pendiente, :entregado]
 
@@ -57,7 +58,7 @@ defmodule Emergencia.MensajeDestinatario do
   end
 
   def marcar_entregado(%__MODULE__{} = registro) do
-    {:ok, %{registro | estado: :entregado, fecha_entrega: DateTime.utc_now()}}
+    {:ok, %{registro | estado: :entregado, fecha_entrega: Reloj.ahora_local()}}
   end
 
   def a_map(%__MODULE__{} = entidad) do

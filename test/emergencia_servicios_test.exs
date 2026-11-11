@@ -11,6 +11,7 @@ defmodule EmergenciaServiciosTest do
   alias Emergencia.MensajeDestinatario
   alias Emergencia.Necesidad
   alias Emergencia.Persona
+  alias Emergencia.Reloj
 
   alias Emergencia.Servicios.{
     ServicioTerritorio,
@@ -126,6 +127,17 @@ defmodule EmergenciaServiciosTest do
     end
   end
 
+  describe "Reloj" do
+    test "genera una fecha con la hora local de la máquina" do
+      fecha = Reloj.ahora_local()
+
+      assert %DateTime{time_zone: "Etc/Local", zone_abbr: "LOCAL"} = fecha
+
+      assert {{fecha.year, fecha.month, fecha.day}, {fecha.hour, fecha.minute, fecha.second}} ==
+               :calendar.system_time_to_local_time(DateTime.to_unix(fecha), :second)
+    end
+  end
+
   # ============================================================================
   # Pruebas de Gestión Territorial
   # ============================================================================
@@ -171,6 +183,7 @@ defmodule EmergenciaServiciosTest do
                ServicioRecursos.registrar_recurso(
                  estado,
                  "Agua",
+                 :agua,
                  100,
                  "litros",
                  "centro_1"
@@ -205,6 +218,7 @@ defmodule EmergenciaServiciosTest do
         ServicioRecursos.registrar_recurso(
           estado,
           "Agua",
+          :agua,
           30,
           "litros",
           "centro_1"
@@ -234,6 +248,7 @@ defmodule EmergenciaServiciosTest do
                ServicioRecursos.registrar_recurso(
                  estado,
                  "Agua",
+                 :agua,
                  60,
                  "litros",
                  "centro_acopio_1"
@@ -266,7 +281,7 @@ defmodule EmergenciaServiciosTest do
       estado = %EstadoRecursos{}
 
       {:ok, _recurso, estado} =
-        ServicioRecursos.registrar_recurso(estado, "Agua", 10, "litros", "origen")
+        ServicioRecursos.registrar_recurso(estado, "Agua", :agua, 10, "litros", "origen")
 
       assert {:error, _} =
                ServicioRecursos.transferir_recurso(
@@ -296,6 +311,7 @@ defmodule EmergenciaServiciosTest do
         ServicioRecursos.registrar_recurso(
           estado_logistica,
           "Agua",
+          :agua,
           20,
           "litros",
           "centro_acopio_1"
@@ -333,10 +349,10 @@ defmodule EmergenciaServiciosTest do
       estado = %EstadoRecursos{}
 
       assert {:ok, primero, estado} =
-               ServicioRecursos.registrar_recurso(estado, "Agua", 10, "litros", "CAC-1")
+               ServicioRecursos.registrar_recurso(estado, "Agua", :agua, 10, "litros", "CAC-1")
 
       assert {:ok, segundo, estado} =
-               ServicioRecursos.registrar_recurso(estado, "Cobijas", 5, "unidades", "CAC-2")
+               ServicioRecursos.registrar_recurso(estado, "Cobijas", :otro, 5, "unidades", "CAC-2")
 
       assert primero.codigo == "REC-0001"
       assert segundo.codigo == "REC-0002"
@@ -416,6 +432,123 @@ defmodule EmergenciaServiciosTest do
       # Intentar resolver nuevamente el mismo reporte
       assert {:error, motivo} = ServicioMascotas.resolver_reporte(est2, reporte.id)
       assert motivo =~ "ya ha sido resuelto"
+    end
+
+    test "registra la posible coincidencia y resuelve ambos reportes al confirmarla" do
+      {:ok, perdida, estado} =
+        ServicioMascotas.registrar_reporte(
+          %EstadoMascotas{},
+          :perdida,
+          "gato",
+          "blanco",
+          :pequeno,
+          "zona_1",
+          "usr_1"
+        )
+
+      {:ok, encontrada, estado} =
+        ServicioMascotas.registrar_reporte(
+          estado,
+          :encontrada,
+          "gato",
+          "blanco",
+          :pequeno,
+          "zona_1",
+          "usr_2"
+        )
+
+      assert {:ok, coincidencia, estado} =
+               ServicioMascotas.registrar_coincidencia(estado, perdida.id, encontrada.id)
+
+      assert coincidencia.estado == :pendiente
+      assert estado.reportes_mascotas[perdida.id].estado == :posible_coincidencia
+      assert estado.reportes_mascotas[encontrada.id].estado == :posible_coincidencia
+
+      assert {:ok, coincidencia_confirmada, estado} =
+               ServicioMascotas.confirmar_coincidencia(estado, coincidencia.id)
+
+      assert coincidencia_confirmada.estado == :confirmada
+      assert estado.reportes_mascotas[perdida.id].estado == :resuelta
+      assert estado.reportes_mascotas[encontrada.id].estado == :resuelta
+
+      assert {:ok, reportes} =
+               ServicioMascotas.buscar_reportes(
+                 estado,
+                 especie: " GATO ",
+                 estado: :resuelta,
+                 id_zona: "zona_1"
+               )
+
+      assert Enum.map(reportes, & &1.id) |> Enum.sort() ==
+               Enum.sort([perdida.id, encontrada.id])
+    end
+
+    test "solo permite registrar una posible coincidencia entre pérdida y hallazgo activos" do
+      {:ok, encontrada, estado} =
+        ServicioMascotas.registrar_reporte(
+          %EstadoMascotas{},
+          :encontrada,
+          "perro",
+          "café",
+          :mediano,
+          "zona_1",
+          "usr_1"
+        )
+
+      {:ok, otra_encontrada, estado} =
+        ServicioMascotas.registrar_reporte(
+          estado,
+          :encontrada,
+          "perro",
+          "café",
+          :mediano,
+          "zona_1",
+          "usr_2"
+        )
+
+      assert {:error, motivo} =
+               ServicioMascotas.registrar_coincidencia(
+                 estado,
+                 encontrada.id,
+                 otra_encontrada.id
+               )
+
+      assert motivo =~ "reporte perdido"
+    end
+
+    test "confirma la coincidencia y cierra ambos reportes en una sola operación" do
+      {:ok, perdida, estado} =
+        ServicioMascotas.registrar_reporte(
+          %EstadoMascotas{},
+          :perdida,
+          "conejo",
+          "blanco",
+          :pequeno,
+          "zona_2",
+          "usr_1"
+        )
+
+      {:ok, encontrada, estado} =
+        ServicioMascotas.registrar_reporte(
+          estado,
+          :encontrada,
+          "conejo",
+          "blanco",
+          :pequeno,
+          "zona_2",
+          "usr_2"
+        )
+
+      assert {:ok, coincidencia, estado} =
+               ServicioMascotas.registrar_y_confirmar_coincidencia(
+                 estado,
+                 perdida.id,
+                 encontrada.id
+               )
+
+      assert coincidencia.estado == :confirmada
+      assert estado.reportes_mascotas[perdida.id].estado == :resuelta
+      assert estado.reportes_mascotas[encontrada.id].estado == :resuelta
     end
   end
 end

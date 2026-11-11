@@ -63,8 +63,12 @@
     "dato_referencia": null,
     "documento": "98765",
     "edad": 48,
-    "estado": "sin_informacion",
+    "estado": "en_albergue",
     "historial_estados": [
+      [
+        "en_albergue",
+        "2026-11-10T20:05:59.672000-05:00"
+      ],
       [
         "sin_informacion",
         "2026-11-10T20:35:03.018000Z"

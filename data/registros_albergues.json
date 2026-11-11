@@ -1,5 +1,12 @@
 [
   {
+    "fecha": "2026-11-10T20:05:59.672000-05:00",
+    "id": "5f72f100-4de2-40ea-b10a-0a027c368e29",
+    "id_albergue": "0fdde630-1915-4a62-904b-8131548bcbd7",
+    "id_persona": "b42298a7-ff7c-41df-b3ec-134895cfe06f",
+    "tipo_movimiento": "ingreso"
+  },
+  {
     "fecha": "2026-11-10T20:42:01.566000Z",
     "id": "7b9ae411-3123-41e1-acd5-b073cfb4be7c",
     "id_albergue": "0fdde630-1915-4a62-904b-8131548bcbd7",

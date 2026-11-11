@@ -52,6 +52,15 @@ defmodule Emergencia.Consola.CLI do
     "estado" => :estado
   }
 
+  @filtros_mascotas %{
+    "especie" => :especie,
+    "species" => :especie,
+    "zona" => :id_zona,
+    "zone" => :id_zona,
+    "estado" => :estado,
+    "state" => :estado
+  }
+
   # ============================================================================
   # BUCLE PRINCIPAL
   # ============================================================================
@@ -135,7 +144,7 @@ defmodule Emergencia.Consola.CLI do
             destinatario: código de persona/familia/albergue/punto/centro/zona o documento de persona
             ejemplo: register_need agua 30 critica ZON-0001 PER-0001 "Agua para Andrés"
 
-          register_resource <nombre> <cantidad> <unidad> <ubicacion>
+          register_resource <nombre> <categoria> <cantidad> <unidad> <ubicacion>
           assign_resource <necesidad> <recurso> <cantidad>
           transfer_resource <recurso> <origen> <destino> <cantidad>
           list_needs [zona=..] [tipo=..] [prioridad=..] [estado=..]
@@ -166,7 +175,12 @@ defmodule Emergencia.Consola.CLI do
           confirm_delivery <codigo_destinatario>
           complete_message <codigo_destinatario> (marca entrega completada)
           report_pet <lost|found> <especie> <nombre> <color> <tamano> <zona> <contacto>
+          list_pet_reports [especie=..] [zona=..] [estado=activa|posible_coincidencia|resuelta]
+          list_pet_matches
           match_pets
+          register_pet_match <id_reporte_perdida> <id_reporte_encontrada>
+          confirm_pet_match <id_coincidencia>
+          confirm_pet_match_reports <id_reporte_perdida> <id_reporte_encontrada>
           complete_pet <id_o_codigo_reporte>
 
         General:
@@ -230,7 +244,9 @@ defmodule Emergencia.Consola.CLI do
           GestionTerritorio.registrar_zona(sesion, nombre, nivel, personas)
         end
       end,
-      fn z -> "Zona '#{z.nombre}' registrada exitosamente [Código: #{z.codigo_zona}] | Nivel de afectación: #{z.nivel_afectacion} | Personas estimadas: #{z.personas_estimadas}" end
+      fn z ->
+        "Zona '#{z.nombre}' registrada exitosamente [Código: #{z.codigo_zona}] | Nivel de afectación: #{z.nivel_afectacion} | Personas estimadas: #{z.personas_estimadas}"
+      end
     )
   end
 
@@ -243,7 +259,9 @@ defmodule Emergencia.Consola.CLI do
           GestionTerritorio.registrar_sector(sesion, zona, nombre, nivel, personas)
         end
       end,
-      fn s -> "Sector '#{s.nombre}' registrado exitosamente [Código: #{s.codigo_sector}] | Nivel de afectación: #{s.nivel_afectacion} | Personas afectadas: #{s.personas_afectadas}" end
+      fn s ->
+        "Sector '#{s.nombre}' registrado exitosamente [Código: #{s.codigo_sector}] | Nivel de afectación: #{s.nivel_afectacion} | Personas afectadas: #{s.personas_afectadas}"
+      end
     )
   end
 
@@ -352,46 +370,42 @@ defmodule Emergencia.Consola.CLI do
           )
         end
       end,
-      fn n -> "Necesidad de tipo '#{n.tipo}' registrada [Código: #{n.codigo_necesidad}] | Prioridad: #{n.prioridad} | Cantidad requerida: #{n.cantidad_requerida} | Estado inicial: #{n.estado}" end
-    )
-  end
-
-  defp evaluar_comando(["register_resource", nombre, cantidad, unidad, ubicacion], sesion) do
-    ejecutar(
-      sesion,
-      fn ->
-        with {:ok, cantidad} <- a_entero(cantidad) do
-          GestionRecursos.registrar_recurso(
-            sesion,
-            nombre,
-            cantidad,
-            unidad,
-            ubicacion
-          )
-        end
-      end,
-      fn r ->
-        "Recurso registrado: #{r.nombre} | Código: #{r.codigo} | Stock inicial: #{cantidad} #{r.unidad_medida} en #{ubicacion}"
+      fn n ->
+        "Necesidad de tipo '#{n.tipo}' registrada [Código: #{n.codigo_necesidad}] | Prioridad: #{n.prioridad} | Cantidad requerida: #{n.cantidad_requerida} | Estado inicial: #{n.estado}"
       end
     )
   end
 
-  defp evaluar_comando(["assign_resource", necesidad, recurso, cantidad], sesion) do
-    ejecutar(
-      sesion,
-      fn ->
-        with {:ok, cantidad} <- a_entero(cantidad) do
-          GestionRecursos.asignar_recurso(sesion, necesidad, recurso, cantidad)
-        end
-      end,
-      fn asignaciones ->
-        resumen = Enum.map_join(asignaciones, ", ", fn a -> "#{a.cantidad_asignada} unidades asignadas en ubicación #{a.ubicacion}" end)
-        "Recurso asignado exitosamente: #{resumen}"
+defp evaluar_comando(
+       ["register_resource", nombre, categoria, cantidad, unidad, ubicacion],
+       sesion
+     ) do
+  ejecutar(
+    sesion,
+    fn ->
+      with {:ok, categoria} <- obtener_categoria(categoria),
+           {:ok, cantidad} <- a_entero(cantidad) do
+        GestionRecursos.registrar_recurso(
+          sesion,
+          nombre,
+          categoria,
+          cantidad,
+          unidad,
+          ubicacion
+        )
       end
-    )
-  end
+    end,
+    fn recurso ->
+      "Recurso registrado: #{recurso.nombre} | " <>
+        "Código: #{recurso.codigo} | " <>
+        "Categoría: #{nombre_categoria(recurso.categoria)} | " <>
+        "Stock inicial: #{cantidad} #{recurso.unidad_medida} " <>
+        "en #{ubicacion}"
+    end
+  )
+end
 
-  defp evaluar_comando(["transfer_resource", recurso, origen, destino, cantidad], sesion) do
+defp evaluar_comando(["transfer_resource", recurso, origen, destino, cantidad], sesion) do
     ejecutar(
       sesion,
       fn ->
@@ -565,7 +579,9 @@ defmodule Emergencia.Consola.CLI do
           GestionAlbergues.registrar_albergue(sesion, nombre, zona, capacidad)
         end
       end,
-      fn a -> "Albergue '#{a.nombre}' registrado exitosamente [Código: #{a.codigo}] con capacidad máxima de #{a.capacidad_maxima} personas." end
+      fn a ->
+        "Albergue '#{a.nombre}' registrado exitosamente [Código: #{a.codigo}] con capacidad máxima de #{a.capacidad_maxima} personas."
+      end
     )
   end
 
@@ -694,7 +710,45 @@ defmodule Emergencia.Consola.CLI do
           )
         end
       end,
-      fn r -> "Reporte de mascota (#{r.tipo}) registrado exitosamente [ID: #{r.id}] | Especie: #{r.especie} | Nombre: #{r.nombre || "Desconocido"} | Color: #{r.color} | Tamaño: #{r.tamano} | Zona ID: #{r.id_zona}" end
+      fn r ->
+        "Reporte de mascota (#{r.tipo}) registrado exitosamente [ID: #{r.id}] | Especie: #{r.especie} | Nombre: #{r.nombre || "Desconocido"} | Color: #{r.color} | Tamaño: #{r.tamano} | Zona: #{zona}"
+      end
+    )
+  end
+
+  defp evaluar_comando(["list_pet_reports" | filtros], sesion) do
+    listar_reportes_mascotas(filtros, sesion)
+  end
+
+  defp evaluar_comando(["list_pet_matches"], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionMascotas.listar_coincidencias(sesion) end,
+      fn
+        [] ->
+          "No hay coincidencias registradas."
+
+        coincidencias ->
+          "\n--- Coincidencias de mascotas ---\n" <>
+            Enum.map_join(coincidencias, "\n", fn coincidencia ->
+              "[#{coincidencia.id}] Pérdida: #{coincidencia.id_reporte_perdida} | " <>
+                "Encontrada: #{coincidencia.id_reporte_encontrada} | " <>
+                "Estado: #{coincidencia.estado}"
+            end)
+      end
+    )
+  end
+
+  defp evaluar_comando(["register_pet_match", id_perdida, id_encontrada], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        GestionMascotas.registrar_coincidencia_reportes(sesion, id_perdida, id_encontrada)
+      end,
+      fn coincidencia ->
+        "Posible coincidencia registrada [#{coincidencia.id}]. " <>
+          "Use confirm_pet_match #{coincidencia.id} para resolver ambos reportes."
+      end
     )
   end
 
@@ -709,7 +763,8 @@ defmodule Emergencia.Consola.CLI do
         {resultados, codigos_zona} ->
           "\n--- Posibles coincidencias de mascotas ---\n" <>
             Enum.map_join(resultados, "\n", fn {perdida, candidatas} ->
-              encabezado = "Mascota Perdida -> Especie: #{perdida.especie} | Nombre: #{perdida.nombre || "No especificado"} | Color: #{perdida.color} | Tamaño: #{perdida.tamano} | #{formatear_zona(perdida.id_zona, codigos_zona)}"
+              encabezado =
+                "Mascota Perdida [#{perdida.id}] -> Especie: #{perdida.especie} | Nombre: #{perdida.nombre || "No especificado"} | Color: #{perdida.color} | Tamaño: #{perdida.tamano} | #{formatear_zona(perdida.id_zona, codigos_zona)}"
 
               case candidatas do
                 [] ->
@@ -719,10 +774,32 @@ defmodule Emergencia.Consola.CLI do
                   encabezado <>
                     "\n    -> Coincidencias encontradas:\n" <>
                     Enum.map_join(candidatas, "\n", fn c ->
-                      "       * Encontrada -> Especie: #{c.especie} | Nombre: #{c.nombre || "No especificado"} | Color: #{c.color} | Tamaño: #{c.tamano} | #{formatear_zona(c.id_zona, codigos_zona)}"
+                      "       * Encontrada [#{c.id}] -> Especie: #{c.especie} | Nombre: #{c.nombre || "No especificado"} | Color: #{c.color} | Tamaño: #{c.tamano} | #{formatear_zona(c.id_zona, codigos_zona)}"
                     end)
               end
             end)
+      end
+    )
+  end
+
+  defp evaluar_comando(["confirm_pet_match", id_coincidencia], sesion) do
+    ejecutar(
+      sesion,
+      fn -> GestionMascotas.confirmar_coincidencia(sesion, id_coincidencia) end,
+      fn coincidencia ->
+        "Coincidencia #{coincidencia.id} confirmada. Ambos reportes relacionados quedaron resueltos."
+      end
+    )
+  end
+
+  defp evaluar_comando(["confirm_pet_match_reports", id_perdida, id_encontrada], sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        GestionMascotas.confirmar_coincidencia_reportes(sesion, id_perdida, id_encontrada)
+      end,
+      fn coincidencia ->
+        "Coincidencia #{coincidencia.id} confirmada. Ambos reportes relacionados quedaron resueltos."
       end
     )
   end
@@ -737,6 +814,7 @@ defmodule Emergencia.Consola.CLI do
       end,
       fn r ->
         codigo = Map.get(r, :codigo_reporte) || r.id
+
         "Reporte #{codigo} (#{r.especie}, #{r.nombre || "sin nombre"}) marcado como resuelto. Ya no puede volver a procesarse."
       end
     )
@@ -817,19 +895,34 @@ defmodule Emergencia.Consola.CLI do
   # Registra (si hace falta) e inicia sesión usando solo la capa de Aplicación.
   defp conectar(usuario, contrasena, tipo) do
     case GestionUsuarios.registrar_usuario(usuario, contrasena, usuario, tipo) do
-      {:ok, u} -> IO.puts("¡Cuenta creada exitosamente para '#{u.nombre_completo}' (#{u.codigo_usuario}) con rol #{u.tipo_usuario}!")
-      {:ok, u, _advertencia} -> IO.puts("¡Cuenta creada exitosamente para '#{u.nombre_completo}' (#{u.codigo_usuario}) con rol #{u.tipo_usuario}!")
+      {:ok, u} ->
+        IO.puts(
+          "¡Cuenta creada exitosamente para '#{u.nombre_completo}' (#{u.codigo_usuario}) con rol #{u.tipo_usuario}!"
+        )
+
+      {:ok, u, _advertencia} ->
+        IO.puts(
+          "¡Cuenta creada exitosamente para '#{u.nombre_completo}' (#{u.codigo_usuario}) con rol #{u.tipo_usuario}!"
+        )
+
       # Usuario ya existente o rol que no permite autoregistro: se intenta el login.
-      {:error, _motivo} -> :ok
+      {:error, _motivo} ->
+        :ok
     end
 
     case Autenticacion.iniciar_sesion(usuario, contrasena) do
       {:ok, sesion} ->
-        IO.puts("¡Bienvenido/a al sistema, #{sesion.nombre_completo}! Sesión iniciada con éxito como #{sesion.tipo_usuario}.")
+        IO.puts(
+          "¡Bienvenido/a al sistema, #{sesion.nombre_completo}! Sesión iniciada con éxito como #{sesion.tipo_usuario}."
+        )
+
         sesion
 
       {:ok, sesion, _advertencia} ->
-        IO.puts("¡Bienvenido/a al sistema, #{sesion.nombre_completo}! Sesión iniciada con éxito como #{sesion.tipo_usuario}.")
+        IO.puts(
+          "¡Bienvenido/a al sistema, #{sesion.nombre_completo}! Sesión iniciada con éxito como #{sesion.tipo_usuario}."
+        )
+
         sesion
 
       {:error, motivo} ->
@@ -871,9 +964,14 @@ defmodule Emergencia.Consola.CLI do
           end)
 
         case coincidencias do
-          [persona] -> {:ok, persona}
-          [] -> {:error, "No se encontró ninguna persona con '#{identificador}'"}
-          _varias -> {:error, "Hay varias personas con '#{identificador}'. Use el código PER-####."}
+          [persona] ->
+            {:ok, persona}
+
+          [] ->
+            {:error, "No se encontró ninguna persona con '#{identificador}'"}
+
+          _varias ->
+            {:error, "Hay varias personas con '#{identificador}'. Use el código PER-####."}
         end
 
       {:error, _motivo} = error ->
@@ -896,12 +994,37 @@ defmodule Emergencia.Consola.CLI do
         case coincidencias do
           [reporte] -> {:ok, reporte}
           [] -> {:error, "No existe un reporte de mascota con identificador '#{identificador}'"}
+          _ -> {:error, "Hay varios reportes coincidentes. Use el ID exacto del reporte."}
         end
 
       {:error, _motivo} = error ->
         error
     end
   end
+
+   defp obtener_categoria(categoria) do
+    categorias = %{
+      "agua" => :agua,
+      "alimentos" => :alimentos,
+      "medicamentos" => :medicamentos,
+      "botiquines" => :botiquines,
+      "otro" => :otro
+    }
+
+    case Map.fetch(categorias, String.downcase(categoria)) do
+      {:ok, categoria} ->
+        {:ok, categoria}
+
+      :error ->
+        {:error, "Categoría de recurso no válida."}
+    end
+  end
+
+  defp nombre_categoria(:agua), do: "Agua"
+  defp nombre_categoria(:alimentos), do: "Alimentos"
+  defp nombre_categoria(:medicamentos), do: "Medicamentos"
+  defp nombre_categoria(:botiquines), do: "Botiquines"
+  defp nombre_categoria(:otro), do: "Otro"
 
   # Para cada reporte de mascota perdida y activa, pide a la capa de
   # Aplicación los reportes de mascotas encontradas que se le parecen.
@@ -926,8 +1049,47 @@ defmodule Emergencia.Consola.CLI do
   end
 
   defp formatear_zona(id_zona, codigos_zona) do
-    codigo = Map.get(codigos_zona, id_zona, "no encontrado")
-    "Zona ID: #{id_zona} | Código: #{codigo}"
+    "Zona: #{Map.get(codigos_zona, id_zona, "desconocida")}"
+  end
+
+  defp listar_reportes_mascotas(filtros, sesion) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, criterios} <- parsear_filtros_mascotas(filtros),
+             {:ok, reportes} <- GestionMascotas.listar_reportes(sesion, criterios),
+             {:ok, zonas} <- GestionTerritorio.listar_zonas(sesion) do
+          {:ok, {reportes, Map.new(zonas, &{&1.id, &1.codigo_zona})}}
+        end
+      end,
+      fn
+        {[], _codigos_zona} ->
+          "No hay reportes de mascotas que coincidan con los filtros."
+
+        {reportes, codigos_zona} ->
+          "\n--- Reportes de mascotas ---\n" <>
+            Enum.map_join(reportes, "\n", fn reporte ->
+              codigo_zona = Map.get(codigos_zona, reporte.id_zona, "desconocida")
+
+              "[#{reporte.id}] #{reporte.tipo} | Especie: #{reporte.especie} | " <>
+                "Color: #{reporte.color} | Tamaño: #{reporte.tamano} | " <>
+                "Zona: #{codigo_zona} | Estado: #{reporte.estado}"
+            end)
+      end
+    )
+  end
+
+  defp parsear_filtros_mascotas(filtros) do
+    Enum.reduce_while(filtros, {:ok, []}, fn filtro, {:ok, acumulados} ->
+      with [clave, valor] <- String.split(filtro, "=", parts: 2),
+           {:ok, clave_atomo} <- Map.fetch(@filtros_mascotas, String.downcase(clave)),
+           true <- String.trim(valor) != "" do
+        {:cont, {:ok, [{clave_atomo, valor} | acumulados]}}
+      else
+        _ ->
+          {:halt, {:error, "Filtro no válido: '#{filtro}' (usa especie=, zona= o estado=)."}}
+      end
+    end)
   end
 
   # Ejecuta una acción que requiere sesión y muestra el resultado.

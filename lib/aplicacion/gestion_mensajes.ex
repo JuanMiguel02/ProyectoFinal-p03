@@ -13,7 +13,7 @@ defmodule Emergencia.Aplicacion.GestionMensajes do
   def enviar_mensaje(sesion, doc_id_o_familia, contenido, opciones \\ [])
 
   def enviar_mensaje(%Sesion{} = sesion, doc_id_o_familia, contenido, opciones) do
-    with :ok <- Autenticacion.autorizar(sesion, :despachar_mensaje) do
+    with :ok <- Autenticacion.autorizar(sesion, :enviar_mensaje) do
       ids_personas =
         case PoblacionServidor.consultar_integrantes(doc_id_o_familia) do
           {:ok, integrantes} when integrantes != [] ->

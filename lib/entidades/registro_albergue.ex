@@ -1,5 +1,6 @@
 defmodule Emergencia.RegistroAlbergue do
   alias Emergencia.GeneradorID
+  alias Emergencia.Reloj
 
   @moduledoc """
   Registra y audita las entradas y salidas de personas afectadas en un
@@ -24,7 +25,7 @@ defmodule Emergencia.RegistroAlbergue do
   Crea un nuevo registro de entrada o salida de albergue.
   """
   def nuevo(id_albergue, id_persona, tipo_movimiento, opciones \\ []) do
-    fecha = Keyword.get(opciones, :fecha, DateTime.utc_now())
+    fecha = Keyword.get(opciones, :fecha, Reloj.ahora_local())
 
     with :ok <- validar_obligatorios(id_albergue, id_persona),
          :ok <- validar_enum(:tipo_movimiento, tipo_movimiento, @tipos_movimiento_permitidos) do

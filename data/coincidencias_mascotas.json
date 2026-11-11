@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "estado": "confirmada",
+    "fecha_coincidencia": "2026-11-10T20:34:03.713000-05:00",
+    "id": "c9ffb4e7-d6eb-4dd8-ab64-1bc9f86ea747",
+    "id_reporte_encontrada": "3addbb89-5d0a-4465-9031-027948c9b812",
+    "id_reporte_perdida": "46a7a48b-b535-4f42-b6d4-71cf041aba02"
+  }
+]

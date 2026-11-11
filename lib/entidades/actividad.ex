@@ -1,5 +1,6 @@
 defmodule Emergencia.Actividad do
   alias Emergencia.GeneradorID
+  alias Emergencia.Reloj
 
   @enforce_keys [:id, :fecha, :descripcion, :operacion, :id_usuario]
   defstruct [:id, :fecha, :descripcion, :operacion, :id_usuario]
@@ -16,7 +17,7 @@ defmodule Emergencia.Actividad do
   Crea un nuevo registro de Actividad. Genera la fecha actual si no se proporciona en opciones.
   """
   def nueva(descripcion, operacion, id_usuario, opciones \\ []) do
-    fecha = Keyword.get(opciones, :fecha, DateTime.utc_now())
+    fecha = Keyword.get(opciones, :fecha, Reloj.ahora_local())
     operacion_texto = if is_atom(operacion), do: Atom.to_string(operacion), else: operacion
 
     cond do

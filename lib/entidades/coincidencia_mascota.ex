@@ -1,5 +1,6 @@
 defmodule Emergencia.CoincidenciaMascota do
   alias Emergencia.GeneradorID
+  alias Emergencia.Reloj
 
   @moduledoc """
   Representa la vinculación o emparejamiento entre un reporte de mascota perdida
@@ -25,7 +26,7 @@ defmodule Emergencia.CoincidenciaMascota do
   """
   def nueva(id_reporte_perdida, id_reporte_encontrada, opciones \\ []) do
     estado = Keyword.get(opciones, :estado, :pendiente)
-    fecha = Keyword.get(opciones, :fecha_coincidencia, DateTime.utc_now())
+    fecha = Keyword.get(opciones, :fecha_coincidencia, Reloj.ahora_local())
 
     with :ok <- validar_obligatorios(id_reporte_perdida, id_reporte_encontrada),
          :ok <- validar_reportes_distintos(id_reporte_perdida, id_reporte_encontrada),

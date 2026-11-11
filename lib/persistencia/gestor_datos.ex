@@ -32,10 +32,8 @@ defmodule Emergencia.GestorDatos do
     {:albergues, "albergues.json", Albergue, :id},
     {:registros_albergues, "registros_albergues.json", RegistroAlbergue, :id},
     {:centros_acopio, "centros_acopio.json", CentroAcopio, :id},
-    {:necesidades, "necesidades.json", Necesidad, :id},
     {:mensajes, "mensajes.json", Mensaje, :id_envio},
-    {:mensajes_destinatarios, "mensajes_destinatarios.json", MensajeDestinatario,
-     :id_mensaje_destinatario},
+    {:mensajes_destinatarios, "mensajes_destinatarios.json", MensajeDestinatario,:id_mensaje_destinatario},
     {:actividades, "actividades.json", Actividad, :id},
     {:reportes_mascotas, "reportes_mascotas.json", ReporteMascota, :id},
     {:coincidencias_mascotas, "coincidencias_mascotas.json", CoincidenciaMascota, :id}

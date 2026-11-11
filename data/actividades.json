@@ -35,11 +35,39 @@
     "operacion": "LOGOUT"
   },
   {
+    "descripcion": "El usuario coord registró 20 unidades de REC-0003 en CAC-0001",
+    "fecha": "2026-11-11T01:48:59.973000Z",
+    "id": "db0c7ce6-e6db-4097-af30-515e6f90623f",
+    "id_usuario": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
+    "operacion": "registrar_recurso"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-11T01:04:57.707000Z",
+    "id": "536f3a60-e3c4-491e-8d63-fe2ef5b6fb7e",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-11T01:32:26.439000Z",
+    "id": "596b1313-aee3-4c29-a823-d36edd2b8230",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
     "descripcion": "El usuario admin registró 10 unidades de REC-0002 en PAT-0001",
     "fecha": "2026-11-10T19:12:13.268000Z",
     "id": "af68b876-9fc0-4fa9-be2c-66d488b8dca8",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "registrar_recurso"
+  },
+  {
+    "descripcion": "El usuario pepe inició sesión",
+    "fecha": "2026-11-11T01:38:04.066000Z",
+    "id": "34216bdd-8f3c-4e96-a998-5c299ea6254d",
+    "id_usuario": "88d0a24c-2705-4452-a946-124077dd68e8",
+    "operacion": "inicio_sesion"
   },
   {
     "descripcion": "El usuario admin inició sesión",
@@ -82,6 +110,20 @@
     "id": "6860c4c4-6985-447a-91ed-b1c66335f6b0",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "registrar_reporte_mascota"
+  },
+  {
+    "descripcion": "El usuario admin cerró sesión",
+    "fecha": "2026-11-10T21:22:39.318000-05:00",
+    "id": "9ce4240c-338b-47fb-9f5b-89e9f2e868b4",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "cierre_sesion"
+  },
+  {
+    "descripcion": "El usuario vol cerró sesión",
+    "fecha": "2026-11-11T01:48:11.659000Z",
+    "id": "9651205d-0fcf-40d5-bb84-6ce41ff05ae1",
+    "id_usuario": "3db02d33-6f68-46d9-b553-0799f3f8067c",
+    "operacion": "cierre_sesion"
   },
   {
     "descripcion": "El usuario admin cambió el estado de PER-0001 a localizada",
@@ -147,6 +189,27 @@
     "operacion": "inicio_sesion"
   },
   {
+    "descripcion": "El usuario admin cerró sesión",
+    "fecha": "2026-11-11T01:35:05.633000Z",
+    "id": "3525840c-efb0-468c-9734-1370d1b6ecaf",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "cierre_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-11T01:35:32.119000Z",
+    "id": "8fe7c206-ecfc-4487-a64c-6b351d78700f",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario vol inició sesión",
+    "fecha": "2026-11-11T01:45:54.777000Z",
+    "id": "10112c84-85bb-43a8-9f8f-e81862ea3e99",
+    "id_usuario": "3db02d33-6f68-46d9-b553-0799f3f8067c",
+    "operacion": "inicio_sesion"
+  },
+  {
     "descripcion": "El usuario USR-0003 creó su propia cuenta como ciudadano",
     "fecha": "2026-11-10T02:47:31.492000Z",
     "id": "4ab1cec3-666b-40b1-9217-cc577e1c59a2",
@@ -164,6 +227,13 @@
     "descripcion": "El usuario admin inició sesión",
     "fecha": "2026-11-10T20:32:14.366000Z",
     "id": "6dec7a6c-b7e8-4097-9e4e-2cb8bcbefe6b",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-11T00:56:08.579000Z",
+    "id": "50dde033-b1f0-4f1c-b922-b47207d614fd",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
   },
@@ -189,6 +259,13 @@
     "operacion": "registrar_reporte_mascota"
   },
   {
+    "descripcion": "El usuario pepe cerró sesión",
+    "fecha": "2026-11-11T01:01:35.001000Z",
+    "id": "41ad9175-1fb2-45a5-8a67-4282ce804f9d",
+    "id_usuario": "88d0a24c-2705-4452-a946-124077dd68e8",
+    "operacion": "cierre_sesion"
+  },
+  {
     "descripcion": "El usuario admin registró una necesidad de tipo agua",
     "fecha": "2026-11-10T20:16:02.088000Z",
     "id": "3ea0d91e-6171-41df-8f6e-a75c9378d9f7",
@@ -201,6 +278,13 @@
     "id": "c3c99d38-93d0-4fa3-a90c-42bb9c9e25eb",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin registró el ingreso de una persona a un albergue",
+    "fecha": "2026-11-11T01:05:59.706000Z",
+    "id": "6918bd32-e0e2-47cf-afaf-17c42c3f7a9d",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "ingreso_albergue"
   },
   {
     "descripcion": "El usuario vol inició sesión",
@@ -273,6 +357,13 @@
     "operacion": "registrar_reporte_mascota"
   },
   {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-11T01:21:07.017000Z",
+    "id": "73779f20-ebbc-4fef-bea3-645809fab0bf",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
     "descripcion": "El usuario admin registró reporte de mascota encontrada",
     "fecha": "2026-11-10T23:54:21.777000Z",
     "id": "9cf20308-9b5f-4a6d-802a-89c4421e85d7",
@@ -287,11 +378,60 @@
     "operacion": "registro_albergue"
   },
   {
+    "descripcion": "El usuario admin confirmó una coincidencia de mascota",
+    "fecha": "2026-11-11T01:34:18.527000Z",
+    "id": "a72383f6-a6f1-4f22-a5ee-7bbd3a03e096",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "confirmar_coincidencia_mascota"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-11T00:57:14.664000Z",
+    "id": "f31a7fc2-0cff-474a-abec-802d982a4f93",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario pepe inició sesión",
+    "fecha": "2026-11-11T01:44:48.394000Z",
+    "id": "435a6a05-0c50-4752-b2fe-803ce5d53843",
+    "id_usuario": "88d0a24c-2705-4452-a946-124077dd68e8",
+    "operacion": "inicio_sesion"
+  },
+  {
     "descripcion": "El usuario admin registró reporte de mascota perdida",
     "fecha": "2026-11-10T20:43:20.610000Z",
     "id": "fee58299-ba38-4b40-b36a-701924a97c80",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "registrar_reporte_mascota"
+  },
+  {
+    "descripcion": "El usuario admin registró una posible coincidencia de mascota",
+    "fecha": "2026-11-11T01:34:03.732000Z",
+    "id": "d91e266d-4623-4c73-8a5b-5b563ca65630",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_coincidencia_mascota"
+  },
+  {
+    "descripcion": "El usuario coord inició sesión",
+    "fecha": "2026-11-11T01:48:23.654000Z",
+    "id": "0147269d-fa51-4f5d-b7fe-ff743f510bb3",
+    "id_usuario": "e204c9a4-e186-47a7-b80a-1cb1fe57b276",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin registró 10 unidades de REC-0005 (categoría: medicamentos) en PAT-0001",
+    "fecha": "2026-11-10T21:24:13.164000-05:00",
+    "id": "b7df3092-2298-42ad-aedd-558d57bd547b",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_recurso"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T21:21:24.934000-05:00",
+    "id": "9cb2e322-c996-4464-b389-fd3616f92ca4",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
   },
   {
     "descripcion": "El usuario admin registró a la persona PER-0001",
@@ -313,6 +453,20 @@
     "id": "a3912e8b-ec0c-4e41-8d41-9c1ad97ceb13",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario pepe inició sesión",
+    "fecha": "2026-11-11T01:39:26.465000Z",
+    "id": "be11d8bb-3407-43dc-971f-017f8423d7ab",
+    "id_usuario": "88d0a24c-2705-4452-a946-124077dd68e8",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin cerró sesión",
+    "fecha": "2026-11-11T00:56:53.863000Z",
+    "id": "59b5d6ea-e75f-431a-a6fd-1fbbeb49b278",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "cierre_sesion"
   },
   {
     "descripcion": "El usuario admin registró a la persona PER-0005",
@@ -355,6 +509,41 @@
     "id": "d62f8690-478f-4b67-8cb7-54b6231ad053",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "resolver_reporte"
+  },
+  {
+    "descripcion": "El usuario pepe cerró sesión",
+    "fecha": "2026-11-11T01:45:34.505000Z",
+    "id": "46232cef-5932-4983-8d18-ce78e51cfcb1",
+    "id_usuario": "88d0a24c-2705-4452-a946-124077dd68e8",
+    "operacion": "cierre_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-10T21:22:47.963000-05:00",
+    "id": "4cb36463-162b-4696-afc1-6e6be411d39c",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario pepe inició sesión",
+    "fecha": "2026-11-11T01:00:57.014000Z",
+    "id": "5f0a8037-ad73-49ba-af65-a0547b857fb7",
+    "id_usuario": "88d0a24c-2705-4452-a946-124077dd68e8",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-11T01:14:41.207000Z",
+    "id": "1b5d4005-5261-4b42-9f11-672bdb8a023c",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin registró 20 unidades de REC-0004 (categoría: alimentos) en CAC-0001",
+    "fecha": "2026-11-10T21:22:11.121000-05:00",
+    "id": "648b17a3-0ba7-40d3-9173-d96da6ae540b",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "registrar_recurso"
   },
   {
     "descripcion": "El usuario admin inició sesión",
@@ -409,6 +598,13 @@
     "descripcion": "El usuario admin inició sesión",
     "fecha": "2026-11-10T20:41:59.821000Z",
     "id": "ec6e2f2f-f31a-47cd-abdb-fad05c36dacb",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-11T01:49:54.622000Z",
+    "id": "10755f2d-a79b-48d7-8997-955361e2a937",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
   },

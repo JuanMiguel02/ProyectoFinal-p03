@@ -6,17 +6,22 @@ defmodule Emergencia.Consola.MenuAlbergues do
 
   alias Emergencia.Aplicacion.GestionAlbergues
   alias Emergencia.Aplicacion.GestionPersonas
+  alias Emergencia.Consola.FormatoConsola
+  alias Emergencia.Consola.PermisosMenu
   alias Util
 
   def iniciar(sesion) do
     Util.mostrar("\n========== GESTIÓN DE ALBERGUES ==========", :mensaje)
-    Util.mostrar("1. Registrar albergue", :mensaje)
-    Util.mostrar("2. Ingresar persona a un albergue", :mensaje)
-    Util.mostrar("3. Registrar salida de una persona", :mensaje)
-    Util.mostrar("4. Consultar cupos disponibles", :mensaje)
-    Util.mostrar("5. Consultar ocupación de un albergue", :mensaje)
-    Util.mostrar("6. Reporte general de ocupación", :mensaje)
-    Util.mostrar("7. Volver", :mensaje)
+
+    PermisosMenu.mostrar_opciones(sesion, [
+      {"1", "Registrar albergue", :registrar_albergue},
+      {"2", "Ingresar persona a un albergue", :ingreso_albergue},
+      {"3", "Registrar salida de una persona", :salida_albergue},
+      {"4", "Consultar cupos disponibles", :consultar_albergues},
+      {"5", "Consultar ocupación de un albergue", :consultar_albergues},
+      {"6", "Reporte general de ocupación", :consultar_albergues},
+      {"7", "Volver", nil}
+    ])
 
     opcion = Util.ingresar("\nSeleccione una opción: ", :texto)
 
@@ -106,20 +111,11 @@ defmodule Emergencia.Consola.MenuAlbergues do
                    albergue.id
                  ) do
               {:ok, registro} ->
-                Util.mostrar(
-                  "\nIngreso registrado correctamente.",
-                  :mensaje
-                )
-
-                Util.mostrar(inspect(registro, pretty: true), :mensaje)
+                mostrar_registro(registro, persona, albergue)
 
               {:ok, registro, {:advertencia, motivo}} ->
-                Util.mostrar(
-                  "\nIngreso registrado, pero ocurrió una advertencia: #{inspect(motivo)}",
-                  :error
-                )
-
-                Util.mostrar(inspect(registro, pretty: true), :mensaje)
+                mostrar_registro(registro, persona, albergue)
+                Util.mostrar("Advertencia de auditoría: #{inspect(motivo)}", :error)
 
               {:error, motivo} ->
                 Util.mostrar("\n#{motivo}", :error)
@@ -157,25 +153,13 @@ defmodule Emergencia.Consola.MenuAlbergues do
           )
 
         if String.downcase(confirmar) == "s" do
-          case GestionAlbergues.registrar_salida(
-                 sesion,
-                 persona.id
-               ) do
+          case GestionAlbergues.registrar_salida(sesion, persona.id) do
             {:ok, registro} ->
-              Util.mostrar(
-                "\nSalida registrada correctamente.",
-                :mensaje
-              )
-
-              Util.mostrar(inspect(registro, pretty: true), :mensaje)
+              mostrar_salida(registro, persona)
 
             {:ok, registro, {:advertencia, motivo}} ->
-              Util.mostrar(
-                "\nSalida registrada, pero ocurrió una advertencia: #{inspect(motivo)}",
-                :error
-              )
-
-              Util.mostrar(inspect(registro, pretty: true), :mensaje)
+              mostrar_salida(registro, persona)
+              Util.mostrar("Advertencia de auditoría: #{inspect(motivo)}", :error)
 
             {:error, motivo} ->
               Util.mostrar("\n#{motivo}", :error)
@@ -307,12 +291,13 @@ defmodule Emergencia.Consola.MenuAlbergues do
 
         codigo =
           Util.ingresar(
-            "\nIngrese el código del albergue: ",
+            "\nIngrese el código o ID del albergue: ",
             :texto
           )
 
         case Enum.find(albergues, fn albergue ->
-               String.downcase(albergue.codigo) == String.downcase(codigo)
+               albergue.id == codigo or
+                 String.downcase(albergue.codigo) == String.downcase(codigo)
              end) do
           nil ->
             {:error, "No existe un albergue con ese código."}
@@ -363,6 +348,7 @@ defmodule Emergencia.Consola.MenuAlbergues do
       _ ->
         case GestionPersonas.buscar_personas(sesion, criterios) do
           {:ok, [persona]} ->
+            mostrar_persona_seleccionada(persona)
             {:ok, persona}
 
           {:ok, []} ->
@@ -386,5 +372,28 @@ defmodule Emergencia.Consola.MenuAlbergues do
     Util.mostrar("Nombre: #{albergue.nombre}", :mensaje)
     Util.mostrar("Capacidad máxima: #{albergue.capacidad_maxima}", :mensaje)
     Util.mostrar("Ocupación actual: #{albergue.ocupacion_actual}", :mensaje)
+  end
+
+  defp mostrar_persona_seleccionada(persona) do
+    Util.mostrar("\n---------- PERSONA SELECCIONADA ----------", :mensaje)
+    Util.mostrar("Nombre: #{persona.nombre}", :mensaje)
+    Util.mostrar("Código: #{persona.codigo_persona}", :mensaje)
+    Util.mostrar("Documento: #{persona.documento}", :mensaje)
+    Util.mostrar("Estado: #{FormatoConsola.estado(persona.estado)}", :mensaje)
+    Util.mostrar("Edad: #{persona.edad || "No especificada"}", :mensaje)
+    Util.mostrar("Descripción: #{persona.dato_referencia || "No especificada"}", :mensaje)
+  end
+
+  defp mostrar_registro(registro, persona, albergue) do
+    Util.mostrar("\nIngreso registrado correctamente.", :mensaje)
+    Util.mostrar("Persona: #{persona.nombre} (#{persona.codigo_persona})", :mensaje)
+    Util.mostrar("Albergue: #{albergue.nombre} (#{albergue.codigo})", :mensaje)
+    Util.mostrar("Fecha y hora: #{FormatoConsola.fecha_hora(registro.fecha)}", :mensaje)
+  end
+
+  defp mostrar_salida(registro, persona) do
+    Util.mostrar("\nSalida registrada correctamente.", :mensaje)
+    Util.mostrar("Persona: #{persona.nombre} (#{persona.codigo_persona})", :mensaje)
+    Util.mostrar("Fecha y hora: #{FormatoConsola.fecha_hora(registro.fecha)}", :mensaje)
   end
 end

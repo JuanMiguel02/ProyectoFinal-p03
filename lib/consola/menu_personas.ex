@@ -5,16 +5,20 @@ defmodule Emergencia.Consola.MenuPersonas do
   """
 
   alias Emergencia.Aplicacion.GestionPersonas
+  alias Emergencia.Consola.PermisosMenu
   alias Util
 
   def iniciar(sesion) do
     Util.mostrar("\n========== GESTIÓN DE PERSONAS ==========", :mensaje)
-    Util.mostrar("1. Registrar persona", :mensaje)
-    Util.mostrar("2. Buscar persona", :mensaje)
-    Util.mostrar("3. Listar personas", :mensaje)
-    Util.mostrar("4. Cambiar estado de una persona", :mensaje)
-    Util.mostrar("5. Consultar historial de una persona", :mensaje)
-    Util.mostrar("6. Volver", :mensaje)
+
+    PermisosMenu.mostrar_opciones(sesion, [
+      {"1", "Registrar persona", :registrar_persona},
+      {"2", "Buscar persona", :consultar_personas},
+      {"3", "Listar personas", :consultar_personas},
+      {"4", "Cambiar estado de una persona", :cambiar_estado_persona},
+      {"5", "Consultar historial de una persona", :consultar_historial},
+      {"6", "Volver", nil}
+    ])
 
     opcion = Util.ingresar("\nSeleccione una opción: ", :texto)
 
@@ -316,9 +320,19 @@ defmodule Emergencia.Consola.MenuPersonas do
 
       {:ok, historial} ->
         Util.mostrar("\n========== HISTORIAL DE LA PERSONA ==========", :mensaje)
+        Util.mostrar("Persona: #{historial.nombre}", :mensaje)
 
-        Enum.each(historial, fn registro ->
-          Util.mostrar(inspect(registro, pretty: true), :mensaje)
+        Util.mostrar(
+          "Estado actual: #{Emergencia.Consola.FormatoConsola.estado(historial.estado)}",
+          :mensaje
+        )
+
+        Enum.each(historial.historial_estados, fn {estado, fecha} ->
+          Util.mostrar(
+            "#{Emergencia.Consola.FormatoConsola.estado(estado)} - " <>
+              "#{Emergencia.Consola.FormatoConsola.fecha_hora(fecha)}",
+            :mensaje
+          )
         end)
 
       {:error, motivo} ->
@@ -337,7 +351,7 @@ defmodule Emergencia.Consola.MenuPersonas do
     Util.mostrar("Código: #{persona.codigo_persona}", :mensaje)
     Util.mostrar("Nombre: #{persona.nombre}", :mensaje)
     Util.mostrar("Documento: #{persona.documento}", :mensaje)
-    Util.mostrar("Estado: #{persona.estado}", :mensaje)
+    Util.mostrar("Estado: #{Emergencia.Consola.FormatoConsola.estado(persona.estado)}", :mensaje)
     Util.mostrar("Edad: #{persona.edad || "No especificada"}", :mensaje)
     Util.mostrar("Descripción: #{persona.dato_referencia || "No especificada"}", :mensaje)
   end
