@@ -192,6 +192,10 @@ defmodule Emergencia.Consola.MenuTerritorio do
         Util.mostrar("Sectores registrados: #{estadisticas.cantidad_sectores}", :mensaje)
         Util.mostrar("Puntos de atención: #{estadisticas.cantidad_puntos_atencion}", :mensaje)
 
+        if sectores != [] do
+          Util.mostrar("\n--- Sectores Registrados ---", :mensaje)
+        end
+
         Enum.each(sectores, fn sector ->
           Util.mostrar(
             "#{sector.codigo_sector} - #{sector.nombre} | " <>
@@ -199,6 +203,8 @@ defmodule Emergencia.Consola.MenuTerritorio do
               "Personas afectadas: #{sector.personas_afectadas}",
             :mensaje
           )
+
+          mostrar_puntos_atencion(sector.puntos_atencion)
         end)
 
       {:error, motivo} ->
@@ -206,6 +212,19 @@ defmodule Emergencia.Consola.MenuTerritorio do
     end
 
     iniciar(sesion)
+  end
+
+  defp mostrar_puntos_atencion([]), do: :ok
+
+  defp mostrar_puntos_atencion(puntos) do
+    Util.mostrar("  Puntos de Atención:", :mensaje)
+
+    Enum.each(puntos, fn punto ->
+      Util.mostrar(
+        "    - #{punto.codigo_punto_atencion}: #{punto.nombre} (#{FormatoConsola.estado(punto.tipo)})",
+        :mensaje
+      )
+    end)
   end
 
   defp listar_centros(sesion) do

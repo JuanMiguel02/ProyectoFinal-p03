@@ -71,6 +71,13 @@
   },
   {
     "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-13T20:00:18.703000Z",
+    "id": "a7abc728-48d2-4f62-a8c1-abc6b1aedb74",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
     "fecha": "2026-11-11T00:05:19.550000Z",
     "id": "227da96a-3ffc-43ae-a488-c6a5b6569081",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
@@ -113,7 +120,7 @@
   },
   {
     "descripcion": "El usuario admin cerró sesión",
-    "fecha": "2026-11-10T21:22:39.318000-05:00",
+    "fecha": "2026-11-11T02:22:39.318000Z",
     "id": "9ce4240c-338b-47fb-9f5b-89e9f2e868b4",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "cierre_sesion"
@@ -151,6 +158,13 @@
     "fecha": "2026-11-10T02:48:15.923000Z",
     "id": "4c1ba4ce-a64d-4f2f-9935-0fbb32c94050",
     "id_usuario": "3db02d33-6f68-46d9-b553-0799f3f8067c",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-13T15:32:43.727000-05:00",
+    "id": "c717f12e-e326-4706-8ffe-1e69178cd113",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
   },
   {
@@ -330,6 +344,13 @@
   },
   {
     "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-13T18:48:40.864000Z",
+    "id": "c9f35ef3-0c14-4825-84e4-b064061da5f1",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
     "fecha": "2026-11-10T23:52:58.629000Z",
     "id": "b5ad74ea-8e02-4469-9ecf-bad8bcc88c15",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
@@ -421,14 +442,14 @@
   },
   {
     "descripcion": "El usuario admin registró 10 unidades de REC-0005 (categoría: medicamentos) en PAT-0001",
-    "fecha": "2026-11-10T21:24:13.164000-05:00",
+    "fecha": "2026-11-11T02:24:13.164000Z",
     "id": "b7df3092-2298-42ad-aedd-558d57bd547b",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "registrar_recurso"
   },
   {
     "descripcion": "El usuario admin inició sesión",
-    "fecha": "2026-11-10T21:21:24.934000-05:00",
+    "fecha": "2026-11-11T02:21:24.934000Z",
     "id": "9cb2e322-c996-4464-b389-fd3616f92ca4",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
@@ -439,6 +460,13 @@
     "id": "dbdbbed6-0149-4e0f-a816-c1aec222dd48",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "registro_persona"
+  },
+  {
+    "descripcion": "El usuario admin cerró sesión",
+    "fecha": "2026-11-13T15:34:23.713000-05:00",
+    "id": "05763ee1-8985-4b4e-86cc-f210a6a178d2",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "cierre_sesion"
   },
   {
     "descripcion": "El usuario admin registró a la persona PER-0004",
@@ -519,7 +547,7 @@
   },
   {
     "descripcion": "El usuario admin inició sesión",
-    "fecha": "2026-11-10T21:22:47.963000-05:00",
+    "fecha": "2026-11-11T02:22:47.963000Z",
     "id": "4cb36463-162b-4696-afc1-6e6be411d39c",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
@@ -540,7 +568,7 @@
   },
   {
     "descripcion": "El usuario admin registró 20 unidades de REC-0004 (categoría: alimentos) en CAC-0001",
-    "fecha": "2026-11-10T21:22:11.121000-05:00",
+    "fecha": "2026-11-11T02:22:11.121000Z",
     "id": "648b17a3-0ba7-40d3-9173-d96da6ae540b",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "registrar_recurso"
@@ -549,6 +577,13 @@
     "descripcion": "El usuario admin inició sesión",
     "fecha": "2026-11-10T19:21:33.391000Z",
     "id": "27a085da-4d4c-492f-a2d5-61e5ccb9b219",
+    "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
+    "operacion": "inicio_sesion"
+  },
+  {
+    "descripcion": "El usuario admin inició sesión",
+    "fecha": "2026-11-13T15:30:57.173000-05:00",
+    "id": "7e5f9040-ef82-4854-bc31-719c2672503d",
     "id_usuario": "b3701dbb-6da7-47d8-8ca4-fbd89ccb8fe9",
     "operacion": "inicio_sesion"
   },
