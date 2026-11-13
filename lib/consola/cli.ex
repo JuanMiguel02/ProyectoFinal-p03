@@ -336,7 +336,9 @@ defmodule Emergencia.Consola.CLI do
             _ ->
               "\n\n--- Sectores Registrados ---\n" <>
                 Enum.map_join(sectores, "\n", fn sec ->
-                  "Código: #{sec.codigo_sector} | Nombre: #{sec.nombre} | Afectados: #{sec.personas_afectadas}"
+                  puntos_texto = formatear_puntos_atencion(sec.puntos_atencion)
+
+                  "Código: #{sec.codigo_sector} | Nombre: #{sec.nombre} | Afectados: #{sec.personas_afectadas}#{puntos_texto}"
                 end)
           end
 
@@ -376,36 +378,36 @@ defmodule Emergencia.Consola.CLI do
     )
   end
 
-defp evaluar_comando(
-       ["register_resource", nombre, categoria, cantidad, unidad, ubicacion],
-       sesion
-     ) do
-  ejecutar(
-    sesion,
-    fn ->
-      with {:ok, categoria} <- obtener_categoria(categoria),
-           {:ok, cantidad} <- a_entero(cantidad) do
-        GestionRecursos.registrar_recurso(
-          sesion,
-          nombre,
-          categoria,
-          cantidad,
-          unidad,
-          ubicacion
-        )
+  defp evaluar_comando(
+         ["register_resource", nombre, categoria, cantidad, unidad, ubicacion],
+         sesion
+       ) do
+    ejecutar(
+      sesion,
+      fn ->
+        with {:ok, categoria} <- obtener_categoria(categoria),
+             {:ok, cantidad} <- a_entero(cantidad) do
+          GestionRecursos.registrar_recurso(
+            sesion,
+            nombre,
+            categoria,
+            cantidad,
+            unidad,
+            ubicacion
+          )
+        end
+      end,
+      fn recurso ->
+        "Recurso registrado: #{recurso.nombre} | " <>
+          "Código: #{recurso.codigo} | " <>
+          "Categoría: #{nombre_categoria(recurso.categoria)} | " <>
+          "Stock inicial: #{cantidad} #{recurso.unidad_medida} " <>
+          "en #{ubicacion}"
       end
-    end,
-    fn recurso ->
-      "Recurso registrado: #{recurso.nombre} | " <>
-        "Código: #{recurso.codigo} | " <>
-        "Categoría: #{nombre_categoria(recurso.categoria)} | " <>
-        "Stock inicial: #{cantidad} #{recurso.unidad_medida} " <>
-        "en #{ubicacion}"
-    end
-  )
-end
+    )
+  end
 
-defp evaluar_comando(["transfer_resource", recurso, origen, destino, cantidad], sesion) do
+  defp evaluar_comando(["transfer_resource", recurso, origen, destino, cantidad], sesion) do
     ejecutar(
       sesion,
       fn ->
@@ -935,8 +937,9 @@ defp evaluar_comando(["transfer_resource", recurso, origen, destino, cantidad], 
     ejecutar(
       sesion,
       fn ->
-        with {:ok, criterios} <- parsear_filtros(filtros) do
-          GestionRecursos.listar_necesidades(sesion, criterios)
+        with {:ok, criterios} <- parsear_filtros(filtros),
+             {:ok, necesidades} <- GestionRecursos.listar_necesidades(sesion, criterios) do
+          {:ok, enriquecer_necesidades(necesidades, sesion)}
         end
       end,
       fn
@@ -951,6 +954,97 @@ defp evaluar_comando(["transfer_resource", recurso, origen, destino, cantidad], 
       end
     )
   end
+
+  defp enriquecer_necesidades(necesidades, sesion) do
+    Enum.map(necesidades, fn necesidad ->
+      {nombre, codigo} = resolver_destinatario(necesidad, sesion)
+      Map.merge(necesidad, %{nombre_destinatario: nombre, codigo_destinatario: codigo})
+    end)
+  end
+
+  defp resolver_destinatario(%{id_destinatario: id_dest, entidad_asociada: tipo}, sesion)
+       when not is_nil(id_dest) do
+    case tipo do
+      "persona" ->
+        case GestionPersonas.buscar_personas(sesion, []) do
+          {:ok, personas} ->
+            case Enum.find(personas, &(&1.id == id_dest)) do
+              nil -> {"Desconocido", id_dest}
+              persona -> {persona.nombre, persona.codigo_persona}
+            end
+
+          _ ->
+            {"Desconocido", id_dest}
+        end
+
+      "familia" ->
+        case GestionFamilias.listar_familias(sesion) do
+          {:ok, familias} ->
+            case Enum.find(familias, &(&1.id == id_dest)) do
+              nil -> {"Desconocida", id_dest}
+              familia -> {familia.nombre, familia.codigo_familia}
+            end
+
+          _ ->
+            {"Desconocida", id_dest}
+        end
+
+      "albergue" ->
+        case GestionAlbergues.listar_albergues(sesion) do
+          {:ok, albergues} ->
+            case Enum.find(albergues, &(&1.id == id_dest)) do
+              nil -> {"Desconocido", id_dest}
+              albergue -> {albergue.nombre, albergue.codigo}
+            end
+
+          _ ->
+            {"Desconocido", id_dest}
+        end
+
+      "zona" ->
+        case GestionTerritorio.listar_zonas(sesion) do
+          {:ok, zonas} ->
+            case Enum.find(zonas, &(&1.id == id_dest)) do
+              nil -> {"Desconocida", id_dest}
+              zona -> {zona.nombre, zona.codigo_zona}
+            end
+
+          _ ->
+            {"Desconocida", id_dest}
+        end
+
+      "centro_acopio" ->
+        case GestionTerritorio.listar_centros_acopio(sesion) do
+          {:ok, centros} ->
+            case Enum.find(centros, &(&1.id == id_dest)) do
+              nil -> {"Desconocido", id_dest}
+              centro -> {centro.nombre, centro.codigo_centro_acopio}
+            end
+
+          _ ->
+            {"Desconocido", id_dest}
+        end
+
+      "punto_atencion" ->
+        case GestionTerritorio.listar_zonas(sesion) do
+          {:ok, zonas} ->
+            puntos = zonas |> Enum.flat_map(& &1.sectores) |> Enum.flat_map(& &1.puntos_atencion)
+
+            case Enum.find(puntos, &(&1.id == id_dest)) do
+              nil -> {"Desconocido", id_dest}
+              punto -> {punto.nombre, punto.codigo_punto_atencion}
+            end
+
+          _ ->
+            {"Desconocido", id_dest}
+        end
+
+      _ ->
+        {"Desconocido", id_dest}
+    end
+  end
+
+  defp resolver_destinatario(_necesidad, _sesion), do: {"Sin especificar", "N/A"}
 
   # Busca una persona por código (PER-####), documento exacto o UUID.
   defp buscar_persona_unica(sesion, identificador) do
@@ -1002,7 +1096,7 @@ defp evaluar_comando(["transfer_resource", recurso, origen, destino, cantidad], 
     end
   end
 
-   defp obtener_categoria(categoria) do
+  defp obtener_categoria(categoria) do
     categorias = %{
       "agua" => :agua,
       "alimentos" => :alimentos,
@@ -1090,6 +1184,15 @@ defp evaluar_comando(["transfer_resource", recurso, origen, destino, cantidad], 
           {:halt, {:error, "Filtro no válido: '#{filtro}' (usa especie=, zona= o estado=)."}}
       end
     end)
+  end
+
+  defp formatear_puntos_atencion([]), do: ""
+
+  defp formatear_puntos_atencion(puntos) do
+    "\n    Puntos de Atención:\n" <>
+      Enum.map_join(puntos, "\n", fn punto ->
+        "      - #{punto.codigo_punto_atencion}: #{punto.nombre} (#{punto.tipo})"
+      end)
   end
 
   # Ejecuta una acción que requiere sesión y muestra el resultado.

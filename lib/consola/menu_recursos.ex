@@ -5,6 +5,11 @@ defmodule Emergencia.Consola.MenuRecursos do
 
   alias Emergencia.Aplicacion.GestionRecursos
   alias Emergencia.Aplicacion.GestionResumen
+  alias Emergencia.Aplicacion.GestionPersonas
+  alias Emergencia.Aplicacion.GestionFamilias
+  alias Emergencia.Aplicacion.GestionAlbergues
+  alias Emergencia.Aplicacion.GestionTerritorio
+  alias Emergencia.Aplicacion.GestionAlbergues
   alias Emergencia.AsignacionRecurso
   alias Emergencia.Consola.FormatoConsola
   alias Emergencia.Consola.PermisosMenu
@@ -129,57 +134,58 @@ defmodule Emergencia.Consola.MenuRecursos do
   end
 
   defp registrar_recurso(sesion) do
-  nombre = Util.ingresar("Nombre del recurso: ", :texto)
+    nombre = Util.ingresar("Nombre del recurso: ", :texto)
 
-  Util.mostrar(
-    "\nCategorías disponibles:",
-    :mensaje
-  )
+    Util.mostrar(
+      "\nCategorías disponibles:",
+      :mensaje
+    )
 
-  Util.mostrar("1. Agua", :mensaje)
-  Util.mostrar("2. Alimentos", :mensaje)
-  Util.mostrar("3. Medicamentos", :mensaje)
-  Util.mostrar("4. Botiquines", :mensaje)
-  Util.mostrar("5. Otro", :mensaje)
+    Util.mostrar("1. Agua", :mensaje)
+    Util.mostrar("2. Alimentos", :mensaje)
+    Util.mostrar("3. Medicamentos", :mensaje)
+    Util.mostrar("4. Botiquines", :mensaje)
+    Util.mostrar("5. Otro", :mensaje)
 
-  opcion_categoria =
-    Util.ingresar("Seleccione la categoría: ", :entero)
+    opcion_categoria =
+      Util.ingresar("Seleccione la categoría: ", :entero)
 
-  categoria =
-    case opcion_categoria do
-      1 -> :agua
-      2 -> :alimentos
-      3 -> :medicamentos
-      4 -> :botiquines
-      5 -> :otro
-      _ -> nil
+    categoria =
+      case opcion_categoria do
+        1 -> :agua
+        2 -> :alimentos
+        3 -> :medicamentos
+        4 -> :botiquines
+        5 -> :otro
+        _ -> nil
+      end
+
+    if is_nil(categoria) do
+      Util.mostrar("\nLa categoría seleccionada no es válida.", :mensaje)
+    else
+      cantidad = Util.ingresar("Cantidad inicial: ", :entero)
+      unidad = Util.ingresar("Unidad de medida: ", :texto)
+
+      ubicacion =
+        Util.ingresar(
+          "Código de centro, punto de atención o albergue: ",
+          :texto
+        )
+
+      sesion
+      |> GestionRecursos.registrar_recurso(
+        nombre,
+        categoria,
+        cantidad,
+        unidad,
+        ubicacion
+      )
+      |> mostrar_resultado("Recurso registrado:")
     end
 
-  if is_nil(categoria) do
-    Util.mostrar("\nLa categoría seleccionada no es válida.", :mensaje)
-  else
-    cantidad = Util.ingresar("Cantidad inicial: ", :entero)
-    unidad = Util.ingresar("Unidad de medida: ", :texto)
-
-    ubicacion =
-      Util.ingresar(
-        "Código de centro, punto de atención o albergue: ",
-        :texto
-      )
-
-    sesion
-    |> GestionRecursos.registrar_recurso(
-      nombre,
-      categoria,
-      cantidad,
-      unidad,
-      ubicacion
-    )
-    |> mostrar_resultado("Recurso registrado:")
+    iniciar(sesion)
   end
 
-  iniciar(sesion)
-end
   defp asignar_recurso(sesion) do
     necesidad = Util.ingresar("Código de necesidad: ", :texto)
     recurso = Util.ingresar("Código de recurso: ", :texto)
@@ -244,8 +250,12 @@ end
       |> agregar_filtro(:estado, estado)
 
     case GestionRecursos.listar_necesidades(sesion, opciones) do
-      {:ok, necesidades} -> mostrar_necesidades(necesidades)
-      {:error, motivo} -> Util.mostrar(inspect(motivo), :error)
+      {:ok, necesidades} ->
+        necesidades_enriquecidas = enriquecer_necesidades(necesidades, sesion)
+        mostrar_necesidades(necesidades_enriquecidas)
+
+      {:error, motivo} ->
+        Util.mostrar(inspect(motivo), :error)
     end
 
     iniciar(sesion)
@@ -253,8 +263,12 @@ end
 
   defp listar_necesidades_ordenadas(sesion) do
     case GestionRecursos.listar_necesidades_ordenadas(sesion) do
-      {:ok, necesidades} -> mostrar_necesidades(necesidades)
-      {:error, motivo} -> Util.mostrar(inspect(motivo), :error)
+      {:ok, necesidades} ->
+        necesidades_enriquecidas = enriquecer_necesidades(necesidades, sesion)
+        mostrar_necesidades(necesidades_enriquecidas)
+
+      {:error, motivo} ->
+        Util.mostrar(inspect(motivo), :error)
     end
 
     iniciar(sesion)
@@ -310,15 +324,114 @@ end
 
   defp mostrar_necesidades(necesidades) do
     Enum.each(necesidades, fn necesidad ->
+      destinatario =
+        if Map.has_key?(necesidad, :nombre_destinatario) do
+          "#{necesidad.nombre_destinatario} (#{necesidad.codigo_destinatario})"
+        else
+          "No especificado"
+        end
+
       Util.mostrar(
         "#{necesidad.codigo_necesidad} | #{FormatoConsola.estado(necesidad.tipo)} | " <>
           "Prioridad: #{FormatoConsola.estado(necesidad.prioridad)} | " <>
           "Pendiente: #{necesidad.cantidad_pendiente} | " <>
+          "Destinatario: #{destinatario} | " <>
           "Estado: #{FormatoConsola.estado(necesidad.estado)}",
         :mensaje
       )
     end)
   end
+
+  defp enriquecer_necesidades(necesidades, sesion) do
+    Enum.map(necesidades, fn necesidad ->
+      {nombre, codigo} = resolver_destinatario(necesidad, sesion)
+      Map.merge(necesidad, %{nombre_destinatario: nombre, codigo_destinatario: codigo})
+    end)
+  end
+
+  defp resolver_destinatario(%{id_destinatario: id_dest, entidad_asociada: tipo}, sesion)
+       when not is_nil(id_dest) do
+    case tipo do
+      "persona" ->
+        case GestionPersonas.buscar_personas(sesion, []) do
+          {:ok, personas} ->
+            case Enum.find(personas, &(&1.id == id_dest)) do
+              nil -> {"Desconocido", id_dest}
+              persona -> {persona.nombre, persona.codigo_persona}
+            end
+
+          _ ->
+            {"Desconocido", id_dest}
+        end
+
+      "familia" ->
+        case GestionFamilias.listar_familias(sesion) do
+          {:ok, familias} ->
+            case Enum.find(familias, &(&1.id == id_dest)) do
+              nil -> {"Desconocida", id_dest}
+              familia -> {familia.nombre, familia.codigo_familia}
+            end
+
+          _ ->
+            {"Desconocida", id_dest}
+        end
+
+      "albergue" ->
+        case GestionAlbergues.listar_albergues(sesion) do
+          {:ok, albergues} ->
+            case Enum.find(albergues, &(&1.id == id_dest)) do
+              nil -> {"Desconocido", id_dest}
+              albergue -> {albergue.nombre, albergue.codigo}
+            end
+
+          _ ->
+            {"Desconocido", id_dest}
+        end
+
+      "zona" ->
+        case GestionTerritorio.listar_zonas(sesion) do
+          {:ok, zonas} ->
+            case Enum.find(zonas, &(&1.id == id_dest)) do
+              nil -> {"Desconocida", id_dest}
+              zona -> {zona.nombre, zona.codigo_zona}
+            end
+
+          _ ->
+            {"Desconocida", id_dest}
+        end
+
+      "centro_acopio" ->
+        case GestionTerritorio.listar_centros_acopio(sesion) do
+          {:ok, centros} ->
+            case Enum.find(centros, &(&1.id == id_dest)) do
+              nil -> {"Desconocido", id_dest}
+              centro -> {centro.nombre, centro.codigo_centro_acopio}
+            end
+
+          _ ->
+            {"Desconocido", id_dest}
+        end
+
+      "punto_atencion" ->
+        case GestionTerritorio.listar_zonas(sesion) do
+          {:ok, zonas} ->
+            puntos = zonas |> Enum.flat_map(& &1.sectores) |> Enum.flat_map(& &1.puntos_atencion)
+
+            case Enum.find(puntos, &(&1.id == id_dest)) do
+              nil -> {"Desconocido", id_dest}
+              punto -> {punto.nombre, punto.codigo_punto_atencion}
+            end
+
+          _ ->
+            {"Desconocido", id_dest}
+        end
+
+      _ ->
+        {"Desconocido", id_dest}
+    end
+  end
+
+  defp resolver_destinatario(_necesidad, _sesion), do: {"Sin especificar", "N/A"}
 
   defp seleccionar(opciones, mensaje) do
     opciones

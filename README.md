@@ -181,6 +181,19 @@ iex --sname cliente2 --cookie emergencia123 -S mix run --no-start
 
 Repite `Node.connect/1`, `Emergencia.NodoServidor.configurar/1` y `Emergencia.Consola.CLI.iniciar()`.
 
+## Credenciales de inicio de sesión
+
+El sistema incluye usuarios precargados para facilitar las pruebas. Puedes iniciar sesión con cualquiera de estos usuarios:
+
+| Usuario | Contraseña | Rol | Zona | Descripción |
+|---------|-----------|-----|------|-------------|
+| admin | 1234 | Administrador | ZON-0001 | Acceso completo a todas las funciones del sistema |
+| coord | 1234 | Coordinador | ZON-0002 | Gestión de recursos, personas y necesidades |
+| vol | 1234 | Voluntario | ZON-0001 | Registro de personas, albergues y mensajes |
+| pepe | 1234 | Ciudadano | ZON-0003 | Usuario ciudadano de ejemplo |
+
+**Nota:** También puedes crear nuevos usuarios usando el comando `connect`. Si el usuario no existe, el sistema lo registrará automáticamente (excepto para el rol de administrador, que debe ser creado manualmente).
+
 **Ver las sesiones activas** (en la terminal del servidor): muestra qué usuarios están conectados, desde qué nodo y con qué proceso.
 
 ```elixir
@@ -212,6 +225,12 @@ Para probar rápidamente sin distribución, no hace falta conectar nodos:
 iex -S mix
 ```
 
+## Formas de uso del sistema
+El sistema ofrece *dos interfaces de usuario* para interactuar con sus funcionalidades:
+
+1. Interfaz por Comandos (CLI)
+Ideal para usuarios avanzados que quieren usar la terminal para interactuar con el sistema.
+
 ```elixir
 Emergencia.Consola.CLI.iniciar()
 ```
@@ -238,7 +257,7 @@ Si el usuario no existe, `connect` lo registra automáticamente; si ya existe, v
 ### Ejemplo de flujo
 
 ```
-connect laura 1234 coordinador centro
+connect admin 1234 administrador ZON-0001
 register_zone "Zona Centro" critico 5000
 register_center "Centro de Acopio Norte" "Calle 10 # 5-20" 500 ZON-0001
 register_need agua 30 critica ZON-0001 ZON-0001 "Punto de atención sector 3"
@@ -254,6 +273,54 @@ summary
 ```
 
 Los códigos (`ZON-0001`, `CAC-0001`, `NEC-0001`, `PER-0001`, etc.) los genera el sistema; usa los que te devuelve cada comando. La ubicación de `register_resource` debe ser un centro de acopio, un punto de atención o un albergue ya registrado.
+
+2. Interfaz de Menús Interactivos
+Ideal para usuarios que prefieren una navegación más sencilla y visual.
+
+```elixir
+Emergencia.Consola.iniciar()
+```
+
+El sistema muestra un menú principal con las siguientes opciones:
+```
+========================================
+     SISTEMA DE GESTIÓN DE EMERGENCIAS
+========================================
+
+1. Iniciar sesión
+2. Registrarse
+3. Salir
+```
+
+Una vez autenticado, accedes al menú principal según tu rol:
+```
+========== MENÚ PRINCIPAL ==========
+1. Gestión de Territorio
+2. Gestión de Recursos
+3. Gestión de Personas
+4. Gestión de Familias
+5. Gestión de Albergues
+6. Gestión de Mensajes
+7. Gestión de Mascotas
+8. Resumen del Sistema
+9. Cerrar sesión
+```
+
+Características de los menús:
+
+- Guiados paso a paso: El sistema solicita cada dato necesario con instrucciones claras.
+- Validación en tiempo real: Los datos se validan antes de procesarse.
+- Restricción por permisos: Solo se muestran las opciones permitidas según el rol del usuario.
+- Navegación intuitiva: Puedes volver al menú anterior en cualquier momento.
+- 
+Submenús disponibles:
+- Gestión de Territorio: Registrar zonas, sectores, centros de acopio, puntos de atención, consultar estadísticas.
+- Gestión de Recursos: Registrar necesidades y recursos, asignar recursos, transferir entre ubicaciones, consultar inventarios.
+- Gestión de Personas: Reportar personas afectadas, buscar por documento, cambiar estados, ver historial.
+- Gestión de Familias: Crear familias, asignar personas, consultar integrantes.
+- Gestión de Albergues: Registrar albergues, consultar ocupación, registrar ingresos/salidas.
+- Gestión de Mensajes: Enviar mensajes a personas o familias, confirmar entregas.
+- Gestión de Mascotas: Reportar mascotas perdidas/encontradas, buscar coincidencias automáticas.
 
 ## Pruebas
 
